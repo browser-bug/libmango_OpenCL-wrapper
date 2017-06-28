@@ -1,0 +1,11 @@
+Compilation
+-----------
+$ mkdir build
+$ cd build
+$ cmake .. -DBOSP_PATH="/path/to/bbque"
+$ make -jX	# Replace X with number of cores
+
+
+Installation
+-------------------
+$ sudo make install
