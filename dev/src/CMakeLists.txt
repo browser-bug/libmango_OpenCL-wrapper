@@ -14,14 +14,14 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msoft-float -DTARGET_V485T -DDEBUG -DVERBOS
 # Set DEBUG compilation
 set(CMAKE_BUILD_TYPE Debug)
 
-# List of source files of HN library
-set(LIBHN_SOURCES	debug.c
-			peak/mango_hn.c
-			peak/mango_hn_peak.c
-			)
+# List of source files of the HN-side support
+set(HN_SOURCES
+	debug.c
+	peak/mango_hn.c
+	peak/mango_hn_peak.c
+)
 
-
-add_library (mango-devStatic STATIC ${LIBHN_SOURCES})
+add_library (mango-devStatic STATIC ${HN_SOURCES})
 
 target_include_directories (mango-devStatic PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_include_directories (mango-devStatic PUBLIC ${PROJECT_SOURCE_DIR}/dev/include)
