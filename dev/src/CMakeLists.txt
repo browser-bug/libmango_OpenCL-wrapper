@@ -26,7 +26,7 @@ add_library (mango-devStatic STATIC ${HN_SOURCES})
 target_include_directories (mango-devStatic PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_include_directories (mango-devStatic PUBLIC ${PROJECT_SOURCE_DIR}/dev/include)
 
-install (TARGETS mango-devStatic DESTINATION lib)
+install (TARGETS mango-devStatic DESTINATION ${MANGO_ROOT}/lib)
 set_target_properties(mango-devStatic PROPERTIES OUTPUT_NAME mango-dev)
 
 

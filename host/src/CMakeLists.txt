@@ -50,7 +50,7 @@ target_link_libraries(mango PUBLIC hn)
 target_link_libraries(mangoStatic PUBLIC hn)
 
 # Installation
-install (TARGETS mango DESTINATION lib)
-install (TARGETS mangoStatic DESTINATION lib)
+install (TARGETS mango DESTINATION ${MANGO_ROOT}/lib)
+install (TARGETS mangoStatic DESTINATION ${MANGO_ROOT}/lib)
 set_target_properties(mangoStatic PROPERTIES OUTPUT_NAME mango)
 

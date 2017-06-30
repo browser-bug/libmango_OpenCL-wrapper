@@ -3,5 +3,5 @@ set (HEADER_FILES
 	)
 
 
-install (FILES ${HEADER_FILES} DESTINATION include/libmango)
+install (FILES ${HEADER_FILES} DESTINATION ${MANGO_ROOT}/include/libmango)
 
