@@ -94,7 +94,14 @@ std::string KernelArguments::get_arguments() const noexcept {
 		if (p_instanceof<BufferArg>(arg) || p_instanceof<EventArg>(arg)) {
 			ss << " 0x" << std::hex << arg->get_value();
 		}
-		else if (p_instanceof<ScalarArg<mango_size_t>>(arg)) {
+		else if ( p_instanceof<ScalarArg<mango_size_t>>(arg) 
+			 || p_instanceof<ScalarArg<char>>(arg) 
+			 || p_instanceof<ScalarArg<unsigned char>>(arg) 
+			 || p_instanceof<ScalarArg<short>>(arg) 
+			 || p_instanceof<ScalarArg<unsigned short>>(arg) 
+			 || p_instanceof<ScalarArg<int>>(arg) 
+			 || p_instanceof<ScalarArg<unsigned int>>(arg) 
+ 		) {
 			ss << " " << arg->get_value();
 		}
 		else {
