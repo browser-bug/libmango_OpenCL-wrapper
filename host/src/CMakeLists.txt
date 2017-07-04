@@ -38,6 +38,10 @@ target_include_directories (mangoStatic PUBLIC ${BOSP_PATH}/include)
 target_include_directories (mango PUBLIC ${BOSP_PATH}/include/bbque)
 target_include_directories (mangoStatic PUBLIC ${BOSP_PATH}/include/bbque)
 
+target_include_directories (mango PUBLIC ${MANGO_ROOT}/include)
+target_include_directories (mangoStatic PUBLIC ${MANGO_ROOT}/include)
+
+
 #link_directories(${BOSP_PATH}/lib/bbque)
 target_link_libraries(mango PUBLIC ${BOSP_PATH}/lib/bbque/libbbque_pms.so)
 target_link_libraries(mangoStatic PUBLIC ${BOSP_PATH}/lib/bbque/libbbque_pms.so)
