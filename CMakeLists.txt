@@ -6,4 +6,5 @@ set(MANGO_ROOT "/" CACHE STRING "MANGO installation root directory")
 add_subdirectory (include)
 add_subdirectory (host)
 add_subdirectory (dev)
+add_subdirectory (docs)
 
