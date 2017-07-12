@@ -3,9 +3,9 @@ Compilation
 $ mkdir build
 $ cd build
 
-$ cmake .. -DBOSP_PATH="/path/to/bbque" CMakeLists.txt
+$ cmake .. -DBOSP_PATH="/path/to/bbque"
 or 
-$ cmake .. -DBOSP_PATH="/path/to/bbque" -DMANGO_ROOT="/path/to/mango/installation" CMakeLists
+$ cmake .. -DBOSP_PATH="/path/to/bbque" -DMANGO_ROOT="/path/to/mango/installation"
 ... if you want to specify an installation path different from "/"
 
 $ make -jX	# Replace X with number of cores
