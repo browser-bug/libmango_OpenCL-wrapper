@@ -8,7 +8,7 @@ or
 $ cmake .. -DBOSP_PATH="/path/to/bbque" -DMANGO_ROOT="/path/to/mango/installation"
 ... if you want to specify an installation path different from "/"
 
-$ make -jX	# Replace X with number of cores
+$ make -jX	# Replace X with number of cores for parallelize the build process
 
 Installation
 -------------------
