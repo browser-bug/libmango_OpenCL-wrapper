@@ -1,10 +1,12 @@
 # Compilation flags
 
-find_program (PEAK_COMPILER "mipsel-unknown-gappeak-gcc" PATHS "/usr/local/bin"
-		"/usr/local/mipsel-unknown-gappeak/bin/")
+find_program (PEAK_COMPILER "mipsel-unknown-gappeak-gcc"
+	PATHS "/usr/local/bin" "/usr/local/mipsel-unknown-gappeak/bin/"
+		"${MANGO_ROOT}/usr/local/mipsel-unknown-gappeak/bin/")
 
 if (${PEAK_COMPILER} STREQUAL "PEAK_COMPILER-NOTFOUND") 
-	message(FATAL_ERROR "I'm not able to find the PEAK compiler.")
+	message(FATAL_ERROR "I'm not able to find the PEAK compiler: PATH="
+		${MANGO_ROOT}/usr/local/mipsel-unknown-gappeak/bin/)
 endif (${PEAK_COMPILER} STREQUAL "PEAK_COMPILER-NOTFOUND") 
 
 set(CMAKE_C_COMPILER ${PEAK_COMPILER})
