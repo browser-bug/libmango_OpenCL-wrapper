@@ -49,9 +49,8 @@ target_link_libraries(mango PUBLIC ${BOSP_PATH}/lib/bbque/libbbque_tg.so)
 target_link_libraries(mangoStatic PUBLIC ${BOSP_PATH}/lib/bbque/libbbque_tg.so)
 
 # HN Library linking
-link_directories(/usr/local/lib)
-target_link_libraries(mango PUBLIC hn)
-target_link_libraries(mangoStatic PUBLIC hn)
+target_link_libraries(mango PUBLIC ${MANGO_ROOT}/lib/libhn.so)
+target_link_libraries(mangoStatic PUBLIC ${MANGO_ROOT}/lib/libhn.a)
 
 # Installation
 install (TARGETS mango DESTINATION ${MANGO_ROOT}/lib)
