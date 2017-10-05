@@ -171,7 +171,7 @@ BBQContext::BBQContext(std::string const & _name, std::string const & _recipe) :
 	filter.core = 999;
 
 	// We initialize the hn library with the filter and the UPV's partition strategy
-	int rv = hn_initialize(filter, UPV_PARTITION_STRATEGY, 1, 0);	// TODO Check UPV_PARTITION_STRATEGY
+	int rv = hn_initialize(filter, UPV_PARTITION_STRATEGY, 1, 0, 0);	// TODO Check UPV_PARTITION_STRATEGY
 	if (rv != HN_SUCCEEDED) {
 		const char error[] = "Unable to initialize HN library";
   	mango_log->Fatal("%s", error);
