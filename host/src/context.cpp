@@ -142,7 +142,7 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 					kernel->get_mem_tile(), kernel->get_physical_address());
 				
 	/*! Get argument string */
-	std::string str_arguments = args.get_arguments();
+	std::string str_arguments = args.get_arguments(kernel->get_assigned_unit()->get_arch());
 	char *arguments=(char *)str_arguments.c_str();
 	mango_log->Info ("Argument string: %s\n", arguments);
 

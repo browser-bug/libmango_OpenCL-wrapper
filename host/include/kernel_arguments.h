@@ -80,18 +80,20 @@ public:
 		return args.size();
 	};
 
-	std::string get_arguments() const noexcept;
+	virtual std::string get_arguments(mango_unit_type_t arch_type) const noexcept;
+
+protected:
+	std::vector<std::shared_ptr<Arg>> args;
 
 private:
-	void setup(const std::vector<Arg *> &arguments,
+	virtual void setup(const std::vector<Arg *> &arguments,
 			std::shared_ptr<Kernel> kernel) noexcept;
 
 	std::shared_ptr<Kernel> kernel;
 
-	std::vector<std::shared_ptr<Arg>> args;
-	std::string peak_argstring;
 
 };
+
 
 
 }

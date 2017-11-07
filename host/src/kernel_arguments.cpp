@@ -86,11 +86,17 @@ void KernelArguments::setup(const std::vector<Arg *> &arguments,
 
 }
 
-std::string KernelArguments::get_arguments() const noexcept {
+std::string KernelArguments::get_arguments(mango_unit_type_t arch_type) const noexcept {
 
 
 	std::stringstream ss;
-	ss << "x";	// TODO: change the 'x' with the binary name
+
+	if (arch_type == mango_unit_type_t::GN) {
+		ss << kernel->get_kernel()->get_kernel_version(arch_type);
+		ss << " 0x" << std::hex << GN_MEM_SIZE;
+	} else {
+		ss << "x";	// TODO: change the 'x' with the binary name
+	}
 
 	for (const auto arg : args) {
 
