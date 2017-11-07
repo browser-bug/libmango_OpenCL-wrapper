@@ -86,6 +86,8 @@ private:
 	void setup(const std::vector<Arg *> &arguments,
 			std::shared_ptr<Kernel> kernel) noexcept;
 
+	std::shared_ptr<Kernel> kernel;
+
 	std::vector<std::shared_ptr<Arg>> args;
 	std::string peak_argstring;
 

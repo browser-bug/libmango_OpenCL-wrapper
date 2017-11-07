@@ -81,6 +81,9 @@ void KernelArguments::setup(const std::vector<Arg *> &arguments,
 		args.push_back(p_a);
 	}
 
+	this->kernel = kernel;
+
+
 }
 
 std::string KernelArguments::get_arguments() const noexcept {
