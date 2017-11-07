@@ -46,7 +46,9 @@ class BufferArg : public Arg {
 public: 
 	BufferArg(std::shared_ptr<const Buffer> arg) noexcept;
 	virtual ~BufferArg(){};
-	virtual void set_value(std::shared_ptr<const TLB> tlb) noexcept { this->value = tlb->get_virt_addr_buffer(this->id); }
+	virtual void set_value(std::shared_ptr<const TLB> tlb) noexcept {
+		this->value = tlb->get_virt_addr_buffer(this->id);
+	}
 };
 
 class EventArg : public Arg {
@@ -54,7 +56,9 @@ public:
 	EventArg(std::shared_ptr<const Event> arg) noexcept;
 	//EventArg(std::shared_ptr<const Event> arg, std::shared_ptr<const TLB> tlb) noexcept;
 	virtual ~EventArg(){};
-	virtual void set_value(std::shared_ptr<const TLB> tlb) noexcept { this->value = tlb->get_virt_addr_event(this->id); }
+	virtual void set_value(std::shared_ptr<const TLB> tlb) noexcept  override {
+		this->value = tlb->get_virt_addr_event(this->id);
+	}
 
 };
 
