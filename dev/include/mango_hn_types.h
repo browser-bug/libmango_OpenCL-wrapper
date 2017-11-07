@@ -30,6 +30,7 @@ typedef struct _context {
 	mango_event_t event_r; /*!< Restart */
 	mango_event_t event_exit; /*!< End of kernel */
 	uint8_t *memory; /*!< Only needed for current GN implementation */
+	uint32_t memory_size;
 	int tf;	 /*!< Only needed for current GN implementation */
 } mango_context_t;
 
