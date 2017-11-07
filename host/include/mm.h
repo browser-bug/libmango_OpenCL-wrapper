@@ -20,13 +20,14 @@ class MM {
 public:
 	MM() noexcept;
 
-	~MM();
+	virtual ~MM();
 
 
+	virtual mango_exit_code_t set_vaddr_kernels(TaskGraph &tg) noexcept;
 		
-	mango_exit_code_t set_vaddr_buffers(TaskGraph &tg) noexcept;
+	virtual mango_exit_code_t set_vaddr_buffers(TaskGraph &tg) noexcept;
 
-	mango_exit_code_t set_vaddr_events(TaskGraph &tg) noexcept;
+	virtual mango_exit_code_t set_vaddr_events(TaskGraph &tg) noexcept;
 
 
 private:
@@ -37,7 +38,8 @@ private:
 	void set_tlb_kb(mango_id_t unit, mango_id_t mem_bank, mango_addr_t starting_addr,
 			mango_size_t size, mango_addr_t phy_addr, int entry) const noexcept;
 
-	void set_buff_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Buffer> b) noexcept;
+	virtual void set_buff_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Buffer> b) noexcept;
+	virtual void set_event_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Event> e) noexcept;
 
 };
 

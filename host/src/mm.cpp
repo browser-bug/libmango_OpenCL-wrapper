@@ -102,6 +102,15 @@ void MM::set_buff_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Buffer> b) noex
 
 }
 
+void MM::set_event_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Event> e) noexcept {
+
+	// TODO Not sure if we have to add this offset, we have to ask UPV about this
+	const uint32_t offset = 0x40;
+
+	auto tlb = k->get_tlb();
+	tlb->set_virt_addr(*e, TLB_BASE_SYNCH + offset + e->get_phy_addr());
+}
+
 mango_exit_code_t MM::set_vaddr_buffers(TaskGraph &tg) noexcept {
 
 	for(auto& b : tg.get_buffers()){
@@ -137,8 +146,6 @@ mango_exit_code_t MM::set_vaddr_buffers(TaskGraph &tg) noexcept {
 mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 	mango_log->Info("Mapping events...");
 
-	// TODO Not sure if we have to add this offset, we have to ask UPV about this
-	const uint32_t offset = 0x40;
 
 	for(auto& e : tg.get_events()) {
 
@@ -146,16 +153,14 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 			if (k_id==0)
 				continue;	 // TODO Check 
 
-			auto tlb = tg.get_kernel_by_id(k_id)->get_tlb();
-			tlb->set_virt_addr(*e, TLB_BASE_SYNCH + offset + e->get_phy_addr());
+			set_event_tlb(tg.get_kernel_by_id(k_id), e);
 		}
 
 		for(auto &k_id : e->get_kernels_out()) {			
 			if (k_id==0)
 				continue;	 // TODO Check 
 
-			auto tlb = tg.get_kernel_by_id(k_id)->get_tlb();
-			tlb->set_virt_addr(*e, TLB_BASE_SYNCH + offset + e->get_phy_addr());
+			set_event_tlb(tg.get_kernel_by_id(k_id), e);
 		}
 	}
 
@@ -172,10 +177,9 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 		/* Single instance of tlb for all events */
 		hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
 
-		auto tlb = k->get_tlb();
-
 		for(auto &e : k->get_task_events()){
-			tlb->set_virt_addr(*e, TLB_BASE_SYNCH + offset + e->get_phy_addr());
+
+			set_event_tlb(k, e);
 		}
 	}
 
