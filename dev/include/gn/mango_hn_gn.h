@@ -39,7 +39,7 @@ uint32_t mango_gn_read_synchronization(mango_event_t *event);
  * created from the main processing element, which runs the initial binary after
  * being activated by the GN node.
  */
-mango_event_t *mango_gn_spawn(void *(*task)(task_args *), uint32_t range);
+mango_event_t *mango_gn_spawn(void *(*task)(task_args *), uint64_t range);
 
 /*! \brief Deallocate the task_args data structure
  * \param a The arguments for the taks

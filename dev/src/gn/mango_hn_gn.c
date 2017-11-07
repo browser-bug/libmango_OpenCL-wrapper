@@ -2,7 +2,6 @@
 #include "mango_hn_gn.h"
 #include <errno.h>
 #include <pthread.h>
-#include <sys/shm.h>
 #include <sys/stat.h>
 #include <inttypes.h>
 #include <stddef.h>
@@ -14,51 +13,57 @@
 #include <sys/mman.h>
 #include "debug.h"
 
-
-#define BASETLB 0x1000000
-#define SIZE 1048576
-
 mango_context_t ctx;
 
+uint8_t* mango_memory_map(uint64_t a){
+	return ctx.memory + a;
+}
+
 mango_exit_t mango_gn_init(char **argv) {
-	ctx.semaphore=sem_open("sem_mango",0);
+	ctx.semaphore=sem_open("mango_sem",0);
 	if (ctx.semaphore==SEM_FAILED){ 
 		dprint("%s\n", strerror(errno));
 		return ERR_SEM_FAILED;
 	}
-	ctx.event_exit.vaddr=(uint32_t *)strtol(argv[1], NULL, 16);
-	ctx.event_a.vaddr=(uint32_t *)strtol(argv[2], NULL, 16);
-	ctx.event_b.vaddr=(uint32_t *)strtol(argv[3], NULL, 16);
-	ctx.event_r.vaddr=(uint32_t *)strtol(argv[4], NULL, 16);
-	dprint("Return event address: %p\n", ctx.event_exit);
-	dprint("Task event address: %p\n", ctx.event_a);
-	dprint("Barrier event address: %p\n", ctx.event_b);
-	dprint("Release event address: %p\n", ctx.event_r);
-	ctx.tf=open("device_memory.dat",O_RDWR);
+
+	ctx.tf=open("/tmp/device_memory.dat",O_RDWR);
 	if (ctx.tf==-1) {
 		dprint("%s\n", strerror(errno));
 		return ERR_FOPEN;		
 	}
-	ctx.memory = (uint8_t*) mmap ((void *)BASETLB, SIZE,
-		PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, ctx.tf,0);
+	
+	ctx.memory_size = strtol(argv[1], NULL, 16);
+
+	ctx.memory = (uint8_t*) mmap (NULL, ctx.memory_size,
+		PROT_READ|PROT_WRITE, MAP_SHARED, ctx.tf,0);
 	dprint("Memory address: %p\n", ctx.memory);
 	if (ctx.memory==MAP_FAILED) {
 		dprint("%s\n", strerror(errno));
 		return ERR_MMAP_FAILED;
 	}
+
+	ctx.event_exit.vaddr=ctx.memory + strtol(argv[2], NULL, 16);
+	ctx.event_a.vaddr=ctx.memory + strtol(argv[3], NULL, 16);
+	ctx.event_b.vaddr=ctx.memory + strtol(argv[4], NULL, 16);
+	ctx.event_r.vaddr=ctx.memory + strtol(argv[5], NULL, 16);
+	dprint("Return event address: %p\n", ctx.event_exit);
+	dprint("Task event address: %p\n", ctx.event_a);
+	dprint("Barrier event address: %p\n", ctx.event_b);
+	dprint("Release event address: %p\n", ctx.event_r);
+
 	return SUCCESS;
 }
 
 void mango_gn_close(int status){
         mango_gn_write_synchronization(&ctx.event_exit,1);
-        munmap(ctx.memory, SIZE);
+        munmap(ctx.memory, ctx.memory_size);
         close(ctx.tf);
         exit(status); 
 }
 
 void mango_gn_write_synchronization(mango_event_t *e, uint32_t value){
 	sem_wait(ctx.semaphore);
-	*(e->vaddr)=value;
+	*(e->vaddr) = value;
 	sem_post(ctx.semaphore);
 }
 
@@ -70,7 +75,7 @@ uint32_t mango_gn_read_synchronization(mango_event_t *e){
 	return value;
 }
 
-mango_event_t *mango_gn_spawn(void *(*task)(task_args *), uint32_t range) {
+mango_event_t *mango_gn_spawn(void *(*task)(task_args *), uint64_t range) {
 	*(ctx.event_a.vaddr)=range+1;
 	*(ctx.event_b.vaddr)=range+1;
 	*(ctx.event_r.vaddr)=2;
@@ -86,7 +91,6 @@ mango_event_t *mango_gn_spawn(void *(*task)(task_args *), uint32_t range) {
 		s->ntasks=range;
 		pthread_t *thread=(pthread_t *)malloc(sizeof(pthread_t));
 		pthread_create(thread, NULL, ((void *(*)(void*))task), s);
-dbg();
 	}
 	return e;
 }
