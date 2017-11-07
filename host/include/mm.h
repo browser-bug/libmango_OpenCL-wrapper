@@ -23,20 +23,11 @@ public:
 	~MM();
 
 
-	mango_exit_code_t allocate_events(TaskGraph &tg) noexcept;
-
-
-	mango_exit_code_t set_vaddr_kernels(TaskGraph &tg) noexcept;
 		
 	mango_exit_code_t set_vaddr_buffers(TaskGraph &tg) noexcept;
 
 	mango_exit_code_t set_vaddr_events(TaskGraph &tg) noexcept;
 
-	mango_exit_code_t allocate_buffers(TaskGraph &tg) noexcept;
-
-	mango_exit_code_t deallocate_buffers(TaskGraph &tg) noexcept {
-		return ExitCode::ERR_FEATURE_NOT_IMPLEMENTED;
-	}
 
 private:
 	mango_addr_t last_address;

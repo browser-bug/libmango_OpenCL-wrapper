@@ -43,20 +43,6 @@ MM::~MM() noexcept {
 	// Nothing to do
 }
 
-mango_exit_code_t MM::allocate_events(TaskGraph &tg) noexcept {
-
-	UNUSED(tg);
-
-// TODO CHECK: memory is never setted if HN_UPV_ENABLE exists (I actually removed this code)
-
-/*	for(auto& b : tg.events){
-		events[b->id]->gn_addr=(uint32_t *) 
-			& memory[b->phy_addr];
-	}
-*/
-	return mango_exit_code_t::SUCCESS;
-}
-
 mango_exit_code_t MM::set_vaddr_kernels(TaskGraph &tg) noexcept {
 
 	entries.clear();
@@ -196,23 +182,11 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 	return ExitCode::SUCCESS;
 }
 
-mango_exit_code_t MM::allocate_buffers(TaskGraph &tg) noexcept {
 
-// TODO Cannot understand what is
 
-/*	for(auto& b : tg.buffers){
-		if (last_address+buffers[b->id]->size > size)
-			return ExitCode::ERR_OUT_OF_MEMORY;
-		buffers[b->id]->phy_addr=last_address;
 
-		buffers[b->id]->gn_addr=(uint8_t*)last_address;
+	auto tlb = k->get_tlb();
 
-		std::cerr << "Assigning address " << last_address << " to buffer " << b->id << std::endl;
-		last_address+=buffers[b->id]->size;
-	}
-*/
-	return ExitCode::SUCCESS;
-	
 
 }
 
