@@ -330,10 +330,20 @@ mango_exit_code_t BBQContext::resource_allocation(TaskGraph &tg) noexcept {
 	this->bbque_app_ctrl.GetResourceAllocation(bbque_tg);
 	this->from_bbque(tg);
 
+	std::shared_ptr<MM> mm;
+
+	if ( tg.get_kernels()[0]->get_assigned_unit()->get_arch() == mango_unit_type_t::GN ) {
+		// Simulated mode
+		mm = std::make_shared<MM_GN>();
+		mango_log->Warn("Simulated GN mode");
+	} else {
+		mm = std::make_shared<MM>();
+	}
+
 	/* TLB management */
-	mm.set_vaddr_kernels(tg);
-	mm.set_vaddr_buffers(tg);
-	mm.set_vaddr_events(tg);
+	mm->set_vaddr_kernels(tg);
+	mm->set_vaddr_buffers(tg);
+	mm->set_vaddr_events(tg);
 
 	/* Initialize all buffer locks to WRITE */
 	for (auto &b : tg.get_buffers()) 

@@ -117,8 +117,6 @@ public:
 protected:
 	void print_debug(const char *function, int line) const noexcept;
 
-	MM mm;
-
 	std::map<mango_id_t, std::shared_ptr<Kernel>> kernels;
 	std::map<mango_id_t, std::shared_ptr<Buffer>> buffers;
 	std::map<mango_id_t, std::shared_ptr<Event>> events;
