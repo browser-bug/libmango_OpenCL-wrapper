@@ -8,10 +8,20 @@
 #include <cstdint>
 #include <cstddef>
 
+#define GN_MEM_SIZE (1024UL * 1024 * 1024)
+
 namespace mango {
 
 typedef uint32_t mango_size_t;
-typedef uint32_t mango_addr_t;
+#ifdef GNEMU
+#if __x86_64__
+	typedef uint64_t mango_addr_t;
+#else
+	typedef uint32_t mango_addr_t;
+#endif
+#else
+	typedef uint32_t mango_addr_t;
+#endif
 typedef uint32_t mango_id_t;
 
 /*!
