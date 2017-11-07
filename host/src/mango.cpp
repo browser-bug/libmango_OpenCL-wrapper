@@ -73,6 +73,27 @@ mango_buffer_t mango_register_memory(uint32_t buffer_id, size_t size, mango_buff
 	return buffer_id;	
 }
 
+mango_event_t mango_register_event(uint32_t value, int nkernels_in, int nkernels_out, ...){
+	std::vector<uint32_t> in;
+	std::vector<uint32_t> out;
+	va_list list;
+	va_start(list, nkernels_out);
+	for(int i=0; i<nkernels_in; i++)
+		in.push_back(va_arg(list, mango_kernel_t));
+	for(int i=0; i<nkernels_out; i++)
+		out.push_back(va_arg(list, mango_kernel_t));
+	va_end(list);
+
+	std::shared_ptr<mango::Event> event = std::make_shared<mango::Event>(in, out);
+
+	cxt->register_event(event);
+
+	event->write(value);
+
+	return event->get_id();
+}
+
+
 void mango_deregister_memory(mango_buffer_t mem){
 	cxt->deregister_buffer(mem);
 }
