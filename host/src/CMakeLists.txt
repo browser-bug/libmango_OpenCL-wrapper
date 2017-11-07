@@ -16,6 +16,10 @@ set(LIBMANGO_SOURCES	buffer.cpp
 			task_graph.cpp
 			)
 
+if(CONFIG_LIBMANGO_GN)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGNEMU")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGNEMU")
+endif(CONFIG_LIBMANGO_GN)
 
 # Build for convenience both static and dynamic library
 add_library (mango SHARED ${LIBMANGO_SOURCES})
@@ -49,8 +53,13 @@ target_link_libraries(mango PUBLIC ${BOSP_PATH}/lib/bbque/libbbque_tg.so)
 target_link_libraries(mangoStatic PUBLIC ${BOSP_PATH}/lib/bbque/libbbque_tg.so)
 
 # HN Library linking
-target_link_libraries(mango PUBLIC ${MANGO_ROOT}/lib/libhn.so)
-target_link_libraries(mangoStatic PUBLIC ${MANGO_ROOT}/lib/libhn.a)
+if (CONFIG_LIBMANGO_GN)
+	target_link_libraries(mango PUBLIC ${MANGO_ROOT}/lib/libgn.so)
+	target_link_libraries(mangoStatic PUBLIC ${MANGO_ROOT}/lib/libgn.a)
+else (CONFIG_LIBMANGO_GN)
+	target_link_libraries(mango PUBLIC ${MANGO_ROOT}/lib/libhn.so)
+	target_link_libraries(mangoStatic PUBLIC ${MANGO_ROOT}/lib/libhn.a)
+endif (CONFIG_LIBMANGO_GN)
 
 # Installation
 install (TARGETS mango DESTINATION ${MANGO_ROOT}/lib)
