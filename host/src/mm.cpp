@@ -184,11 +184,22 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 
 
 
+void MM_GN::set_buff_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Buffer> b) noexcept {
 
 	auto tlb = k->get_tlb();
 
+	mango_log->Debug("Adding TLB entry for buffer %d address 0x%x", b->get_id(), b->get_phy_addr());
+	tlb->set_virt_addr(*b, b->get_phy_addr());
 
 }
+
+void MM_GN::set_event_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Event> e) noexcept {
+
+	auto tlb = k->get_tlb();
+	mango_log->Debug("Adding TLB entry for event %d address 0x%x", e->get_id(), e->get_phy_addr());
+	tlb->set_virt_addr(*e, e->get_phy_addr());
+}
+
 
 } // namespace mango
 
