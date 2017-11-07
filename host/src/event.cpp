@@ -19,7 +19,7 @@ Event::Event(mango_id_t kernel_id) noexcept : Event()
 	kernels_out = std::vector<mango_id_t>({kernel_id}) ;
 }
 
-Event::Event (  const std::vector<mango_id_t> &kernel_id_in,
+Event::Event (const std::vector<mango_id_t> &kernel_id_in,
 				const std::vector<mango_id_t> &kernel_id_out ) noexcept : Event() {
 	kernels_in  = kernel_id_in;
 	kernels_out = kernel_id_out;
