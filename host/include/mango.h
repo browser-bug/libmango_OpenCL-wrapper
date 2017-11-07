@@ -101,7 +101,7 @@ kernelfunction *mango_kernelfunction_init();
  * \param t The type of file (source file, binary file, or source string)
  * \returns An exit code; kernel is modified by adding the appropriate kernel implementation
  */
-mango_exit_t mango_load_kernel(char *kname, kernelfunction *kernel, mango_unit_type_t unit, filetype t);
+mango_exit_t mango_load_kernel(const char *kname, kernelfunction *kernel, mango_unit_type_t unit, filetype t);
 
 ///@}
 

@@ -25,10 +25,11 @@ kernelfunction *mango_kernelfunction_init(){
 }
 
 mango_exit_t mango_load_kernel(
-	char *kname, kernelfunction *kernel,
+	const char *kname, kernelfunction *kernel,
 	mango_unit_type_t unit, filetype t){
-	((mango::KernelFunction *)kernel)->load(kname, (mango::UnitType)unit,
-		 (mango::FileType)t);
+
+	((mango::KernelFunction *)kernel)->load(kname, (mango::UnitType)unit, (mango::FileType)t);
+
 	return SUCCESS;
 }
 
