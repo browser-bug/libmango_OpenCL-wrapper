@@ -26,21 +26,45 @@ mango_exit_code_t KernelFunction::load(const std::string &kernel_file, UnitType 
 
 mango_exit_code_t KernelFunction::load_gn(const std::string &kernel_file, mango_file_type_t type)   noexcept {
 
-// TODO Check if this is necessary
-/*	switch (type) {
+	std::ifstream kernel_fd;
+	unsigned int line_count;
+
+
+	switch (type) {
 		case FileType::BINARY: 
-			version[UnitType::GN] = (kernelfp)strdup(kname);
-			size[UnitType::GN] = sizeof(char *); 
+			version[UnitType::GN] = kernel_file;
+
+			kernel_fd.open(kernel_file);
+
+			if(! kernel_fd.good()) {
+				mango_log->Error("Unable to open the kernel file: %s", kernel_file.c_str());
+				return mango_exit_code_t::ERR_INVALID_KERNEL_FILE;
+			}
+
+			// Don't skip lines
+			kernel_fd.unsetf(std::ios_base::skipws);
+			line_count = std::count(std::istream_iterator<char>(kernel_fd),
+						std::istream_iterator<char>(), '\n');
+
+			kernel_fd.close();
+
+			// Each lines contains 128 hex value
+			size[UnitType::GN] = 128 * 16 * line_count;
+
+			mango_log->Info("Kernel GN file [%s] loaded with size %d",
+					kernel_file.c_str(), size[UnitType::GN]);
+
 			break;
 		case FileType::STRING: 
 		case FileType::SOURCE: 
-			return ExitCode::ERR_FEATURE_NOT_IMPLEMENTED ;
+			mango_log->Error("String and source not supported yet");
+			return mango_exit_code_t::ERR_FEATURE_NOT_IMPLEMENTED ;
 		default: 
 			mango_log->Error("Kernel file is not valid");
-			return ExitCode::ERR_INVALID_KERNEL_FILE ;
+			return mango_exit_code_t::ERR_INVALID_KERNEL_FILE ;
 	}
-*/
-	return mango_exit_code_t::ERR_FEATURE_NOT_IMPLEMENTED;
+
+	return mango_exit_code_t::SUCCESS;
 }
 
 mango_exit_code_t KernelFunction::load_peak(const std::string &kernel_file, mango_file_type_t type) noexcept {
