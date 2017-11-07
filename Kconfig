@@ -1,0 +1,24 @@
+
+################################################################################
+# Platform Configuration
+################################################################################
+
+config LIBMANGO_GN
+  bool "Emulate platform with General-Purpose Node"
+  default n
+
+
+menu "Target architectures"
+  depends on ! LIBMANGO_GN
+
+config LIBMANGO_PEAK
+  bool "PEAK processor"
+  depends on ! LIBMANGO_GN
+  default y
+
+config LIBMANGO_NUPLUS
+  bool "NU+ processor"
+  depends on ! LIBMANGO_GN
+  default n
+
+endmenu
