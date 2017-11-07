@@ -198,6 +198,11 @@ void mango_wait(mango_event_t e){
 	cxt->get_event(e)->wait();
 }
 
+void mango_wait_state(mango_event_t e, uint32_t state){
+	cxt->get_event(e)->wait_state(state);
+}
+
+
 
 void mango_write_synchronization(mango_event_t event, uint32_t value){
 	cxt->get_event(event)->write(value);

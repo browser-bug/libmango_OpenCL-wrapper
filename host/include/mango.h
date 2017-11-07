@@ -298,6 +298,12 @@ void mango_resource_deallocation(mango_task_graph_t *tg);
  */
  void mango_wait(mango_event_t e);
 
+/*! \brief High level wait primitive
+ * \param e A synchronization event
+ * \param state Value waited for
+ */
+void mango_wait_state(mango_event_t e, uint32_t state);
+
 /*! \brief Initialize an event
  * \param event A synchronization event on the HN side
  * \param value An integer value
