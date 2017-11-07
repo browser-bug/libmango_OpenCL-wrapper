@@ -8,9 +8,9 @@ static mango::BBQContext *cxt;
 
 extern "C" {
 
-mango_exit_t mango_init(){
+mango_exit_t mango_init(const char *application_name, const char *recipe){
 	mango::mango_init_logger();
-	cxt = new mango::BBQContext();
+	cxt = new mango::BBQContext(application_name, recipe);
 	return SUCCESS;
 }
 

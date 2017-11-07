@@ -81,7 +81,7 @@ typedef struct Arg mango_arg_t;
 ///@{
 
 /*! \brief Initialize runtime library */
-mango_exit_t mango_init();
+mango_exit_t mango_init(const char *application_name, const char *recipe);
 
 /*! \brief Shutdown runtime library */
 mango_exit_t mango_release();
