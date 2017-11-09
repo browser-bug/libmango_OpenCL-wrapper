@@ -149,12 +149,13 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 	/*! Run kernel 
 	 * \note We assume that hn_run_kernel is non-blocking
 	 */
-	sleep(2);	/*! \todo This sleep show be removed */
 	mango_log->Debug ("Kernel ID %d VADDR 0x%x \n", kernel->get_assigned_unit()->get_id(), kernel->get_virtual_address());
 
+	std::shared_ptr<Event> re = kernel->get_termination_event();
+	re->write(0);
 	hn_run_kernel(kernel->get_assigned_unit()->get_id(), kernel->get_virtual_address(), arguments);
 
-	return kernel->get_termination_event();
+	return re;
 }
 
 BBQContext::BBQContext(std::string const & _name, std::string const & _recipe) : 
@@ -174,7 +175,6 @@ BBQContext::BBQContext(std::string const & _name, std::string const & _recipe) :
 	int rv = hn_initialize(filter, UPV_PARTITION_STRATEGY, 1, 0, 0);	// TODO Check UPV_PARTITION_STRATEGY
 	if (rv != HN_SUCCEEDED) {
 		const char error[] = "Unable to initialize HN library";
-  	mango_log->Fatal("%s", error);
 		throw std::runtime_error(error);
 	}
 }
