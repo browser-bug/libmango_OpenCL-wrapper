@@ -5,6 +5,11 @@
 
 mango_context_t ctx;
 
+uint8_t* mango_memory_map(uint64_t a) {
+	return a;
+}
+
+
 mango_exit_t mango_peak_init(char **argv){
 
         printf("mango_init (peak)\n");
