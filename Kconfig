@@ -3,13 +3,12 @@
 # Platform Configuration
 ################################################################################
 
+
+comment "Target architectures"
+
 config LIBMANGO_GN
-  bool "Emulate platform with General-Purpose Node"
+  bool "General-Purpose Node Emulation (GN)"
   default n
-
-
-menu "Target architectures"
-  depends on ! LIBMANGO_GN
 
 config LIBMANGO_PEAK
   bool "PEAK processor"
@@ -21,4 +20,4 @@ config LIBMANGO_NUPLUS
   depends on ! LIBMANGO_GN
   default n
 
-endmenu
+
