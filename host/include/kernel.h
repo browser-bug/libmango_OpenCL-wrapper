@@ -34,7 +34,9 @@ public:
 	 *  \throw std::out_of_range if that kernel type was never loaded
 	 */ 
 	std::string get_kernel_version(mango_unit_type_t type) const { return version.at(type); }
-		
+
+	void set_kernel_size(mango_unit_type_t type, mango_size_t size) { this->size[type] = size; }
+
 	/*! \brief Given a Mango unit type, it returns the matching file size
 	 *  \throw std::out_of_range if that kernel type was never loaded
 	 */

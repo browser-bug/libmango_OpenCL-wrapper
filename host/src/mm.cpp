@@ -60,12 +60,28 @@ mango_exit_code_t MM::set_vaddr_kernels(TaskGraph &tg) noexcept {
 		// We have only one kernel per unit, so the virtual address is fixed
 		k->set_virtual_address(virt_addr);
 
-		set_tlb_kb(tile_unit, mem_bank, virt_addr, kern_size, phy_addr, TLB_ENTRY_KERNEL);
+		mango_size_t tlb_area_size;
+
+		switch(unit->get_arch()) {
+			case mango_unit_type_t::PEAK:
+				// In PEAK the stack area is fixed and we do not have paging,
+				// thus we have to allocate a fixed 256MB area for the kernel
+				// @see issue#9
+				// https://bitbucket.org/mango_developers/mangolibs/issues/9/
+				tlb_area_size = 256 * 1024 * 1024;
+			break;
+
+			default:
+				tlb_area_size = kern_size;
+			break;
+		}
+
+		set_tlb_kb(tile_unit, mem_bank, virt_addr, tlb_area_size, phy_addr, TLB_ENTRY_KERNEL);
 
 
 		mango_log->Notice("Mapped kernel image. [tile=%d, mem_bank=%d, phy_addr=%p, "
 				  "virt_addr=%p, size=%d]", tile_unit, mem_bank, phy_addr,
-				  virt_addr, kern_size);
+				  virt_addr, tlb_area_size);
 
 		this->entries[tile_unit] = TLB_ENTRY_START;
 
