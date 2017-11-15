@@ -2,6 +2,7 @@
 from string import split, strip, join
 
 from sys import argv
+arch  = argv[-2]
 fname = argv[-1]
 
 kernel_proto = 'not found'
@@ -41,7 +42,13 @@ template_end   = """
 out = template_start
 out+='extern '+kernel_proto+';\n'
 out+= template_main
-i=6
+
+i=5	# TODO REMOVE ME
+if arch == "GN":
+	i=6
+if arch == "PEAK":
+	i=5
+
 for a in kargs :
 	if '*' in join(a[:-1]) : 
 		out+='\t'+join(a)+' = ('+join(a[:-1])+')mango_memory_map(strtol(argv['+`i`+'],NULL,16));\n'
