@@ -216,7 +216,7 @@ void MM_GN::set_buff_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Buffer> b) n
 void MM_GN::set_event_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Event> e) noexcept {
 
 	auto tlb = k->get_tlb();
-	mango_log->Debug("Adding TLB entry for event %d address 0x%x", e->get_id(), e->get_phy_addr());
+	mango_log->Info("Adding TLB entry for event %d address 0x%x", e->get_id(), e->get_phy_addr());
 	tlb->set_virt_addr(*e, e->get_phy_addr());
 }
 

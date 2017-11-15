@@ -32,7 +32,6 @@ public:
 	 * \note Current specification assumes synchronous transfer
 	 */
 	virtual std::shared_ptr<const Event> write(const void *GN_buffer, mango_size_t global_size=0) const noexcept;
-
 	/*! \brief Memory transfer from HN to GN in DIRECT mode
 	 * \param GN_buffer A pointer to memory in the GN address space
 	 * This function performs a copy between a memory region in the HN address space
@@ -143,7 +142,7 @@ public:
 	
 	using Buffer::Buffer;
 	
-	mango_size_t synch_write(void *GN_buffer, mango_size_t global_size) const noexcept;
+	mango_size_t synch_write(const void *GN_buffer, mango_size_t global_size) const noexcept;
 
 	mango_size_t synch_read (void *GN_buffer, mango_size_t global_size) const noexcept;
 		
@@ -155,9 +154,10 @@ public:
 	 * specified in the HN buffer descriptor.
 	 * \note Current specification assumes asynchronous transfer
 	 */
-	virtual std::shared_ptr<const Event> write(void *GN_buffer, size_t global_size) const noexcept;
+	virtual std::shared_ptr<const Event> write(const void *GN_buffer, mango_size_t global_size=0) const noexcept override;
+
 		
-	virtual std::shared_ptr<const Event> read(void *GN_buffer, size_t global_size) const noexcept;
+	virtual std::shared_ptr<const Event> read(void *GN_buffer, mango_size_t global_size=0) const noexcept override;
 };
 
 
