@@ -53,9 +53,10 @@ void mango_wait(mango_event_t *e, uint32_t state){
 	do {
 		value=mango_lock(e);
 		//dprint("Releasing event %p (value %d)\n", e->vaddr, value); 
-		mango_write_synchronization(e,value);
+
 		//dprint("Checking event %p\n", e->vaddr);
-		if (value!=state){ 
+		if (value!=state){
+			mango_write_synchronization(e,value);
 			ARCH(suspend)();
 		}
 	}	while(value!=state);
