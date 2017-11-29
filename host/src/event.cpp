@@ -28,12 +28,15 @@ Event::Event (const std::vector<mango_id_t> &kernel_id_in,
 
 void Event::wait_state(uint32_t state) const noexcept {
 	uint32_t value;
+	mango_log->Info("Wait state %d: id %d phy_addr %08x",
+			state, id, phy_addr);
 
 	do {
 		value = lock();
-		write(value);
 
 		if (value!=state){ 
+			write(value);
+			mango_log->Info("Unexpected value: %d", value);
 			usleep(1);		// TODO: no other way to do this?
 		}
 
@@ -63,22 +66,20 @@ uint32_t Event::lock() const noexcept {
 
 uint32_t Event::read() const noexcept {
 
-		uint32_t value;
+	uint32_t value;
 
-		uint32_t tile = id / 16;
-		uint32_t reg_id = (id % 16) + HN_MANGO_TILEREG_SYNCH0;
-		hn_read_register(tile, reg_id, &value);
+	hn_read_register(0, phy_addr, &value);
 
-		return value;
+	return value;
 }
 
 void Event::write(uint32_t value) const noexcept
 {
-	mango_log->Debug("Writing on an event: phy_addr %08x, value %u", phy_addr, value);
 
-	hn_post(phy_addr, value);
-	mango_log->Debug("Wrote to the event");
+	mango_log->Info("Writing on an event: phy_addr %x, value %u, id %d",
+			phy_addr, value, id);
 
+	hn_write_register(0, phy_addr, value);
 }
 
 void KernelCompletionEvent::write(uint32_t value) const noexcept {
