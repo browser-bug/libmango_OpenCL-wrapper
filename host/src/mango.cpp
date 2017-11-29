@@ -73,7 +73,7 @@ mango_buffer_t mango_register_memory(uint32_t buffer_id, size_t size, mango_buff
 	return buffer_id;	
 }
 
-mango_event_t mango_register_event(uint32_t value, int nkernels_in, int nkernels_out, ...){
+mango_event_t mango_register_event(int nkernels_in, int nkernels_out, ...){
 	std::vector<uint32_t> in;
 	std::vector<uint32_t> out;
 	va_list list;
@@ -87,8 +87,6 @@ mango_event_t mango_register_event(uint32_t value, int nkernels_in, int nkernels
 	std::shared_ptr<mango::Event> event = std::make_shared<mango::Event>(in, out);
 
 	cxt->register_event(event);
-
-	event->write(value);
 
 	return event->get_id();
 }

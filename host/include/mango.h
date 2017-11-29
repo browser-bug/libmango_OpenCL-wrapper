@@ -163,7 +163,6 @@ mango_buffer_t mango_register_memory(uint32_t buffer_id, size_t size, mango_buff
 void mango_deregister_memory(mango_buffer_t mem);
 
 /*! \brief Register a HN synchronization event (semaphore?)
- * \param value Initial value of the synchronization variable
  * \param nkernels Number of kernels which will write the event
  * \param nkernels Number of kernels which will read the event
  * \param ... The variadic parameters define which kernels will access the
@@ -175,7 +174,7 @@ void mango_deregister_memory(mango_buffer_t mem);
  * retrieved but the will be set to zero. When written the content will be
  * incremented by the value to be written.
  */
-mango_event_t mango_register_event(uint32_t value, int nkernels_in, int nkernels_out, ...);
+mango_event_t mango_register_event(int nkernels_in, int nkernels_out, ...);
 
 /*! \brief Deallocate registered event
  * \param event The synchronization event to deallocate
