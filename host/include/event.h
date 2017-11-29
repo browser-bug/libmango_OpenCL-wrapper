@@ -72,6 +72,13 @@ public:
 	inline mango_size_t get_phy_addr()		const noexcept { return phy_addr; }
 
 	/*! 
+	 * \brief Get the physical address of the event. This is not an actual physical address,
+	 * 	  but it represents an offset in the tile register. 
+	 */
+	inline void set_phy_addr(mango_size_t addr)	noexcept { phy_addr = addr; }
+
+
+	/*! 
 	 * \brief Set a callback function for write/read data asynchronously
 	 */
 	inline void set_fifo_task(std::unique_ptr<std::thread> task) noexcept { 

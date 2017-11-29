@@ -9,7 +9,6 @@ std::atomic<mango_id_t> mango::Event::id_gen ;
 
 Event::Event() noexcept : bbq_notify_callback(nullptr) {
 	id=id_gen++;
-	phy_addr=id * sizeof(uint32_t);
 }
 
 
