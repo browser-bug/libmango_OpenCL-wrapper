@@ -315,9 +315,9 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 	}
 	for(auto e : bbque_tg->Events()){
 		for(auto &et : tg.get_events())
-			if(et->get_id() == e.first){
-				// et->set_phy_addr(e.second->PhysicalAddress());	// TODO
-				// TODO Probably nothing to do here?
+			if(et->get_id() == e.first) {
+				et->set_phy_addr(e.second->PhysicalAddress());
+				et->write(0);
 			}
 	}
 	/*! \todo Event memory address? */
