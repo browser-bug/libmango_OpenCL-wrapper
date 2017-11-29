@@ -142,8 +142,9 @@ mango_event_t mango_write(void *GN_buffer, mango_buffer_t HN_buffer,
 	if (mode == BURST) {
 		auto f = std::static_pointer_cast<mango::FIFOBuffer>(b);
 		e = f->write(GN_buffer,global_size);
-	} else
-		e=cxt->get_buffer(HN_buffer)->write(GN_buffer);
+	} else {
+		e=cxt->get_buffer(HN_buffer)->write(GN_buffer, global_size);
+	}
 	return e->get_id();
 }
 
@@ -155,8 +156,9 @@ mango_event_t mango_read(void *GN_buffer, mango_buffer_t HN_buffer,
 		auto f =
 			std::static_pointer_cast<mango::FIFOBuffer>(cxt->get_buffer(HN_buffer));
 		e=f->read(GN_buffer,global_size);
-	}	else
-		e=b->read(GN_buffer);
+	} else {
+		e=b->read(GN_buffer, global_size);
+	}
 	return e->get_id();
 	
 }
