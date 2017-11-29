@@ -18,9 +18,13 @@ Buffer::Buffer(mango_id_t bid, mango_size_t size, const std::vector<mango_id_t> 
 
 std::shared_ptr<const Event> Buffer::write(const void *GN_buffer, mango_size_t global_size) const noexcept
 {
-	mango_log->Info("Buffer::write: mem_tile=%d phy_addr=0x%x size=%u\n", mem_tile, phy_addr, size);
+	if ( global_size == 0 ) {
+		global_size = size;
+	}
 
-	int err = hn_write_memory(mem_tile, get_phy_addr(), size, (char*)GN_buffer);
+	mango_log->Info("Buffer::write: mem_tile=%d phy_addr=0x%x size=%u\n", mem_tile, phy_addr, global_size);
+
+	int err = hn_write_memory(mem_tile, get_phy_addr(), global_size, (char*)GN_buffer);
 	if (HN_SUCCEEDED != err) {
 		mango_log->Error("Unable to write memory at memory tile %d [err=%d]", mem_tile, err);
 	}
@@ -30,9 +34,13 @@ std::shared_ptr<const Event> Buffer::write(const void *GN_buffer, mango_size_t g
 
 std::shared_ptr<const Event> Buffer::read(void *GN_buffer, mango_size_t global_size) const noexcept {
 
-	mango_log->Info("Buffer::read: mem_tile=%d phy_addr=0x%x size=%u\n", get_mem_tile(), get_phy_addr(), get_size());
+	if ( global_size == 0 ) {
+		global_size = size;
+	}
 
-	int err = hn_read_memory(get_mem_tile(), get_phy_addr(), get_size(), (char*)GN_buffer);
+	mango_log->Info("Buffer::read: mem_tile=%d phy_addr=0x%x size=%u\n", get_mem_tile(), get_phy_addr(), global_size);
+
+	int err = hn_read_memory(get_mem_tile(), get_phy_addr(), global_size, (char*)GN_buffer);
 	if (HN_SUCCEEDED != err) {
 		mango_log->Error("Unable to read memory at memory tile %d [err=%d]", get_mem_tile(), err);
 	}
