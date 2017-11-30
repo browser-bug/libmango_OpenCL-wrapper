@@ -27,7 +27,6 @@ mango_exit_code_t KernelFunction::load(const std::string &kernel_file, UnitType 
 mango_exit_code_t KernelFunction::load_gn(const std::string &kernel_file, mango_file_type_t type)   noexcept {
 
 	std::ifstream kernel_fd;
-	unsigned int line_count;
 
 
 	switch (type) {
@@ -41,18 +40,12 @@ mango_exit_code_t KernelFunction::load_gn(const std::string &kernel_file, mango_
 				return mango_exit_code_t::ERR_INVALID_KERNEL_FILE;
 			}
 
-			// Don't skip lines
-			kernel_fd.unsetf(std::ios_base::skipws);
-			line_count = std::count(std::istream_iterator<char>(kernel_fd),
-						std::istream_iterator<char>(), '\n');
-
 			kernel_fd.close();
 
 			// Each lines contains 128 hex value
-			size[UnitType::GN] = 128 * 16 * line_count;
+			size[UnitType::GN] = 0;
 
-			mango_log->Info("Kernel GN file [%s] loaded with size %d",
-					kernel_file.c_str(), size[UnitType::GN]);
+			mango_log->Info("Kernel GN file [%s] loaded", kernel_file.c_str());
 
 			break;
 		case FileType::STRING: 
