@@ -16,9 +16,17 @@ else (BUILD_TYPE STREQUAL "Debug")
 endif (BUILD_TYPE STREQUAL "Debug")
 message (STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 
+configure_file (
+	"${PROJECT_SOURCE_DIR}/libmango.conf.in"
+	"${PROJECT_BINARY_DIR}/libmango.conf"
+)
 
 add_subdirectory (include)
 add_subdirectory (host)
 add_subdirectory (dev)
 add_subdirectory (docs)
+
+install (FILES "${PROJECT_BINARY_DIR}/libmango.conf"
+	DESTINATION "${BOSP_PATH}/etc/bbque/"
+)
 
