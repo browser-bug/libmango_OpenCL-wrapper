@@ -126,7 +126,8 @@ mango_exit_t mango_load_kernel(const char *kname, kernelfunction *kernel, mango_
  * \deprecated  ut The list of unit types in order of preference
  * (STOP-terminated), if NULL rely on BarbequeRTRM recipes.
  */
-mango_kernel_t mango_register_kernel(uint32_t kernel_id, kernelfunction *kernel, int nbuffers_in, int nbuffers_out, ...);
+mango_kernel_t mango_register_kernel(uint32_t kernel_id, kernelfunction *kernel, 
+					unsigned int nbuffers_in, unsigned  int nbuffers_out, ...);
 
 /*! \brief De-register the kernel with BarbequeRTRM
  * \param kernel The kernel to remove
@@ -153,7 +154,7 @@ void mango_deregister_kernel(mango_kernel_t kernel);
  * or mango_read will setup the streamed communication
  * \note The bandwidth parameter has been moved to the RTlib
  */
-mango_buffer_t mango_register_memory(uint32_t buffer_id, size_t size, mango_buffer_type_t mode, int nkernels_in, int nkernels_out, ...);
+mango_buffer_t mango_register_memory(uint32_t buffer_id, size_t size, mango_buffer_type_t mode, unsigned int nkernels_in, unsigned int nkernels_out, ...);
 
 /*! \brief Deallocate registered memory
  * \param mem The memory buffer to deallocate
@@ -174,7 +175,7 @@ void mango_deregister_memory(mango_buffer_t mem);
  * retrieved but the will be set to zero. When written the content will be
  * incremented by the value to be written.
  */
-mango_event_t mango_register_event(int nkernels_in, int nkernels_out, ...);
+mango_event_t mango_register_event(unsigned int nkernels_in, unsigned int nkernels_out, ...);
 
 /*! \brief Deallocate registered event
  * \param event The synchronization event to deallocate
@@ -341,7 +342,8 @@ uint32_t mango_lock(mango_event_t e);
  * specified in the HN buffer descriptor.
  * \note Current specification assumes asynchronous transfer
  */
-mango_event_t mango_write(void *GN_buffer, mango_buffer_t HN_buffer, mango_communication_mode_t mode, size_t global_size);
+mango_event_t mango_write(const void *GN_buffer, mango_buffer_t HN_buffer,
+				mango_communication_mode_t mode, size_t global_size);
 
 
 /*! \brief Memory transfer from HN to GN
@@ -368,7 +370,7 @@ mango_event_t mango_read(void *GN_buffer, mango_buffer_t HN_buffer, mango_commun
  * \param t The type of argument (scalar, event or buffer)
  * \returns a mango_arg_t structure
  */
-mango_arg_t *mango_arg(mango_kernel_t kernel, void *value, size_t size, mango_buffer_type_t t);
+mango_arg_t *mango_arg(mango_kernel_t kernel, const void *value, size_t size, mango_buffer_type_t t);
 
 /*! \brief Set up the arguments for a kernel
  * \param kernel The kernel for which the parameters are set

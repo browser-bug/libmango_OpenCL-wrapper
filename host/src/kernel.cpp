@@ -21,6 +21,11 @@ mango_exit_code_t KernelFunction::load(const std::string &kernel_file, UnitType 
 			res = mango_exit_code_t::ERR_UNSUPPORTED_UNIT;
 		break;
 	}
+
+	if (res == mango_exit_code_t::SUCCESS) {
+		loaded = true;
+	}
+
 	return res;
 }
 

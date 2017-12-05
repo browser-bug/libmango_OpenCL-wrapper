@@ -50,8 +50,14 @@ public:
 		return size.cend();
 	}
 
+	inline bool is_loaded() const noexcept {
+		return this->loaded;
+	}
 
 private:
+
+	bool loaded = false;
+
 	/*!< pointer to the start of the kernel, for each unit type */
 	std::map<mango_unit_type_t, std::string> version;
 
