@@ -345,9 +345,13 @@ mango_exit_code_t BBQContext::resource_allocation(TaskGraph &tg) noexcept {
 	mm->set_vaddr_buffers(tg);
 	mm->set_vaddr_events(tg);
 
+#if 0
+	// TODO: We cannot do this here, we should move after the resourse allocation
+
 	/* Initialize all buffer locks to WRITE */
 	for (auto &b : tg.get_buffers()) 
 		b->get_event()->write(2);
+#endif
 
 	return ExitCode::SUCCESS;
 }
