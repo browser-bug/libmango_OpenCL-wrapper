@@ -19,6 +19,8 @@ typedef enum {
 	ERR_OTHER            /*!< Generic error */
 } mango_exit_t;
 
+typedef enum { LOCK, READ, WRITE, END_FIFO_OPERATION } mango_event_status_t;
+
 /*! \brief Types of kernel sources/file types
  */
 typedef enum { 
