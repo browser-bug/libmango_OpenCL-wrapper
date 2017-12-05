@@ -23,7 +23,7 @@ public:
 	inline mango_id_t   get_id()    const noexcept { return this->id;    }
 
 	inline void set_value(mango_size_t value) noexcept { this->value = value; }
-	virtual void set_value(std::shared_ptr<const TLB> tlb) noexcept {};
+	virtual void set_value(std::shared_ptr<const TLB> tlb) noexcept = 0;
 
 protected:
 	/* \brief This class cannot be instantitated directly */
@@ -39,6 +39,12 @@ class ScalarArg : public Arg {
 public:
 	ScalarArg(T arg) noexcept;
 	virtual ~ScalarArg() {};
+
+	virtual void set_value(std::shared_ptr<const TLB> tlb) noexcept {
+		// Nothing to do here.
+		(void)tlb;
+	}
+
 };
 
 

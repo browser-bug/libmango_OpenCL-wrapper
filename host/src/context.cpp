@@ -134,6 +134,8 @@ std::shared_ptr<Event> Context::register_event(std::shared_ptr<Event> event) noe
 std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 		KernelArguments &args, std::shared_ptr<Event> event) noexcept {
 	
+	(void) event; // TODO Check why not used
+
 	/*! Load kernel image to device memory */
 	mango_log->Info("Write image into memory to tile %d address 0x%x", kernel->get_mem_tile(), kernel->get_physical_address());
 
@@ -359,6 +361,8 @@ mango_exit_code_t BBQContext::resource_allocation(TaskGraph &tg) noexcept {
 
 std::shared_ptr<Event> BBQContext::start_kernel(std::shared_ptr<Kernel> kernel, 
 			KernelArguments &args, std::shared_ptr<Event> _e) noexcept {
+
+	(void) _e; // TODO Check why not used
 
 	this->bbque_app_ctrl.NotifyTaskStart(kernel->get_id());
 

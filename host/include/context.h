@@ -149,6 +149,9 @@ public:
 		// TODO: Once we finish we need to free memory assigned to the kernel image
 		//       hn_free_memory(tile, address, size) <- This function must be coded in hn_library
 		// TODO: We need to remove TLB entries assigned to kernel image (entry 1) and buffers (entry 2 and successive ones)
+
+		(void) tg;
+
 		return mango_exit_code_t::SUCCESS;
 	}
 
