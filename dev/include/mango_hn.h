@@ -116,6 +116,6 @@ void *mango_exit();
 ///@}
 
 // Internal function, do not use
-uint8_t* mango_memory_map(uint64_t a);
+uint32_t* mango_memory_map(uint64_t a);
 
 #endif /* MANGO_HN_H */
