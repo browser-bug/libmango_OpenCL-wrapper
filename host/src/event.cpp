@@ -36,8 +36,7 @@ void Event::wait_state(uint32_t state) const noexcept {
 
 		if (value!=state){ 
 			write(value);
-			mango_log->Info("Unexpected value: %d", value);
-			usleep(1);		// TODO: no other way to do this?
+			std::this_thread::yield();
 		}
 
 	}	while(value!=state);
