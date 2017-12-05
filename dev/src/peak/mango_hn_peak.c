@@ -5,7 +5,7 @@
 
 mango_context_t ctx;
 
-uint8_t* mango_memory_map(uint64_t a) {
+uint32_t* mango_memory_map(uint64_t a) {
 	return a;
 }
 

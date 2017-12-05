@@ -15,7 +15,7 @@
 
 mango_context_t ctx;
 
-uint8_t* mango_memory_map(uint64_t a){
+uint32_t* mango_memory_map(uint64_t a){
 	return ctx.memory + a;
 }
 
@@ -34,7 +34,7 @@ mango_exit_t mango_gn_init(char **argv) {
 	
 	ctx.memory_size = strtol(argv[1], NULL, 16);
 
-	ctx.memory = (uint8_t*) mmap (NULL, ctx.memory_size,
+	ctx.memory = (uint32_t*) mmap (NULL, ctx.memory_size,
 		PROT_READ|PROT_WRITE, MAP_SHARED, ctx.tf,0);
 	dprint("Memory address: %p\n", ctx.memory);
 	if (ctx.memory==MAP_FAILED) {
