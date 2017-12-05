@@ -183,15 +183,18 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 	for(auto& k : tg.get_kernels()) {
 
 		const auto unit = k->get_assigned_unit();
-		mango_id_t   tile_unit  = unit->get_id();
-		mango_addr_t start_addr = TLB_BASE_SYNCH;
-		mango_addr_t end_addr   = TLB_BASE_SYNCH + 0xffffff;
 
-		mango_log->Notice("Configured TLB for events of tile %d [%p - %p]", tile_unit,
-					start_addr, end_addr);
+		if (unit->get_arch() == mango_unit_type_t::PEAK) {
+			mango_id_t   tile_unit  = unit->get_id();
+			mango_addr_t start_addr = TLB_BASE_SYNCH;
+			mango_addr_t end_addr   = TLB_BASE_SYNCH + 0xffffff;
 
-		/* Single instance of tlb for all events */
-		hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
+			mango_log->Notice("Configured TLB for events of tile %d [%p - %p]", tile_unit,
+						start_addr, end_addr);
+
+			/* Single instance of tlb for all events */
+			hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
+		}
 
 		for(auto &e : k->get_task_events()){
 
