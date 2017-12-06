@@ -66,12 +66,12 @@ typedef enum class BufferType {
 /*! \brief Mango computational unit (device) types
  */
 typedef enum class UnitType {
-	STOP, /*!< Terminator used to close arrays of mango_unit_type_t */
 	PEAK, /*!< PEAK units */
 	NUP,  /*!< NU+ units */
 	GN,   /*!< Fall back to GN node if no other option is available */
 	GPU,  /*!< GPU units */
-	ARM   /*!< ARM units */
+	ARM,   /*!< ARM units */
+	STOP, /*!< Terminator used to close arrays of mango_unit_type_t */
 } mango_unit_type_t;
 
 

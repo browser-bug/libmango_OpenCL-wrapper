@@ -19,6 +19,8 @@ typedef enum {
 	ERR_OTHER            /*!< Generic error */
 } mango_exit_t;
 
+typedef enum { LOCK, READ, WRITE, END_FIFO_OPERATION } mango_event_status_t;
+
 /*! \brief Types of kernel sources/file types
  */
 typedef enum { 
@@ -47,10 +49,10 @@ typedef enum {
  * \brief Mango computational unit (device) types
  */
 typedef enum {
-	STOP, /*!< Terminator used to close arrays of mango_unit_type_t */
 	PEAK, /*!< PEAK units */
 	NUP,  /*!< NU+ units */
-	GN    /*!< Fall back to GN node if no other option is available */
+	GN,    /*!< Fall back to GN node if no other option is available */
+	STOP, /*!< Terminator used to close arrays of mango_unit_type_t */
 } mango_unit_type_t;
 
 

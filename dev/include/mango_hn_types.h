@@ -18,7 +18,6 @@ typedef struct _mango_event_t {
 /*! \enum mango_event_status_t 
  * \brief Symbolic constants for synchronization operations
  */
-typedef enum { LOCK, READ, WRITE, END_FIFO_OPERATION } mango_event_status_t;
 
 /*! \struct mango_context_t
  * \brief A data structure for the device-side context 
