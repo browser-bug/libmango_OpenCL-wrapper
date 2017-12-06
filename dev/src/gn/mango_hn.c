@@ -1,5 +1,5 @@
 #include "mango_hn.h"
-#include "mango_hn_peak.h"
+#include "mango_hn_gn.h"
 #include "debug.h"
 
 #ifndef ARCH
