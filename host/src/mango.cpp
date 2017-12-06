@@ -38,6 +38,8 @@ mango_exit_t mango_load_kernel(
 	assert(kname != NULL && "Kernel name must be a valid pointer!");
 	assert(kernel != NULL && "Kernel function must be a valid pointer!");
 
+	assert(unit < mango_unit_type_t::STOP && "Invalid unit type");
+
 	mango::mango_exit_code_t err = ((mango::KernelFunction *)kernel)->load(kname, (mango::UnitType)unit, (mango::FileType)t);
 
 	return err == mango::mango_exit_code_t::SUCCESS ? SUCCESS : ERR_INVALID_KERNEL_FILE;

@@ -234,18 +234,34 @@ std::shared_ptr<bbque::TaskGraph> BBQContext::to_bbque(TaskGraph &tg) noexcept {
 	auto bl = bbque::BufferMap_t();
 	auto el = bbque::EventMap_t();
 
+	assert(tg.get_kernels().size() > 0 && "At least 1 kernel is required to ask resources");
+
 	for(auto &k : tg.get_kernels()){
 		std::list<mango_id_t> inl(k->buffers_in_cbegin(), k->buffers_in_cend());
 		std::list<mango_id_t> outl(k->buffers_out_cbegin(), k->buffers_out_cend());
 
+		assert((inl.size() + outl.size() > 0) && "At least 1 buffer is required per kernel");
+		assert(k->get_id() > 0 && "Kernel id should be greater than 0");
+
+		// TODO core counts not implemented
+//		assert(k->get_thread_count() > 0 && "Thread count should be at least 1");
+
 		auto bk = boost::make_shared<bbque::Task>(k->get_id(), inl, outl, 
 			k->get_thread_count());
 
-		const auto &kernels_size = *k->get_kernel();
+		assert(k->get_kernel() != NULL && "Internal error: kernel invalid pointer");
 
-		for (auto s = kernels_size.cbegin(); s != kernels_size.cend(); s++ ) {
+		const auto &kernels_func = *k->get_kernel();
+
+		for (auto s = kernels_func.cbegin(); s != kernels_func.cend(); s++ ) {
 			// TODO Check arguments
-			bk->AddTarget(unit_to_arch_type(s->first), 0, 0, s->second, 0);
+
+			assert(s->first < mango_unit_type_t::STOP && "Invalid archtype");
+			auto bbque_archtype = unit_to_arch_type(s->first);
+			assert(bbque_archtype != bbque::ArchType_t::STOP && "Invalid Barbeque Archtype");
+			assert(bbque_archtype != bbque::ArchType_t::NONE && "Invalid Barbeque Archtype");
+
+			bk->AddTarget(bbque_archtype, 0, 0, s->second, 0);
 		}
 
 		kl[k->get_id()] = bk;
@@ -286,19 +302,32 @@ std::shared_ptr<bbque::TaskGraph> BBQContext::to_bbque(TaskGraph &tg) noexcept {
 
 
 void BBQContext::from_bbque(TaskGraph &tg) noexcept {
+
+	assert(bbque_tg && "Internal error: invalid TG from BBQUE");
+	assert(bbque_tg->Tasks().size() == tg.get_kernels().size() && "Internal error: TG from BBQUE contains no sufficient tasks");
+	assert(bbque_tg->Buffers().size() == tg.get_buffers().size() && "Internal error: TG from BBQUE contains no sufficient buffers");
+
+
 	for(auto k : bbque_tg->Tasks()){
 		mango_id_t pid = k.second->GetMappedProcessor();
+
 		auto bbque_arch_type = k.second->GetAssignedArch();
 		int ncores = k.second->GetMappedCores();
+
+		// TODO: cores not handled
+		// assert(ncores > 0 && "Internal error: less than 1 core from BBQUE");
+
 		mango_log->Debug("Assigning kernel %d to archtype %d", k.first, bbque_arch_type);
 
 		for(auto &kt : tg.get_kernels())
 			if (k.first == kt->get_id()) {
 
-				kt->set_unit(std::make_shared<Unit>(pid, arch_to_unit_type(bbque_arch_type),
-						ncores));	
+				mango_unit_type_t arch_type = arch_to_unit_type(bbque_arch_type);
+				assert(arch_type != mango_unit_type_t::STOP && "Internal error: invalid archtype");
 
-				auto arch_info = k.second->Targets()[bbque_arch_type];
+				kt->set_unit(std::make_shared<Unit>(pid, arch_type, ncores));	
+
+				auto arch_info = k.second->Targets().at(bbque_arch_type);
 				kt->set_mem_tile(arch_info->MemoryBank());
 				kt->set_physical_address(arch_info->Address());
 				mango_log->Debug("Memory tile %d address %p", kt->get_mem_tile(),
@@ -310,14 +339,18 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 	for(auto b : bbque_tg->Buffers()){
 		for(auto &bt : tg.get_buffers())
 			if(bt->get_id() == b.first){
+				assert(b.second && "Internal error: null buffer from BBQUE");
+
 				bt->set_mem_tile(b.second->MemoryBank());
 				bt->set_phy_addr(b.second->PhysicalAddress());
-
+				bt->get_event()->write(WRITE);
 			}
 	}
 	for(auto e : bbque_tg->Events()){
 		for(auto &et : tg.get_events())
 			if(et->get_id() == e.first) {
+				assert(e.second && "Internal error: null event from BBQUE");
+
 				et->set_phy_addr(e.second->PhysicalAddress());
 				et->write(0);
 			}
