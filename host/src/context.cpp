@@ -325,7 +325,7 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 				mango_unit_type_t arch_type = arch_to_unit_type(bbque_arch_type);
 				assert(arch_type != mango_unit_type_t::STOP && "Internal error: invalid archtype");
 
-				kt->set_unit(std::make_shared<Unit>(pid, arch_type, ncores));	
+				kt->set_unit(std::make_shared<Unit>(pid, arch_type, ncores));
 
 				auto arch_info = k.second->Targets().at(bbque_arch_type);
 				kt->set_mem_tile(arch_info->MemoryBank());
@@ -336,16 +336,6 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 			}
 	}
 
-	for(auto b : bbque_tg->Buffers()){
-		for(auto &bt : tg.get_buffers())
-			if(bt->get_id() == b.first){
-				assert(b.second && "Internal error: null buffer from BBQUE");
-
-				bt->set_mem_tile(b.second->MemoryBank());
-				bt->set_phy_addr(b.second->PhysicalAddress());
-				bt->get_event()->write(WRITE);
-			}
-	}
 	for(auto e : bbque_tg->Events()){
 		for(auto &et : tg.get_events())
 			if(et->get_id() == e.first) {
@@ -355,7 +345,19 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 				et->write(0);
 			}
 	}
-	/*! \todo Event memory address? */
+
+	for(auto b : bbque_tg->Buffers()){
+		for(auto &bt : tg.get_buffers())
+			if(bt->get_id() == b.first){
+				assert(b.second && "Internal error: null buffer from BBQUE");
+
+				bt->set_mem_tile(b.second->MemoryBank());
+				bt->set_phy_addr(b.second->PhysicalAddress());
+
+				assert(bt->get_event()->get_phy_addr() != 0);
+				bt->get_event()->write(WRITE);
+			}
+	}
 
 }
 
