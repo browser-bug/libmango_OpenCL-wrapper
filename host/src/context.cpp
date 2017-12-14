@@ -45,7 +45,17 @@ std::shared_ptr<Kernel> Context::register_kernel(mango_id_t kid, KernelFunction 
 					std::vector<mango_id_t> in_buffers,
 					std::vector<mango_id_t> out_buffers) noexcept {
 
+	assert(nullptr != k && "Kernel function is nullptr");
+
+	if(k->length() <= 0) {
+		mango_log->Error("You cannot register a kernel with an empty KernelFunction");
+		return nullptr;
+	}
+
 	std::shared_ptr<Kernel> the_kernel = std::make_shared<mango::Kernel>(kid, k, in_buffers, out_buffers);
+
+	assert(the_kernel && "Internal error: kernel construction FAILED");
+	assert(the_kernel->get_termination_event() && "Invalid termination event");
 
 	this->kernels.emplace(kid, the_kernel);
 
@@ -84,6 +94,8 @@ std::shared_ptr<Buffer> Context::register_buffer(mango_id_t bid, mango_size_t si
 					std::initializer_list<mango_id_t> kernels_out,
 					BufferType bt) noexcept {
 	
+	assert(size > 0 && "Unable to create a buffer of size 0");
+
 	std::shared_ptr<Buffer> the_buffer;
 	switch (bt) {
 		case BufferType::FIFO : 
@@ -145,6 +157,9 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 				
 	/*! Get argument string */
 	std::string str_arguments = args.get_arguments(kernel->get_assigned_unit()->get_arch());
+
+	assert(str_arguments.length() > 0 && "Empty argument string makes no sense.");
+
 	char *arguments=(char *)str_arguments.c_str();
 	mango_log->Info ("Argument string: %s\n", arguments);
 

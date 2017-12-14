@@ -54,6 +54,11 @@ public:
 		return this->loaded;
 	}
 
+	size_t length() const noexcept {
+		assert(version.size() == size.size());
+		return version.size();
+	}
+
 private:
 
 	bool loaded = false;
