@@ -1,8 +1,8 @@
 #include "mm.h"
 #include "logger.h"
 
+#include <assert.h>
 #include <libhn/hn.h>
-#include <bbque/utils/assert.h>
 
 #define TLB_BASE_SHRD  0x50000000
 #define TLB_BASE_SYNCH 0x5e000000
@@ -131,14 +131,14 @@ mango_exit_code_t MM::set_vaddr_buffers(TaskGraph &tg) noexcept {
 
 	for(auto& b : tg.get_buffers()){
 
-		bbque_assert(b != nullptr);
+		assert(b != nullptr);
 		mango_log->Info("Mapping input buffers...");
 
 		for(auto k_id : b->get_kernels_in()) {
 
 			if (k_id==0) continue;		// TODO What?
 			auto k = tg.get_kernel_by_id(k_id);
-			bbque_assert(k != nullptr);
+			assert(k != nullptr);
 
 			set_buff_tlb(k, b);
 		}
@@ -148,7 +148,7 @@ mango_exit_code_t MM::set_vaddr_buffers(TaskGraph &tg) noexcept {
 
 			if (k_id==0) continue;		// TODO What?
 			auto k = tg.get_kernel_by_id(k_id);
-			bbque_assert(k != nullptr);
+			assert(k != nullptr);
 
 			set_buff_tlb(k, b);
 		}
