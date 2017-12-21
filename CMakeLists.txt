@@ -4,9 +4,15 @@ project (LIBMANGO)
 set(MANGO_ROOT "/" CACHE STRING "MANGO installation root directory")
 
 include(../global.cmake)
+include(../bosp/build/configuration/bosp-config.cmake)
 
 # Set DEBUG compilation
-set (CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wextra -pedantic -DDEBUG")
+if (CONFIG_BBQUE_BUILD_DEBUG)
+  set (CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wextra -pedantic -DDEBUG -DBBQUE_DEBUG")
+else (CONFIG_BBQUE_BUILD_DEBUG)
+  set (CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wextra -pedantic -DDEBUG")
+endif (CONFIG_BBQUE_BUILD_DEBUG)
+
 if (BUILD_TYPE STREQUAL "Debug")
   set (CMAKE_BUILD_TYPE Debug)
   set (DEBUG ON)
