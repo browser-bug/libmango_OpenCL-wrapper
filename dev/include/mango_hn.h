@@ -11,7 +11,7 @@
 /*! \brief Initialize mango-dev lib 
  * \returns Success code, unless something bad happens.
  */
-mango_exit_t mango_init();
+mango_exit_t mango_init(char ** argv);
 
 /*! \brief Shutdown mango-dev lib and terminate kernel 
  * \param Exit status
