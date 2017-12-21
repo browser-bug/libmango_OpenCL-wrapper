@@ -178,6 +178,8 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 BBQContext::BBQContext(std::string const & _name, std::string const & _recipe) : 
 							Context(), bbque_app_ctrl(_name,_recipe) {
 
+	assert(mango_log && "MANGO Logger not initialized!");
+
 	mango_log->Debug("Initializing the application controller...");
 	bbque_app_ctrl.Init(); 
 

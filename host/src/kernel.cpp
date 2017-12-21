@@ -106,6 +106,9 @@ Kernel::Kernel(mango_id_t kid, KernelFunction *k, std::vector<mango_id_t> buffer
 		std::vector<mango_id_t> buffers_out) noexcept :
 		id(kid), kernel(k), buffers_in(buffers_in), buffers_out(buffers_out) {
 
+	assert(k && "Kernel function is null.");
+	assert(k->length() > 0 && "Kernel function is empty.");
+
 	this->termination_event = std::make_shared<KernelCompletionEvent>(kid);
 
 	for(int i=0; i<3; i++)	{ // TODO Is this correct? In that case please document
