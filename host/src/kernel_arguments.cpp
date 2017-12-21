@@ -31,6 +31,7 @@ template class ScalarArg<int>;
 template class ScalarArg<unsigned int>;
 //template class ScalarArg<long>;
 //template class ScalarArg<unsigned long>;
+template class ScalarArg<float>;
 
 BufferArg::BufferArg(std::shared_ptr<const Buffer> arg) noexcept
 {
@@ -110,6 +111,7 @@ std::string KernelArguments::get_arguments(mango_unit_type_t arch_type) const no
 			 || p_instanceof<ScalarArg<unsigned short>>(arg) 
 			 || p_instanceof<ScalarArg<int>>(arg) 
 			 || p_instanceof<ScalarArg<unsigned int>>(arg) 
+			 || p_instanceof<ScalarArg<float>>(arg)
  		) {
 			ss << " " << arg->get_value();
 		}
