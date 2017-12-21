@@ -359,7 +359,14 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 				assert(e.second && "Internal error: null event from BBQUE");
 
 				et->set_phy_addr(e.second->PhysicalAddress());
-				et->write(0);
+
+				// It follows a strange pattern:
+				// - We read the value (this should change to zero the register)
+				et->read();
+				// - We re-read the value and now must be zero
+				int value = et->read();
+				assert( 0 == value );
+
 			}
 	}
 
@@ -371,8 +378,15 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 				bt->set_mem_tile(b.second->MemoryBank());
 				bt->set_phy_addr(b.second->PhysicalAddress());
 
-				assert(bt->get_event()->get_phy_addr() != 0);
-				bt->get_event()->write(WRITE);
+				auto et = bt->get_event();
+				assert(et->get_phy_addr() != 0);
+
+				et->read();	// Read the event BEFORE writing it to allow the initialization
+						// in case of write-accumulare register
+				int value = et->read();
+				assert( 0 == value );
+
+				et->write(WRITE);
 			}
 	}
 

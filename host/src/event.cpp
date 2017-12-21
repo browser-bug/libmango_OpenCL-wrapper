@@ -28,8 +28,7 @@ Event::Event (const std::vector<mango_id_t> &kernel_id_in,
 
 void Event::wait_state(uint32_t state) const noexcept {
 	uint32_t value;
-	mango_log->Info("Wait state %d: id %d phy_addr %08x",
-			state, id, phy_addr);
+	mango_log->Info("Wait state %d: id %d phy_addr 0x%08x",	state, id, phy_addr);
 
 	do {
 		value = lock();
@@ -67,7 +66,7 @@ uint32_t Event::read() const noexcept {
 
 	uint32_t value;
 
-	hn_read_register(0, phy_addr, &value);
+	hn_read_synch_register(phy_addr, &value);
 
 	return value;
 }
@@ -75,10 +74,10 @@ uint32_t Event::read() const noexcept {
 void Event::write(uint32_t value) const noexcept
 {
 
-	mango_log->Info("Writing on an event: phy_addr %x, value %u, id %d",
+	mango_log->Info("Writing on an event: phy_addr 0x%x, value %u, id %d",
 			phy_addr, value, id);
 
-	hn_write_register(0, phy_addr, value);
+	hn_write_synch_register(phy_addr, value);
 }
 
 void KernelCompletionEvent::write(uint32_t value) const noexcept {

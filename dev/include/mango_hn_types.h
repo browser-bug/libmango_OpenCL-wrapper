@@ -12,7 +12,7 @@
  * \brief Internal representation of event
  */
 typedef struct _mango_event_t {
-	uint32_t *vaddr;
+	volatile uint32_t *vaddr;
 } mango_event_t;
 
 /*! \enum mango_event_status_t 

@@ -120,11 +120,11 @@ void MM::set_buff_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Buffer> b) noex
 
 void MM::set_event_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Event> e) noexcept {
 
-	// TODO Not sure if we have to add this offset, we have to ask UPV about this
-	const uint32_t offset = 0x40;
+	const uint32_t offset = 0x00;
+	const uint32_t shift_offset = 0x00;
 
 	auto tlb = k->get_tlb();
-	tlb->set_virt_addr(*e, TLB_BASE_SYNCH + offset + e->get_phy_addr());
+	tlb->set_virt_addr(*e, TLB_BASE_SYNCH + offset + (e->get_phy_addr() << shift_offset));
 }
 
 mango_exit_code_t MM::set_vaddr_buffers(TaskGraph &tg) noexcept {

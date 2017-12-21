@@ -38,14 +38,14 @@ void mango_peak_close(int status){
 
 
 void mango_peak_write_synchronization(mango_event_t *e, uint32_t value){
-	
+
         printf("PEAK - mango_write_synchronization %p <- %lu\n", e->vaddr, value);
         *(e->vaddr) = value;
 }
 
 uint32_t mango_peak_read_synchronization(mango_event_t *e){
 
-        printf("PEAK - mango_peak_read_synchronization %p", e->vaddr);
+        printf("PEAK - mango_peak_read_synchronization %p\n", e->vaddr);
         return *(e->vaddr);
 }
 
