@@ -34,7 +34,8 @@ void Event::wait_state(uint32_t state) const noexcept {
 		value = lock();
 
 		if (value!=state){ 
-			write(value);
+			mango_log->Debug("Expected %d, instead it's %d\n", state, value);
+			hn_write_synch_register(phy_addr, value);
 			std::this_thread::yield();
 		}
 
