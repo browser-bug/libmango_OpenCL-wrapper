@@ -4,9 +4,11 @@
 #ifndef MANGO_HN_TYPES_H
 #define MANGO_HN_TYPES_H
 #include "mango_types_c.h"
-#include <unistd.h>
 #include <stdint.h>
+#include <stddef.h>
+#ifdef GNEMU
 #include <semaphore.h>
+#endif
 
 /*! \struct mango_event_t 
  * \brief Internal representation of event
@@ -23,14 +25,16 @@ typedef struct _mango_event_t {
  * \brief A data structure for the device-side context 
  */
 typedef struct _context {
-	sem_t *semaphore; /*!< Only needed for current GN implementation */
 	mango_event_t event_a; /*!< End of task group */
 	mango_event_t event_b; /*!< Barrier */
 	mango_event_t event_r; /*!< Restart */
 	mango_event_t event_exit; /*!< End of kernel */
-	uint32_t *memory; /*!< Only needed for current GN implementation */
 	uint32_t memory_size;
-	int tf;	 /*!< Only needed for current GN implementation */
+#ifdef GNEMU
+	uint32_t *memory;
+	sem_t *semaphore;
+	int tf;
+#endif
 } mango_context_t;
 
 
