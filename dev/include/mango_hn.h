@@ -5,6 +5,10 @@
 #define MANGO_HN_H
 #include "mango_hn_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! @name Initialization and shutdown */
 ///@{
 
@@ -117,5 +121,9 @@ void *mango_exit();
 
 // Internal function, do not use
 uint32_t* mango_memory_map(uint64_t a);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MANGO_HN_H */
