@@ -3,7 +3,7 @@ if (CONFIG_LIBMANGO_GN)
 
 # Compilation flags
 
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall -DDEBUG")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall -DDEBUG -DGNEMU")
 
 # Set DEBUG compilation
 set(CMAKE_BUILD_TYPE Debug)
