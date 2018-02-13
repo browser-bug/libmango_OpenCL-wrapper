@@ -55,6 +55,8 @@ void mango_nuplus_task_arg_free(task_args *a);
  */
 void mango_nuplus_suspend();
 
+uint32_t mango_nuplus_atox(const char *s);
+
 #ifdef __cplusplus
 }
 #endif
