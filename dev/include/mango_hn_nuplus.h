@@ -55,6 +55,10 @@ void mango_nuplus_task_arg_free(task_args *a);
  */
 void mango_nuplus_suspend();
 
+/*! \brief Convert input arguments into hexadecimal integers. 
+ * Same behaviour as strtol with hexadecimal base, although returns a 32-bit integer.
+ * \param s C-string beginning with the representation of an integral number.
+ */
 uint32_t mango_nuplus_atox(const char *s);
 
 #ifdef __cplusplus
