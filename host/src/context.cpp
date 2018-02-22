@@ -184,13 +184,14 @@ BBQContext::BBQContext(std::string const & _name, std::string const & _recipe) :
 	bbque_app_ctrl.Init(); 
 
 	// Now let's setup the connection with the HN daemon
-	hn_daemon_socket_filter filter;
-	filter.target = TARGET_MANGO;
-	filter.mode = APPL_MODE_SYNC_READS;
+	hn_filter_t filter;
+	filter.target = HN_FILTER_TARGET_MANGO;
+	filter.mode = HN_FILTER_APPL_MODE_SYNC_READS;
 	filter.tile = 999;
 	filter.core = 999;
 
 	// We initialize the hn library with the filter and the UPV's partition strategy
+  // FIXME UPV -> POLIMI: The application cannot capture signals? Last argument is to allow the application to receive SIGINT or SIGTERM to terminate
 	int rv = hn_initialize(filter, UPV_PARTITION_STRATEGY, 1, 0, 0);	// TODO Check UPV_PARTITION_STRATEGY
 	if (rv != HN_SUCCEEDED) {
 		const char error[] = "Unable to initialize HN library";
