@@ -220,7 +220,7 @@ bbque::ArchType_t BBQContext::unit_to_arch_type(mango_unit_type_t t) noexcept {
 		case UnitType::PEAK:
 			return bbque::ArchType_t::PEAK;
 		case UnitType::NUP:
-			return bbque::ArchType_t::NUP;
+			return bbque::ArchType_t::NUPLUS;
 		default:
 			return bbque::ArchType_t::NONE;
 	}
@@ -239,7 +239,7 @@ mango_unit_type_t BBQContext::arch_to_unit_type(bbque::ArchType_t t) noexcept {
 			return UnitType::ARM;
 		case bbque::ArchType_t::PEAK:
 			return UnitType::PEAK;
-		case bbque::ArchType_t::NUP:
+		case bbque::ArchType_t::NUPLUS:
 			return UnitType::NUP;
 		default:
 			return UnitType::STOP;
