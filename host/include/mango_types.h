@@ -68,7 +68,9 @@ typedef enum class BufferType {
 typedef enum class UnitType {
 	PEAK, /*!< PEAK units */
 	NUP,  /*!< NU+ units */
+	DCT,
 	GN,   /*!< Fall back to GN node if no other option is available */
+	
 	GPU,  /*!< GPU units */
 	ARM,   /*!< ARM units */
 	STOP, /*!< Terminator used to close arrays of mango_unit_type_t */

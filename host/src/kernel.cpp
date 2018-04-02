@@ -9,12 +9,23 @@ namespace mango {
 mango_exit_code_t KernelFunction::load(const std::string &kernel_file, UnitType unit,
 					mango_file_type_t type) noexcept {
 	mango_exit_code_t res;
+
+	mango_log->Info("Unit type: %i", unit);
+	mango_log->Info("DCT Unit type: %i", UnitType::DCT);
+	mango_log->Info("GN Unit type: %i", UnitType::GN);
+
 	switch (unit){
 		case UnitType::GN:
+			mango_log->Info("Loading GN");
 			res = load_gn(kernel_file, type);
 		break;
 		case UnitType::PEAK:
+		mango_log->Info("Loading PEAK");
 			res = load_peak(kernel_file, type);
+		break;
+		case UnitType::DCT:
+			mango_log->Info("Loading DCT");
+			res = load_dct(kernel_file, type);
 		break;
 		default:
 			mango_log->Error("The architecture is not currently supported");
@@ -98,6 +109,22 @@ mango_exit_code_t KernelFunction::load_peak(const std::string &kernel_file, mang
 			break;
 		default: 
 			mango_log->Error("Kernel file is not valid");
+			return mango_exit_code_t::ERR_INVALID_KERNEL_FILE ;
+	}
+
+	return mango_exit_code_t::SUCCESS;
+}
+mango_exit_code_t KernelFunction::load_dct(const std::string &kernel_file, mango_file_type_t type) noexcept {
+	
+	mango_log->Info("Loading DCT in load_dct");
+	version[UnitType::DCT] = kernel_file;
+	size[UnitType::DCT] = 1;
+	switch (type) {
+		case FileType::HARDWARE: 
+			mango_log->Info("DCT Unit is a hardware unit and has no kernel to load.");
+			break;
+		default: 
+			mango_log->Error("DCT has to be of hardware accelerator type.");
 			return mango_exit_code_t::ERR_INVALID_KERNEL_FILE ;
 	}
 

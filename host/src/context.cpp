@@ -213,6 +213,8 @@ bbque::ArchType_t BBQContext::unit_to_arch_type(mango_unit_type_t t) noexcept {
 			return bbque::ArchType_t::STOP;
 		case UnitType::GN:
 			return bbque::ArchType_t::GN;
+		case UnitType::DCT:
+			return bbque::ArchType_t::DCT;
 		case UnitType::GPU:
 			return bbque::ArchType_t::GPU;
 		case UnitType::ARM:
@@ -231,6 +233,8 @@ mango_unit_type_t BBQContext::arch_to_unit_type(bbque::ArchType_t t) noexcept {
 		case bbque::ArchType_t::NONE:
 		case bbque::ArchType_t::STOP:
 			return UnitType::STOP;
+		case bbque::ArchType_t::DCT:
+			return UnitType::DCT;
 		case bbque::ArchType_t::GN:
 			return UnitType::GN;
 		case bbque::ArchType_t::GPU:

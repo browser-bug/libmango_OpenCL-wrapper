@@ -53,6 +53,7 @@ mango_kernel_t mango_register_kernel(uint32_t kernel_id,
 
 	mango::KernelFunction *t = (mango::KernelFunction *)kernel;
 
+
 	assert(t->is_loaded() && "You must load the kernel file before register it.");
 
 	std::vector<uint32_t> in;

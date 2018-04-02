@@ -26,6 +26,7 @@ typedef enum { LOCK, READ, WRITE, END_FIFO_OPERATION } mango_event_status_t;
 typedef enum { 
 	UNKNOWN_KERNEL_SOURCE_TYPE, /*!< Unknown type, fail. */
 	BINARY, /*!< Binary file, ready to load and execute */
+	HARDWARE,
 	STRING, /*!< String containing the kernel source code */
 	SOURCE  /*!< Text file containing the kernel source code */
 } filetype;
@@ -51,6 +52,7 @@ typedef enum {
 typedef enum {
 	PEAK, /*!< PEAK units */
 	NUP,  /*!< NU+ units */
+	DCT,
 	GN,    /*!< Fall back to GN node if no other option is available */
 	STOP, /*!< Terminator used to close arrays of mango_unit_type_t */
 } mango_unit_type_t;
