@@ -344,5 +344,8 @@ uint32_t mango_read_synchronization(mango_event_t event) {
 	return event_obj->read();
 }
 
+size_t mango_get_max_nr_resources(void) {
+	return mango::Context::get_max_nr_resources();
+}
 
 }
