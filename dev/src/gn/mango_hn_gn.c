@@ -16,7 +16,7 @@
 mango_context_t ctx;
 
 uint32_t* mango_memory_map(uint64_t a){
-	return ctx.memory + a;
+	return ctx.memory + a/4;
 }
 
 mango_exit_t mango_gn_init(char **argv) {
@@ -42,10 +42,10 @@ mango_exit_t mango_gn_init(char **argv) {
 		return ERR_MMAP_FAILED;
 	}
 
-	ctx.event_exit.vaddr=ctx.memory + strtol(argv[2], NULL, 16);
-	ctx.event_a.vaddr=ctx.memory + strtol(argv[3], NULL, 16);
-	ctx.event_b.vaddr=ctx.memory + strtol(argv[4], NULL, 16);
-	ctx.event_r.vaddr=ctx.memory + strtol(argv[5], NULL, 16);
+	ctx.event_exit.vaddr=ctx.memory + strtol(argv[2], NULL, 16)/4;
+	ctx.event_a.vaddr=ctx.memory + strtol(argv[3], NULL, 16)/4;
+	ctx.event_b.vaddr=ctx.memory + strtol(argv[4], NULL, 16)/4;
+	ctx.event_r.vaddr=ctx.memory + strtol(argv[5], NULL, 16)/4;
 	dprint("Return event address: %p\n", ctx.event_exit);
 	dprint("Task event address: %p\n", ctx.event_a);
 	dprint("Barrier event address: %p\n", ctx.event_b);
