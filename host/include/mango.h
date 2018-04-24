@@ -400,6 +400,11 @@ mango_event_t mango_start_kernel(mango_kernel_t kernel, mango_args_t *args, mang
  */
 uint32_t mango_get_unit_id(mango_kernel_t kernel);
 
+/*!
+ * \brief Returns the maximum number of buffers allowed (it depends on the architecture).
+ */
+uint16_t mango_get_max_nr_buffers(void);
+
 ///@}
 
 #ifdef __cplusplus
