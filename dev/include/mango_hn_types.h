@@ -29,14 +29,13 @@ typedef struct _context {
 	mango_event_t event_b; /*!< Barrier */
 	mango_event_t event_r; /*!< Restart */
 	mango_event_t event_exit; /*!< End of kernel */
-	uint32_t memory_size;
 #ifdef GNEMU
-	unsigned  long long memory_size;
+	unsigned long long memory_size;
 	uint32_t *memory;
 	sem_t *semaphore;
 	int tf;
-#else //GNEMU
-    uint32_t memory_size;
+#else // not GNEMU
+	uint32_t memory_size;
 #endif
 } mango_context_t;
 
