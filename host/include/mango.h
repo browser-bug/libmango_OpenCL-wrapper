@@ -393,6 +393,13 @@ mango_args_t *mango_set_args(mango_kernel_t kernel, int argc, ...);
  */
 mango_event_t mango_start_kernel(mango_kernel_t kernel, mango_args_t *args, mango_event_t event);
 
+/*!
+ * \brief Returns the processor id assigned to the kernel. It must be called AFTER
+ *        a successful resource allocation.
+ * \param kernel The kernel to query
+ */
+uint32_t mango_get_unit_id(mango_kernel_t kernel);
+
 ///@}
 
 #ifdef __cplusplus
