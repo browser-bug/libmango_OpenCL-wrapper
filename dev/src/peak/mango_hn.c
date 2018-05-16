@@ -52,7 +52,7 @@ void mango_wait(mango_event_t *e, uint32_t state){
 	uint32_t value=0;
 	do {
 		value=mango_lock(e);
-		dprint("Releasing event %p (value %d), expected %u\n", e->vaddr, value, state); 
+		//dprint("Releasing event %p (value %d), expected %u\n", e->vaddr, value, state); 
 
 		//dprint("Checking event %p\n", e->vaddr);
 		if (value!=state){

@@ -39,23 +39,23 @@ void mango_peak_close(int status){
 
 void mango_peak_write_synchronization(mango_event_t *e, uint32_t value){
 
-        printf("PEAK - mango_write_synchronization %p <- %lu\n", e->vaddr, value);
+        //printf("PEAK - mango_write_synchronization %p <- %lu\n", e->vaddr, value);
         *(e->vaddr) = value;
 }
 
 uint32_t mango_peak_read_synchronization(mango_event_t *e){
 
-        printf("PEAK - mango_peak_read_synchronization %p\n", e->vaddr);
+        //printf("PEAK - mango_peak_read_synchronization %p\n", e->vaddr);
         return *(e->vaddr);
 }
 
 
 void mango_peak_suspend(){
-        printf("mango_peak_suspend not implemented\n");
+        //printf("mango_peak_suspend not implemented\n");
 }
 
 mango_event_t *mango_peak_spawn(void *(*task)(task_args *), uint32_t range){
-        printf("mango_peak_spawn not implemented\n");
+        //printf("mango_peak_spawn not implemented\n");
 	return NULL;
 }
 
