@@ -4,10 +4,10 @@ mango_context_t ctx;
 
 mango_exit_t mango_nuplus_init(char **argv){
 
-	ctx.event_exit.vaddr=(uint32_t *)mango_nuplus_atox(argv[1]);
-        ctx.event_a.vaddr=(uint32_t *)mango_nuplus_atox(argv[2]);
-        ctx.event_b.vaddr=(uint32_t *)mango_nuplus_atox(argv[3]);
-        ctx.event_r.vaddr=(uint32_t *)mango_nuplus_atox(argv[4]);
+	ctx.event_exit.vaddr = 0x001000e0; // (uint32_t *)mango_nuplus_atox(argv[1]);
+        ctx.event_a.vaddr = 0x001000e4; // (uint32_t *)mango_nuplus_atox(argv[2]);
+        ctx.event_b.vaddr = 0x001000e8; // (uint32_t *)mango_nuplus_atox(argv[3]);
+        ctx.event_r.vaddr = 0x001000ec; //(uint32_t *)mango_nuplus_atox(argv[4]);
 
 	return SUCCESS;
 }
@@ -23,7 +23,6 @@ void mango_nuplus_close(int status){
 void mango_nuplus_write_synchronization(mango_event_t *e, uint32_t value){
 	
         *(e->vaddr) = value;
-	__builtin_nuplus_flush((int)(&(e->vaddr)));
 }
 
 uint32_t mango_nuplus_read_synchronization(mango_event_t *e){

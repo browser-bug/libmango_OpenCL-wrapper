@@ -170,7 +170,10 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 
 	std::shared_ptr<Event> re = kernel->get_termination_event();
 	re->write(0);
+        //hn_boot_unit(kernel->get_assigned_unit()->get_id(), kernel->get_mem_tile(), kernel->get_physical_address(), NULL, NULL);
 	hn_run_kernel(kernel->get_assigned_unit()->get_id(), kernel->get_virtual_address(), arguments);
+        //hn_boot_unit(kernel->get_assigned_unit()->get_id(), kernel->get_mem_tile(), kernel->get_physical_address(), NULL, NULL);
+	//hn_run_kernel(kernel->get_assigned_unit()->get_id(), kernel->get_physical_address(), arguments);
 
 	return re;
 }

@@ -12,7 +12,8 @@
 #define TLB_ENTRY_EVENTS 2
 #define TLB_ENTRY_START  3
 
-
+#define NUP_TLB_BASE_SYNCH  0x00100000
+#define NUP_TLB_BASE_KERN   0x00000000
 
 namespace mango {
 
@@ -58,9 +59,9 @@ mango_exit_code_t MM::set_vaddr_kernels(TaskGraph &tg) noexcept {
 		mango_size_t kern_size = k->get_kernel()->get_kernel_size(unit->get_arch());
 
 		// We have only one kernel per unit, so the virtual address is fixed
-		k->set_virtual_address(virt_addr);
+		// k->set_virtual_address(virt_addr);
 
-		mango_size_t tlb_area_size;
+		mango_size_t tlb_area_size = kern_size;
 
 		switch(unit->get_arch()) {
 			case mango_unit_type_t::PEAK:
@@ -70,6 +71,10 @@ mango_exit_code_t MM::set_vaddr_kernels(TaskGraph &tg) noexcept {
 				// https://bitbucket.org/mango_developers/mangolibs/issues/9/
 				tlb_area_size = 256 * 1024 * 1024;
 			break;
+			
+			case mango_unit_type_t::NUP:
+				virt_addr = NUP_TLB_BASE_KERN;
+                        break;
 
 			default:
 				tlb_area_size = kern_size;
@@ -78,6 +83,8 @@ mango_exit_code_t MM::set_vaddr_kernels(TaskGraph &tg) noexcept {
 
 		set_tlb_kb(tile_unit, mem_bank, virt_addr, tlb_area_size, phy_addr, TLB_ENTRY_KERNEL);
 
+		// We have only one kernel per unit, so the virtual address is fixed
+                k->set_virtual_address(virt_addr);
 
 		mango_log->Notice("Mapped kernel image. [tile=%d, mem_bank=%d, phy_addr=%p, "
 				  "virt_addr=%p, size=%d]", tile_unit, mem_bank, phy_addr,
@@ -195,6 +202,18 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 			/* Single instance of tlb for all events */
 			hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
 		}
+		
+		if (unit->get_arch() == mango_unit_type_t::NUP) {
+                        mango_id_t   tile_unit  = unit->get_id();
+                        mango_addr_t start_addr = NUP_TLB_BASE_SYNCH;
+                        mango_addr_t end_addr   = NUP_TLB_BASE_SYNCH + 0xffffff;
+
+                        mango_log->Notice("Configured TLB for events of tile %d [%p - %p]", tile_unit,
+                                                start_addr, end_addr);
+
+                        /* Single instance of tlb for all events */
+                        hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
+                }
 
 		for(auto &e : k->get_task_events()){
 

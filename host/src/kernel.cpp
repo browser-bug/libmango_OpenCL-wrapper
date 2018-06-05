@@ -27,6 +27,12 @@ mango_exit_code_t KernelFunction::load(const std::string &kernel_file, UnitType 
 			mango_log->Info("Loading DCT");
 			res = load_dct(kernel_file, type);
 		break;
+
+		case UnitType::NUP:
+		  mango_log->Info("Loading NUPLUS");
+		  res=load_nuplus(kernel_file, type);
+		break;
+
 		default:
 			mango_log->Error("The architecture is not currently supported");
 			res = mango_exit_code_t::ERR_UNSUPPORTED_UNIT;
@@ -114,6 +120,46 @@ mango_exit_code_t KernelFunction::load_peak(const std::string &kernel_file, mang
 
 	return mango_exit_code_t::SUCCESS;
 }
+
+mango_exit_code_t KernelFunction::load_nuplus(const std::string &kernel_file, mango_file_type_t type) noexcept {
+	
+	std::ifstream kernel_fd;
+	unsigned int line_count;
+
+	switch (type) {
+		case FileType::BINARY: 
+			version[UnitType::NUP] = kernel_file;
+
+			kernel_fd.open(kernel_file);
+
+			if(! kernel_fd.good()) {
+				mango_log->Error("Unable to open the kernel file: %s", kernel_file.c_str());
+				return mango_exit_code_t::ERR_INVALID_KERNEL_FILE;
+			}
+
+			// Don't skip lines
+			kernel_fd.unsetf(std::ios_base::skipws);
+			line_count = std::count(std::istream_iterator<char>(kernel_fd),
+						std::istream_iterator<char>(), '\n');
+
+			kernel_fd.close();
+
+			// Each lines contains 128 hex value
+                        // Peak kernel memory size it is not just the file size
+                        // Peak kernels require 256MB of memory to store bss section, stack...
+			size[UnitType::NUP] = (1 << 28);
+
+			mango_log->Info("Kernel NUPLUS file [%s] loaded with size %d",
+					kernel_file.c_str(), size[UnitType::NUP]);
+			break;
+		default: 
+			mango_log->Error("Kernel file is not valid");
+			return mango_exit_code_t::ERR_INVALID_KERNEL_FILE ;
+	}
+
+	return mango_exit_code_t::SUCCESS;
+}
+
 mango_exit_code_t KernelFunction::load_dct(const std::string &kernel_file, mango_file_type_t type) noexcept {
 	
 	mango_log->Info("Loading DCT in load_dct");
