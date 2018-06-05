@@ -31,9 +31,12 @@ public:
 
 
 private:
-	mango_addr_t last_address;
-	mango_addr_t next_virtual_address;
+
 	std::map<mango_id_t, int> entries;
+	std::map<mango_id_t, mango_addr_t> virtual_address_pool;    /** This is used to keep track of
+                                                                    used virtual addresses of buffers.
+                                                                    It maps kernel id to next free
+                                                                    virtual address. */
 
 	void set_tlb_kb(mango_id_t unit, mango_id_t mem_bank, mango_addr_t starting_addr,
 			mango_size_t size, mango_addr_t phy_addr, int entry) const noexcept;
@@ -52,9 +55,6 @@ public:
 	virtual ~MM_GN() override {};
 
 private:
-	mango_addr_t last_address;
-	mango_addr_t next_virtual_address;
-	std::map<mango_id_t, int> entries;
 
 	void set_tlb_kb(mango_id_t unit, mango_id_t mem_bank, mango_addr_t starting_addr,
 			mango_size_t size, mango_addr_t phy_addr, int entry) const noexcept = delete;
