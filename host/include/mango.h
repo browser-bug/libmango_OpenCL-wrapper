@@ -405,6 +405,7 @@ uint32_t mango_get_unit_id(mango_kernel_t kernel);
  */
 uint16_t mango_get_max_nr_buffers(void);
 
+
 ///@}
 
 #ifdef __cplusplus

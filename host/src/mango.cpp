@@ -347,6 +347,7 @@ uint32_t mango_read_synchronization(mango_event_t event) {
 	return event_obj->read();
 }
 
+
 uint16_t mango_get_max_nr_buffers(void) {
 	return mango::Context::mango_get_max_nr_buffers();
 }

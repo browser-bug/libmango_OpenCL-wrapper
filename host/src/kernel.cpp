@@ -12,6 +12,7 @@ mango_exit_code_t KernelFunction::load(const std::string &kernel_file, UnitType 
 
 	mango_log->Info("Unit type: %i", unit);
 	mango_log->Info("DCT Unit type: %i", UnitType::DCT);
+	mango_log->Info("NUP Unit type: %i", UnitType::NUP);
 	mango_log->Info("GN Unit type: %i", UnitType::GN);
 
 	switch (unit){
@@ -109,6 +110,8 @@ mango_exit_code_t KernelFunction::load_peak(const std::string &kernel_file, mang
                         // Peak kernel memory size it is not just the file size
                         // Peak kernels require 256MB of memory to store bss section, stack...
 			size[UnitType::PEAK] = (1 << 28); //128 * 16 * line_count;
+			(void) line_count;
+			// TODO Check this
 
 			mango_log->Info("Kernel PEAK file [%s] loaded with size %d",
 					kernel_file.c_str(), size[UnitType::PEAK]);

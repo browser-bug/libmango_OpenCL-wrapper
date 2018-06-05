@@ -117,6 +117,10 @@ public:
 		return HN_MAX_RSC;
 	}
 
+	static constexpr size_t get_max_nr_resources() noexcept {
+		return HN_MAX_RSC;
+	}
+
 protected:
 	void print_debug(const char *function, int line) const noexcept;
 

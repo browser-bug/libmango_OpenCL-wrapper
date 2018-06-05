@@ -12,8 +12,10 @@
 #define TLB_ENTRY_EVENTS 2
 #define TLB_ENTRY_START  3
 
-#define NUP_TLB_BASE_SYNCH  0x00100000
-#define NUP_TLB_BASE_KERN   0x00000000
+#define NUP_TLB_BASE_SYNCH    0x00100000
+#define NUP_TLB_BASE_KERN     0x00000000
+#define TLB_BASE_SHRD_NUPLUS  0x50000000
+
 
 namespace mango {
 
@@ -29,14 +31,12 @@ MM::MM() noexcept {
 	mango::mango_init_logger();
 	mango_log->Info("Local Memory Manager initializing...");
 	
-	this->next_virtual_address = TLB_BASE_SHRD; 	// Could be one per kernel
-	this->last_address = 1024;			// TODO CHECK
 
 	mango_log->Info("TLB Information");
-	mango_log->Info(" -> Base virtual address for shared data: %p", TLB_BASE_SHRD);
-	mango_log->Info(" -> Base virtual address for events: %p", TLB_BASE_SYNCH);
-	mango_log->Info(" -> Base virtual address for kernels: %p", TLB_BASE_KERN);
-	mango_log->Info(" -> Default entry nr. peakos/kernel/events/others: %d/%d/%d/%d+",
+	mango_log->Info(" -> PEAK Base virtual address for shared data: %p", TLB_BASE_SHRD);
+	mango_log->Info(" -> PEAK Base virtual address for events: %p", TLB_BASE_SYNCH);
+	mango_log->Info(" -> PEAK Base virtual address for kernels: %p", TLB_BASE_KERN);
+	mango_log->Info(" -> PEAK Default entry nr. peakos/kernel/events/others: %d/%d/%d/%d+",
 			TLB_ENTRY_PEAKOS, TLB_ENTRY_KERNEL, TLB_ENTRY_EVENTS,
 			TLB_ENTRY_START);
 }
@@ -70,11 +70,15 @@ mango_exit_code_t MM::set_vaddr_kernels(TaskGraph &tg) noexcept {
 				// @see issue#9
 				// https://bitbucket.org/mango_developers/mangolibs/issues/9/
 				tlb_area_size = 256 * 1024 * 1024;
+				virtual_address_pool[k->get_id()] = TLB_BASE_SHRD;
 			break;
-			
+
 			case mango_unit_type_t::NUP:
+				// Set the base for the virtual address space for buffers. At this
+				// address, the first buffer will be allocated.
 				virt_addr = NUP_TLB_BASE_KERN;
-                        break;
+				virtual_address_pool[k->get_id()] = TLB_BASE_SHRD_NUPLUS;
+			break;
 
 			default:
 				tlb_area_size = kern_size;
@@ -100,6 +104,11 @@ void MM::set_buff_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Buffer> b) noex
 
 	auto tlb = k->get_tlb();
 
+	// The base for the virtual addresses of buffers must be set before call this function
+	assert(virtual_address_pool.find(k->get_id()) != virtual_address_pool.end());
+
+	auto next_virtual_address = virtual_address_pool.at(k->get_id());
+
 	mango_log->Debug("Adding TLB entry for buffer %d address 0x%x", b->get_id(), next_virtual_address);
 	tlb->set_virt_addr(*b, next_virtual_address);
 
@@ -122,6 +131,8 @@ void MM::set_buff_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Buffer> b) noex
 
 	if ((next_virtual_address % 64) != 0)	// TODO Check this requirement with UPV
 		next_virtual_address += 64 - (next_virtual_address % 64);
+
+	virtual_address_pool[k->get_id()] = next_virtual_address;
 
 }
 
@@ -213,6 +224,7 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 
                         /* Single instance of tlb for all events */
                         hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
+                        //hn_set_tlb(0, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 24, 1);
                 }
 
 		for(auto &e : k->get_task_events()){
