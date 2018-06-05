@@ -113,6 +113,9 @@ public:
 		return this->events;
 	}
 
+	static uint16_t mango_get_max_nr_buffers() noexcept {
+		return HN_MAX_RSC;
+	}
 
 	static constexpr size_t get_max_nr_resources() noexcept {
 		return HN_MAX_RSC;

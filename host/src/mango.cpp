@@ -330,7 +330,10 @@ void mango_wait_state(mango_event_t e, uint32_t state) {
 	event->wait_state(state);
 }
 
-
+uint32_t mango_get_unit_id(mango_kernel_t kernel) {
+	auto k =cxt->get_kernel(kernel);
+	return k->get_assigned_unit()->get_id(); 
+}
 
 void mango_write_synchronization(mango_event_t event, uint32_t value) {
 	auto event_obj = cxt->get_event(event);
@@ -344,8 +347,9 @@ uint32_t mango_read_synchronization(mango_event_t event) {
 	return event_obj->read();
 }
 
-size_t mango_get_max_nr_resources(void) {
-	return mango::Context::get_max_nr_resources();
+
+uint16_t mango_get_max_nr_buffers(void) {
+	return mango::Context::mango_get_max_nr_buffers();
 }
 
 }

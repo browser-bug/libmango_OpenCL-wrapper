@@ -92,12 +92,28 @@ std::string KernelArguments::get_arguments(mango_unit_type_t arch_type) const no
 
 	std::stringstream ss;
 
+#ifdef GNEMU
 	if (arch_type == mango_unit_type_t::GN) {
-		ss << kernel->get_kernel()->get_kernel_version(arch_type);
-		ss << " 0x" << std::hex << GN_MEM_SIZE;
+        //get full memory size
+        uint32_t num_tiles;
+        uint32_t num_tiles_x;
+        uint32_t num_tiles_y;
+        hn_get_num_tiles(&num_tiles, &num_tiles_x, &num_tiles_y);
+        unsigned long long mem_size = 0;
+        for (uint32_t i = 0; i < num_tiles; i++) {
+            uint32_t mem_size_cur = 0;
+            hn_get_memory_size (i, &mem_size_cur);
+            mem_size += mem_size_cur;
+        }
+        ss << kernel->get_kernel()->get_kernel_version(arch_type);
+		ss << " 0x" << std::hex << mem_size;
 	} else {
 		ss << "x";	// TODO: change the 'x' with the binary name
 	}
+#else //GNEMU
+    ss << "x";	// TODO: change the 'x' with the binary name
+#endif //GNEMU
+
 
 	for (const auto arg : args) {
 
