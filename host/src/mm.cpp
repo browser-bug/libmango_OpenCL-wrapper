@@ -138,11 +138,22 @@ void MM::set_buff_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Buffer> b) noex
 
 void MM::set_event_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Event> e) noexcept {
 
+	const auto unit = k->get_assigned_unit();
+
 	const uint32_t offset = 0x00;
 	const uint32_t shift_offset = 0x00;
 
 	auto tlb = k->get_tlb();
-	tlb->set_virt_addr(*e, TLB_BASE_SYNCH + offset + (e->get_phy_addr() << shift_offset));
+
+	switch(unit->get_arch()) {
+			case mango_unit_type_t::NUP:
+				tlb->set_virt_addr(*e, NUP_TLB_BASE_SYNCH + offset + (e->get_phy_addr() << shift_offset));
+			break;
+			case mango_unit_type_t::PEAK:
+			default:
+				tlb->set_virt_addr(*e, TLB_BASE_SYNCH + offset + (e->get_phy_addr() << shift_offset));
+			break;
+		}
 }
 
 mango_exit_code_t MM::set_vaddr_buffers(TaskGraph &tg) noexcept {
