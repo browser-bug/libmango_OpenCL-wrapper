@@ -151,10 +151,15 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 	/*! Load kernel image to device memory */
 	mango_log->Info("Write image into memory to tile %d address 0x%x", kernel->get_mem_tile(), kernel->get_physical_address());
 
-	hn_write_image_into_memory(
-					(char *)kernel->get_kernel()->get_kernel_version(kernel->get_assigned_unit()->get_arch()).c_str(),	
+	int err = hn_write_image_into_memory(
+					(char *)kernel->get_kernel()->get_kernel_version(kernel->get_assigned_unit()->get_arch()).c_str(),
 					kernel->get_mem_tile(), kernel->get_physical_address());
-				
+
+	if (err != HN_SUCCEEDED) {
+		mango_log->Error("Unable to write the kernel image memory.");
+		return nullptr;
+	}
+
 	/*! Get argument string */
 	std::string str_arguments = args.get_arguments(kernel->get_assigned_unit()->get_arch());
 
@@ -170,12 +175,21 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 
 	std::shared_ptr<Event> re = kernel->get_termination_event();
 	re->write(0);
-        
-        if (kernel->get_assigned_unit()->get_arch() == mango_unit_type_t::NUP){
-           hn_run_kernel(kernel->get_assigned_unit()->get_id(), kernel->get_physical_address(), arguments);
-        } 
-        else {
-	   hn_run_kernel(kernel->get_assigned_unit()->get_id(), kernel->get_virtual_address(), arguments);
+
+	mango_size_t kernel_address;
+
+	if (kernel->get_assigned_unit()->get_arch() == mango_unit_type_t::NUP) {
+		kernel_address = kernel->get_physical_address();
+	}
+	else {
+	   kernel_address = kernel->get_virtual_address();
+	}
+
+	err = hn_run_kernel(kernel->get_assigned_unit()->get_id(), kernel_address, arguments);
+
+	if (err != HN_SUCCEEDED) {
+		mango_log->Error("Unable to launch kernel id=%d err=%d", kernel->get_assigned_unit()->get_id(), err);
+		return nullptr;
 	}
 
 	return re;

@@ -22,15 +22,20 @@ namespace mango {
 void MM::set_tlb_kb(mango_id_t unit, mango_id_t mem_bank, mango_addr_t starting_addr,
 			mango_size_t size, mango_addr_t phy_addr, int entry) const noexcept {
 
-	hn_set_tlb(unit, entry, starting_addr, starting_addr + size - 1,	// TODO Check if -1 is correct 
+	int err;
+	err = hn_set_tlb(unit, entry, starting_addr, starting_addr + size - 1,
 			phy_addr, 1, 0, 0, mem_bank);
+
+	if (err != HN_SUCCEEDED) {
+		mango_log->Error("Unable to set tlb for unit=%d, entry=%d, undefined behaviours can happen.", unit, entry);
+	}
 }
 
 MM::MM() noexcept {
 
 	mango::mango_init_logger();
 	mango_log->Info("Local Memory Manager initializing...");
-	
+
 
 	mango_log->Info("TLB Information");
 	mango_log->Info(" -> PEAK Base virtual address for shared data: %p", TLB_BASE_SHRD);
@@ -88,7 +93,7 @@ mango_exit_code_t MM::set_vaddr_kernels(TaskGraph &tg) noexcept {
 		set_tlb_kb(tile_unit, mem_bank, virt_addr, tlb_area_size, phy_addr, TLB_ENTRY_KERNEL);
 
 		// We have only one kernel per unit, so the virtual address is fixed
-                k->set_virtual_address(virt_addr);
+				k->set_virtual_address(virt_addr);
 
 		mango_log->Notice("Mapped kernel image. [tile=%d, mem_bank=%d, phy_addr=%p, "
 				  "virt_addr=%p, size=%d]", tile_unit, mem_bank, phy_addr,
@@ -119,7 +124,7 @@ void MM::set_buff_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Buffer> b) noex
 	mango_size_t buff_size = b->get_size();
 	int entry = this->entries.at(tile_unit);
 
-	set_tlb_kb(tile_unit, mem_bank, next_virtual_address, buff_size, phy_addr, entry); 
+	set_tlb_kb(tile_unit, mem_bank, next_virtual_address, buff_size, phy_addr, entry);
 
 	this->entries[tile_unit] = entry + 1;
 
@@ -196,14 +201,14 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 
 		for(auto &k_id : e->get_kernels_in()) {
 			if (k_id==0)
-				continue;	 // TODO Check 
+				continue;	 // TODO Check
 
 			set_event_tlb(tg.get_kernel_by_id(k_id), e);
 		}
 
-		for(auto &k_id : e->get_kernels_out()) {			
+		for(auto &k_id : e->get_kernels_out()) {
 			if (k_id==0)
-				continue;	 // TODO Check 
+				continue;	 // TODO Check
 
 			set_event_tlb(tg.get_kernel_by_id(k_id), e);
 		}
@@ -212,6 +217,8 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 	for(auto& k : tg.get_kernels()) {
 
 		const auto unit = k->get_assigned_unit();
+
+		int err;
 
 		if (unit->get_arch() == mango_unit_type_t::PEAK) {
 			mango_id_t   tile_unit  = unit->get_id();
@@ -222,24 +229,27 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 						start_addr, end_addr);
 
 			/* Single instance of tlb for all events */
-			hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
+			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
 		}
-		
-		if (unit->get_arch() == mango_unit_type_t::NUP) {
-                        mango_id_t   tile_unit  = unit->get_id();
-                        mango_addr_t start_addr = NUP_TLB_BASE_SYNCH;
-                        mango_addr_t end_addr   = NUP_TLB_BASE_SYNCH + 0xffffff;
+		else if (unit->get_arch() == mango_unit_type_t::NUP) {
+			mango_id_t   tile_unit  = unit->get_id();
+			mango_addr_t start_addr = NUP_TLB_BASE_SYNCH;
+			mango_addr_t end_addr   = NUP_TLB_BASE_SYNCH + 0xffffff;
 
-                        mango_log->Notice("Configured TLB for events of tile %d [%p - %p]", tile_unit,
-                                                start_addr, end_addr);
+			mango_log->Notice("Configured TLB for events of tile %d [%p - %p]", tile_unit,
+									start_addr, end_addr);
 
-                        /* Single instance of tlb for all events */
-                        hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
-                        //hn_set_tlb(0, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 24, 1);
-                }
+			/* Single instance of tlb for all events */
+			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
+		} else {
+			assert(0 && "Unknown architecture.");
+		}
+
+		if(err != HN_SUCCEEDED) {
+			mango_log->Error("Unable to set TLB (err=%d), undefined behaviours can happen.", err);
+		}
 
 		for(auto &e : k->get_task_events()){
-
 			set_event_tlb(k, e);
 		}
 	}
@@ -267,5 +277,3 @@ void MM_GN::set_event_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Event> e) n
 
 
 } // namespace mango
-
-

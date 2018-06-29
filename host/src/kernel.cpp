@@ -130,7 +130,7 @@ mango_exit_code_t KernelFunction::load_nuplus(const std::string &kernel_file, ma
 	unsigned int line_count;
 
 	switch (type) {
-		case FileType::BINARY: 
+		case FileType::BINARY:
 			version[UnitType::NUP] = kernel_file;
 
 			kernel_fd.open(kernel_file);
@@ -155,10 +155,13 @@ mango_exit_code_t KernelFunction::load_nuplus(const std::string &kernel_file, ma
 			mango_log->Info("Kernel NUPLUS file [%s] loaded with size %d",
 					kernel_file.c_str(), size[UnitType::NUP]);
 			break;
-		default: 
+		default:
 			mango_log->Error("Kernel file is not valid");
 			return mango_exit_code_t::ERR_INVALID_KERNEL_FILE ;
 	}
+
+	UNUSED(line_count);	// Used in the previous version to compute the kernel size.
+				// At present not used, but it may be useful in the future
 
 	return mango_exit_code_t::SUCCESS;
 }
