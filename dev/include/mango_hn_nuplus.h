@@ -61,6 +61,8 @@ void mango_nuplus_suspend();
  */
 uint32_t mango_nuplus_atox(const char *s);
 
+void mango_nuplus_endian_row (uint32_t * data, int size);
+ 
 #ifdef __cplusplus
 }
 #endif

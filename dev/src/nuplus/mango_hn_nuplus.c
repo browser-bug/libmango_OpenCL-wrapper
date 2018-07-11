@@ -4,28 +4,31 @@ mango_context_t ctx;
 
 mango_exit_t mango_nuplus_init(char **argv){
 
-	ctx.event_exit.vaddr = (uint32_t) argv[1]; 
-        ctx.event_a.vaddr = (uint32_t) argv[2]; 
-        ctx.event_b.vaddr = (uint32_t) argv[3]; 
-        ctx.event_r.vaddr = (uint32_t) argv[4]; 
+	ctx.event_exit.vaddr = (uint32_t *) argv[1]; 
+        ctx.event_a.vaddr = (uint32_t *) argv[2]; 
+        ctx.event_b.vaddr = (uint32_t *) argv[3]; 
+        ctx.event_r.vaddr = (uint32_t *) argv[4]; 
 
 	return SUCCESS;
 }
 
 void mango_nuplus_close(int status){
-
+    
         mango_nuplus_write_synchronization(&ctx.event_exit, 1);
         //exit(status);
 }
 
 
 void mango_nuplus_write_synchronization(mango_event_t *e, uint32_t value){
-	
-        *(e->vaddr) = value;
+        uint32_t reg = value;
+	mango_nuplus_endian_row (&reg, 1); 
+        *(e->vaddr) = reg;
 }
 
 uint32_t mango_nuplus_read_synchronization(mango_event_t *e){
-        return *(e->vaddr);
+        uint32_t reg = *(e->vaddr);
+        mango_nuplus_endian_row (&reg, 1);
+        return reg;
 }
 
 mango_event_t *mango_nuplus_spawn(void *(*task)(task_args *), uint32_t range){
@@ -61,3 +64,17 @@ uint32_t mango_nuplus_atox(const char *s) {
   }
   return sign==-1?-v:v;
 }
+
+void mango_nuplus_endian_row (uint32_t * data, int size) {
+  uint8_t * buffer;
+
+  //for(int i = 0; i < size; i++){
+      //buffer = (uint8_t *)&data[i];
+      //data[i] = ((buffer[0] << 24) & 0xFF000000) | ((buffer[1] << 16) & 0x00FF0000) | ((buffer[2] << 8) & 0x0000FF00) | (buffer[3] & 0x000000FF);
+      *data = ( ((*data & 0x000000FF) << 24) | 
+                ((*data & 0x0000FF00) << 8)  | 
+                ((*data & 0x00FF0000) >> 8)  | 
+                ((*data & 0xFF000000) >> 24) );
+  //}
+}
+
