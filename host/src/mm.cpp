@@ -242,7 +242,7 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 			/* Single instance of tlb for all events */
 			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
 		} else {
-			assert(0 && "Unknown architecture.");
+			mango_log->Warn("Unknown architecture: %d", unit->get_arch());
 		}
 
 		if(err != HN_SUCCEEDED) {
