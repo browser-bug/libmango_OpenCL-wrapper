@@ -16,6 +16,8 @@
 #define NUP_TLB_BASE_KERN     0x00000000
 #define TLB_BASE_SHRD_NUPLUS  0x50000000
 
+#define TLB_BASE_SHRD_DCT	0X50000000
+#define TLB_BASE_SYNCH_DCT	0X10000000
 
 namespace mango {
 
@@ -85,6 +87,10 @@ mango_exit_code_t MM::set_vaddr_kernels(TaskGraph &tg) noexcept {
 				virtual_address_pool[k->get_id()] = TLB_BASE_SHRD_NUPLUS;
 			break;
 
+			case mango_unit_type_t::DCT:
+				// set the base for the virtual address space for buffers.
+				virtual_address_pool[k->get_id()] = TLB_BASE_SHRD_DCT;
+			break;
 			default:
 				tlb_area_size = kern_size;
 			break;
@@ -153,6 +159,9 @@ void MM::set_event_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Event> e) noex
 	switch(unit->get_arch()) {
 			case mango_unit_type_t::NUP:
 				tlb->set_virt_addr(*e, NUP_TLB_BASE_SYNCH + offset + (e->get_phy_addr() << shift_offset));
+			break;
+			case mango_unit_type_t::DCT:
+				tlb->set_virt_addr(*e, TLB_BASE_SYNCH_DCT + offset + (e->get_phy_addr() << shift_offset));
 			break;
 			case mango_unit_type_t::PEAK:
 			default:
@@ -241,7 +250,17 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 
 			/* Single instance of tlb for all events */
 			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
-		} else {
+		} 
+		else if (unit->get_arch() == mango_unit_type_t::DCT) {
+			mango_id_t tile_unit = unit->get_id();
+			mango_addr_t start_addr = TLB_BASE_SYNCH_DCT;
+			mango_addr_t end_addr = TLB_BASE_SYNCH_DCT + 0xffffff;
+			
+			mango_log->Notice("Configured TLB for events of tile %d [%p - %p]", tile_unit, start_addr, end_addr);
+
+			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
+		}
+		else {
 			mango_log->Warn("Unknown architecture: %d", unit->get_arch());
 		}
 
