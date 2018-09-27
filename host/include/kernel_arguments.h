@@ -6,6 +6,8 @@
 #include "kernel.h"
 #include <string>
 
+#define MANGO_ARGS_STRLEN_MAX  100
+
 namespace mango {
 
 /*! \brief Kernel argument type 

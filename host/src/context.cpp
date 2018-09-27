@@ -172,12 +172,12 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 
 	/*! Get argument string */
 	std::string str_arguments = args.get_arguments(kernel->get_assigned_unit()->get_arch());
-
-
 	assert(str_arguments.length() > 0 && "Empty argument string makes no sense.");
+	char * arguments=(char *)str_arguments.c_str();
 
-	char *arguments=(char *)str_arguments.c_str();
-	mango_log->Info ("Argument string: %s\n", arguments);
+	char str_args[MANGO_ARGS_STRLEN_MAX];
+	strncpy(str_args, arguments, MANGO_ARGS_STRLEN_MAX);
+	mango_log->Info ("Argument string: %s...\n", str_args);
 
 	/*! Run kernel 
 	 * \note We assume that hn_run_kernel is non-blocking
