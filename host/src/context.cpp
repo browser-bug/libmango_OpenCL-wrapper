@@ -149,25 +149,20 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 	(void) event; // TODO Check why not used
 	int err;
 	
-	if (kernel->get_assigned_unit()->get_arch()==mango_unit_type_t::DCT)
-	{
+	if (kernel->get_assigned_unit()->get_arch()==mango_unit_type_t::DCT) {
 		mango_log->Info("Not writing image into memory.");
 	}
-	else
-	{
-	
+	else {
+		/*! Load kernel image to device memory */
+		mango_log->Info("Write image into memory to tile %d address 0x%x", kernel->get_mem_tile(), kernel->get_physical_address());
 
-	/*! Load kernel image to device memory */
-	mango_log->Info("Write image into memory to tile %d address 0x%x", kernel->get_mem_tile(), kernel->get_physical_address());
-
-	err = hn_write_image_into_memory(
-					(char *)kernel->get_kernel()->get_kernel_version(kernel->get_assigned_unit()->get_arch()).c_str(),
-					kernel->get_mem_tile(), kernel->get_physical_address());
-
-	if (err != HN_SUCCEEDED) {
-		mango_log->Error("Unable to write the kernel image memory.");
-		return nullptr;
-	}
+		err = hn_write_image_into_memory(
+						(char *)kernel->get_kernel()->get_kernel_version(kernel->get_assigned_unit()->get_arch()).c_str(),
+						kernel->get_mem_tile(), kernel->get_physical_address());
+		if (err != HN_SUCCEEDED) {
+			mango_log->Error("Unable to write the kernel image memory.");
+			return nullptr;
+		}
 	}
 
 	/*! Get argument string */
@@ -188,16 +183,14 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 	re->write(0);
 
 	mango_size_t kernel_address;
-
 	if (kernel->get_assigned_unit()->get_arch() == mango_unit_type_t::NUP) {
 		kernel_address = kernel->get_physical_address();
 	}
 	else {
-	   kernel_address = kernel->get_virtual_address();
+		kernel_address = kernel->get_virtual_address();
 	}
 
 	err = hn_run_kernel(kernel->get_assigned_unit()->get_id(), kernel_address, arguments);
-
 	if (err != HN_SUCCEEDED) {
 		mango_log->Error("Unable to launch kernel id=%d err=%d", kernel->get_assigned_unit()->get_id(), err);
 		return nullptr;
