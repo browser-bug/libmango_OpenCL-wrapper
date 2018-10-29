@@ -17,9 +17,16 @@ set(LIBMANGO_SOURCES	buffer.cpp
 			)
 
 if(CONFIG_LIBMANGO_GN)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGNEMU")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGNEMU")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGNEMU")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGNEMU")
 endif(CONFIG_LIBMANGO_GN)
+
+
+if(CONFIG_LIBMANGO_PROFILING_MODE)
+	message(STATUS "Profiling mode: ENABLED")
+	set(LIBMANGO_SOURCES ${LIBMANGO_SOURCES} profiling.cpp)
+endif(CONFIG_LIBMANGO_PROFILING_MODE)
+
 
 # Build for convenience both static and dynamic library
 add_library (mango SHARED ${LIBMANGO_SOURCES})

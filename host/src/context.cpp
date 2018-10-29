@@ -460,17 +460,22 @@ std::shared_ptr<Event> BBQContext::start_kernel(std::shared_ptr<Kernel> kernel,
 	(void) _e; // TODO Check why not used
 
 	this->bbque_app_ctrl.NotifyTaskStart(kernel->get_id());
-
 	auto e = Context::start_kernel(kernel, args);
 
-	e->set_callback(
-		&bbque::ApplicationController::NotifyTaskStop,
-		this->bbque_app_ctrl,
-		kernel->get_id());
+	e->set_callback(&BBQContext::on_kernel_termination, this,  kernel->get_id());
 
 	bbque_tg->Print();
 	print_debug(__FUNCTION__,__LINE__);			
 	return e;
 }
+
+void BBQContext::on_kernel_termination(mango_id_t kernel_id) noexcept {
+#ifdef LIBMANGO_PROFILING_MODE
+	Profiler task_profile & per_task_profiling[kernel_id];
+	task_profile.print_to_console();
+#endif
+	this->bbque_app_ctrl.NotifyTaskStop(kernel_id);
+}
+
 
 } // namespace mango
