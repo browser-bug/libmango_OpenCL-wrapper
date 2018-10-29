@@ -21,3 +21,12 @@ config LIBMANGO_NUPLUS
   default n
 
 
+comment  "Building options"
+
+config LIBMANGO_PROFILING_MODE
+  bool "Profiling mode"
+  default n
+  depends on !LIBMANGO_GN
+  ---help---
+  Enable the profiling mode to collect data from the MANGO performance counters.
+
