@@ -199,11 +199,9 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 	return re;
 }
 
-BBQContext::BBQContext(std::string const & _name, std::string const & _recipe) : 
-							Context(), bbque_app_ctrl(_name,_recipe) {
-
+BBQContext::BBQContext(std::string const & _name, std::string const & _recipe):
+				Context(), bbque_app_ctrl(_name,_recipe) {
 	assert(mango_log && "MANGO Logger not initialized!");
-
 	mango_log->Debug("Initializing the application controller...");
 	bbque_app_ctrl.Init(); 
 
@@ -215,8 +213,11 @@ BBQContext::BBQContext(std::string const & _name, std::string const & _recipe) :
 	filter.core = 999;
 
 	// We initialize the hn library with the filter and the UPV's partition strategy
-  // FIXME UPV -> POLIMI: The application cannot capture signals? Last argument is to allow the application to receive SIGINT or SIGTERM to terminate
-	int rv = hn_initialize(filter, UPV_PARTITION_STRATEGY, 1, 0, 0);	// TODO Check UPV_PARTITION_STRATEGY
+	// FIXME: UPV -> POLIMI: The application cannot capture signals? Last
+	// argument is to allow the application to receive SIGINT or SIGTERM to
+	// terminate
+	int rv = hn_initialize(filter, UPV_PARTITION_STRATEGY, 1, 0, 0);
+	// TODO: Check UPV_PARTITION_STRATEGY
 	if (rv != HN_SUCCEEDED) {
 		const char error[] = "Unable to initialize HN library";
 		throw std::runtime_error(error);
@@ -225,7 +226,6 @@ BBQContext::BBQContext(std::string const & _name, std::string const & _recipe) :
 
 BBQContext::~BBQContext() noexcept {
 	bbque_tg->Print();	// TODO Debugging purposes, maybe we want to delete this?
-
 	bbque_app_ctrl.WaitForTermination();
 
 	hn_end();
@@ -285,28 +285,21 @@ std::shared_ptr<bbque::TaskGraph> BBQContext::to_bbque(TaskGraph &tg) noexcept {
 	for(auto &k : tg.get_kernels()){
 		std::list<mango_id_t> inl(k->buffers_in_cbegin(), k->buffers_in_cend());
 		std::list<mango_id_t> outl(k->buffers_out_cbegin(), k->buffers_out_cend());
-
 		assert((inl.size() + outl.size() > 0) && "At least 1 buffer is required per kernel");
 		assert(k->get_id() > 0 && "Kernel id should be greater than 0");
 
 		// TODO core counts not implemented
 //		assert(k->get_thread_count() > 0 && "Thread count should be at least 1");
-
-		auto bk = boost::make_shared<bbque::Task>(k->get_id(), inl, outl, 
-			k->get_thread_count());
-
+		auto bk = boost::make_shared<bbque::Task>(k->get_id(), inl, outl, k->get_thread_count());
 		assert(k->get_kernel() != NULL && "Internal error: kernel invalid pointer");
 
 		const auto &kernels_func = *k->get_kernel();
-
 		for (auto s = kernels_func.cbegin(); s != kernels_func.cend(); s++ ) {
 			// TODO Check arguments
-
 			assert(s->first < mango_unit_type_t::STOP && "Invalid archtype");
 			auto bbque_archtype = unit_to_arch_type(s->first);
-			assert(bbque_archtype != bbque::ArchType_t::STOP && "Invalid Barbeque Archtype");
-			assert(bbque_archtype != bbque::ArchType_t::NONE && "Invalid Barbeque Archtype");
-
+			assert(bbque_archtype != bbque::ArchType_t::STOP && "Invalid BarbequeRTRM ArchType");
+			assert(bbque_archtype != bbque::ArchType_t::NONE && "Invalid BarbequeRTRM ArchType");
 			bk->AddTarget(bbque_archtype, 0, 0, s->second, 0);
 		}
 
@@ -328,10 +321,9 @@ std::shared_ptr<bbque::TaskGraph> BBQContext::to_bbque(TaskGraph &tg) noexcept {
 	bbque_tg = std::make_shared<bbque::TaskGraph>(kl, bl, el);
 	for(auto &b : tg.get_buffers()) {
 		/*! \note Here we set multiple output buffers. We need to take this into account
-		 *        in BBQUE */
+		 *        in BarbequeRTRM */
 		if (b->get_kernels_out().size() == 0 || b->isReadByHost()) {
 			mango_log->Debug("Setting bbque output buffer %d", b->get_id());
-
 			bbque_tg->SetOutputBuffer(b->get_id());
 
 			b->get_event()->set_callback(
@@ -348,29 +340,24 @@ std::shared_ptr<bbque::TaskGraph> BBQContext::to_bbque(TaskGraph &tg) noexcept {
 
 
 void BBQContext::from_bbque(TaskGraph &tg) noexcept {
-
-	assert(bbque_tg && "Internal error: invalid TG from BBQUE");
-	assert(bbque_tg->Tasks().size() == tg.get_kernels().size() && "Internal error: TG from BBQUE contains no sufficient tasks");
-	assert(bbque_tg->Buffers().size() == tg.get_buffers().size() && "Internal error: TG from BBQUE contains no sufficient buffers");
-
+	assert(bbque_tg && "Internal error: invalid TG from BarbequeRTRM");
+	assert(bbque_tg->Tasks().size() ==
+		tg.get_kernels().size() && "Internal error: TG from BarbequeRTRM contains no sufficient tasks");
+	assert(bbque_tg->Buffers().size() ==
+		tg.get_buffers().size() && "Internal error: TG from BarbequeRTRM contains no sufficient buffers");
 
 	for(auto k : bbque_tg->Tasks()){
 		mango_id_t pid = k.second->GetMappedProcessor();
-
 		auto bbque_arch_type = k.second->GetAssignedArch();
 		int ncores = k.second->GetMappedCores();
-
 		// TODO: cores not handled
-		// assert(ncores > 0 && "Internal error: less than 1 core from BBQUE");
+		// assert(ncores > 0 && "Internal error: less than 1 core from BarbequeRTRM");
 
 		mango_log->Debug("Assigning kernel %d to archtype %d", k.first, bbque_arch_type);
-
 		for(auto &kt : tg.get_kernels())
 			if (k.first == kt->get_id()) {
-
 				mango_unit_type_t arch_type = arch_to_unit_type(bbque_arch_type);
 				assert(arch_type != mango_unit_type_t::STOP && "Internal error: invalid archtype");
-
 				kt->set_unit(std::make_shared<Unit>(pid, arch_type, ncores));
 
 				auto arch_info = k.second->Targets().at(bbque_arch_type);
@@ -385,31 +372,26 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 	for(auto e : bbque_tg->Events()){
 		for(auto &et : tg.get_events())
 			if(et->get_id() == e.first) {
-				assert(e.second && "Internal error: null event from BBQUE");
-
+				assert(e.second && "Internal error: null event from BarbequeRTRM");
 				et->set_phy_addr(e.second->PhysicalAddress());
-
 				// It follows a strange pattern:
 				// - We read the value (this should change to zero the register)
 				et->read();
 				// - We re-read the value and now must be zero
 				int value = et->read();
 				assert( 0 == value );
-
 			}
 	}
 
 	for(auto b : bbque_tg->Buffers()){
 		for(auto &bt : tg.get_buffers())
 			if(bt->get_id() == b.first){
-				assert(b.second && "Internal error: null buffer from BBQUE");
-
+				assert(b.second && "Internal error: null buffer from BarbequeRTRM");
 				bt->set_mem_tile(b.second->MemoryBank());
 				bt->set_phy_addr(b.second->PhysicalAddress());
 
 				auto et = bt->get_event();
 				assert(et->get_phy_addr() != 0);
-
 				et->read();	// Read the event BEFORE writing it to allow the initialization
 						// in case of write-accumulare register
 				int value = et->read();
@@ -420,6 +402,7 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 	}
 
 }
+
 
 mango_exit_code_t BBQContext::resource_allocation(TaskGraph &tg) noexcept {
 
@@ -449,7 +432,6 @@ mango_exit_code_t BBQContext::resource_allocation(TaskGraph &tg) noexcept {
 	for (auto &b : tg.get_buffers()) 
 		b->get_event()->write(2);
 #endif
-
 	return ExitCode::SUCCESS;
 }
 
@@ -462,8 +444,7 @@ std::shared_ptr<Event> BBQContext::start_kernel(std::shared_ptr<Kernel> kernel,
 	this->bbque_app_ctrl.NotifyTaskStart(kernel->get_id());
 	auto e = Context::start_kernel(kernel, args);
 
-	e->set_callback(&BBQContext::on_kernel_termination, this,  kernel->get_id());
-
+	e->set_callback(&BBQContext::on_kernel_termination, this, kernel->get_id());
 	bbque_tg->Print();
 	print_debug(__FUNCTION__,__LINE__);			
 	return e;
