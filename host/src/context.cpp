@@ -332,9 +332,9 @@ std::shared_ptr<bbque::TaskGraph> BBQContext::to_bbque(TaskGraph &tg) noexcept {
 				b->get_id());
 		}
 	}
-	
-
+#ifdef DEBUG
 	bbque_tg->Print();
+#endif
 	return bbque_tg;
 }
 
@@ -445,7 +445,9 @@ std::shared_ptr<Event> BBQContext::start_kernel(std::shared_ptr<Kernel> kernel,
 	auto e = Context::start_kernel(kernel, args);
 
 	e->set_callback(&BBQContext::on_kernel_termination, this, kernel->get_id());
+#ifdef DEBUG
 	bbque_tg->Print();
+#endif
 	print_debug(__FUNCTION__,__LINE__);			
 	return e;
 }
