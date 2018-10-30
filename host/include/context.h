@@ -6,8 +6,11 @@
 
 #ifndef CONTEXT_H
 #define CONTEXT_H
+
 #include "mm.h"
+#include "kernel.h"
 #include "kernel_arguments.h"
+#include "profiling.h"
 
 
 namespace mango {
@@ -178,17 +181,23 @@ private:
 
 	std::shared_ptr<bbque::TaskGraph> bbque_tg;
 
-#ifdef LIBMANGO_PROFILING_MODE
-	std::map<uint32_t, Profiler> per_task_profiling;
-#endif
 
 	static bbque::ArchType_t unit_to_arch_type(mango_unit_type_t t) noexcept;
 
-
 	static mango_unit_type_t arch_to_unit_type(bbque::ArchType_t t) noexcept;
 
+	void on_kernel_termination(mango_id_t kernel) noexcept;
 
-	void on_kernel_termination(mango_id_t kernel_id) noexcept;
+
+#ifdef PROFILING_MODE
+	std::vector<std::shared_ptr<Kernel>> * mango_kernels;
+
+	std::map<uint32_t, std::shared_ptr<Profiler>> per_kernel_profiling;
+
+	void update_profiling_data(std::shared_ptr<Kernel> kernel_id) noexcept;
+
+	void print_profiling_data() const;
+#endif
 
 };
 
