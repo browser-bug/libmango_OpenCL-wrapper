@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 from string import split, strip, join
 
 from sys import argv
