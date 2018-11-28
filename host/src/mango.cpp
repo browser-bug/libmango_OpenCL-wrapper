@@ -332,7 +332,12 @@ void mango_wait_state(mango_event_t e, uint32_t state) {
 
 uint32_t mango_get_unit_id(mango_kernel_t kernel) {
 	auto k =cxt->get_kernel(kernel);
-	return k->get_assigned_unit()->get_id(); 
+	return k->get_assigned_unit()->get_id();
+}
+
+mango_unit_type_t mango_get_unit_arch(mango_kernel_t kernel) {
+	auto k =cxt->get_kernel(kernel);
+	return (mango_unit_type_t)k->get_assigned_unit()->get_arch();
 }
 
 void mango_write_synchronization(mango_event_t event, uint32_t value) {

@@ -405,6 +405,12 @@ uint32_t mango_get_unit_id(mango_kernel_t kernel);
  */
 uint16_t mango_get_max_nr_buffers(void);
 
+/*!
+ * \brief Returns the processor type assigned to the kernel specified as argument.
+ *        It must be called AFTER a successful resource allocation.
+ */
+mango_unit_type_t mango_get_unit_arch(mango_kernel_t kernel);
+
 
 ///@}
 
