@@ -22,11 +22,12 @@
 namespace mango {
 
 void MM::set_tlb_kb(mango_id_t unit, mango_id_t mem_bank, mango_addr_t starting_addr,
-			mango_size_t size, mango_addr_t phy_addr, int entry) const noexcept {
+			mango_size_t size, mango_addr_t phy_addr, int entry,
+			uint32_t cluster_id) const noexcept {
 
 	int err;
 	err = hn_set_tlb(unit, entry, starting_addr, starting_addr + size - 1,
-			phy_addr, 1, 0, 0, mem_bank);
+			phy_addr, 1, 0, 0, mem_bank, cluster_id);
 
 	if (err != HN_SUCCEEDED) {
 		mango_log->Error("Unable to set tlb for unit=%d, entry=%d, undefined behaviours can happen.", unit, entry);
@@ -62,6 +63,7 @@ mango_exit_code_t MM::set_vaddr_kernels(TaskGraph &tg) noexcept {
 		mango_addr_t virt_addr = TLB_BASE_KERN;
 		mango_addr_t phy_addr  = k->get_physical_address();
 		mango_id_t   mem_bank  = k->get_mem_tile();
+		uint32_t   cluster_id  = k->get_cluster();
 		mango_id_t   tile_unit = unit->get_id();
 		mango_size_t kern_size = k->get_kernel()->get_kernel_size(unit->get_arch());
 
@@ -96,7 +98,7 @@ mango_exit_code_t MM::set_vaddr_kernels(TaskGraph &tg) noexcept {
 			break;
 		}
 
-		set_tlb_kb(tile_unit, mem_bank, virt_addr, tlb_area_size, phy_addr, TLB_ENTRY_KERNEL);
+		set_tlb_kb(tile_unit, mem_bank, virt_addr, tlb_area_size, phy_addr, TLB_ENTRY_KERNEL, cluster_id);
 
 		// We have only one kernel per unit, so the virtual address is fixed
 				k->set_virtual_address(virt_addr);
@@ -128,9 +130,10 @@ void MM::set_buff_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Buffer> b) noex
 	mango_id_t   tile_unit = unit->get_id();
 	mango_addr_t phy_addr  = b->get_phy_addr();
 	mango_size_t buff_size = b->get_size();
+	uint32_t    cluster_id = b->get_cluster();
 	int entry = this->entries.at(tile_unit);
 
-	set_tlb_kb(tile_unit, mem_bank, next_virtual_address, buff_size, phy_addr, entry);
+	set_tlb_kb(tile_unit, mem_bank, next_virtual_address, buff_size, phy_addr, entry, cluster_id);
 
 	this->entries[tile_unit] = entry + 1;
 
@@ -226,6 +229,7 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 	for(auto& k : tg.get_kernels()) {
 
 		const auto unit = k->get_assigned_unit();
+		uint32_t cluster_id = k->get_cluster();
 
 		int err;
 
@@ -238,7 +242,7 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 						start_addr, end_addr);
 
 			/* Single instance of tlb for all events */
-			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
+			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0, cluster_id);
 		}
 		else if (unit->get_arch() == mango_unit_type_t::NUP) {
 			mango_id_t   tile_unit  = unit->get_id();
@@ -249,7 +253,7 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 									start_addr, end_addr);
 
 			/* Single instance of tlb for all events */
-			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
+			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0, cluster_id);
 		} 
 		else if (unit->get_arch() == mango_unit_type_t::DCT) {
 			mango_id_t tile_unit = unit->get_id();
@@ -258,7 +262,7 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 			
 			mango_log->Notice("Configured TLB for events of tile %d [%p - %p]", tile_unit, start_addr, end_addr);
 
-			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0);
+			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0, cluster_id);
 		}
 		else {
 			mango_log->Warn("Unknown architecture: %d", unit->get_arch());

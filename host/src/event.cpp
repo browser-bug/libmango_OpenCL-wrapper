@@ -35,7 +35,7 @@ void Event::wait_state(uint32_t state) const noexcept {
 
 		if (value!=state){
 			mango_log->Debug("Expected %d, instead it's %d\n", state, value);
-			if(HN_SUCCEEDED != hn_write_synch_register(phy_addr, value)) {
+			if(HN_SUCCEEDED != hn_write_synch_register(phy_addr, value, cluster_id)) {
 				mango_log->Warn("Writing to sync register failed.");
 			}
 			std::this_thread::yield();
@@ -69,7 +69,7 @@ uint32_t Event::read() const noexcept {
 
 	uint32_t value;
 
-	hn_read_synch_register(phy_addr, &value);
+	hn_read_synch_register(phy_addr, &value, cluster_id);
 
 	return value;
 }
@@ -77,10 +77,10 @@ uint32_t Event::read() const noexcept {
 void Event::write(uint32_t value) const noexcept
 {
 
-	mango_log->Info("Writing on an event: phy_addr 0x%x, value %u, id %d",
-			phy_addr, value, id);
+	mango_log->Info("Writing on an event: phy_addr 0x%x, value %u, id %d cluster %d",
+			phy_addr, value, id, cluster_id);
 
-	if(HN_SUCCEEDED != hn_write_synch_register(phy_addr, value)) {
+	if(HN_SUCCEEDED != hn_write_synch_register(phy_addr, value, cluster_id)) {
 		mango_log->Warn("Writing to sync register failed.");
 	}
 }

@@ -77,6 +77,21 @@ public:
 	 */
 	inline void set_phy_addr(mango_size_t addr)	noexcept { phy_addr = addr; }
 
+	/*! 
+	 * \brief Set the identifier of the cluster of tiles/processors assigned
+	 * \note Invalid data may be returned if not previously setted 
+	 */
+	inline void set_cluster(uint32_t cluster_id)	noexcept {
+		this->cluster_id = cluster_id;
+	}
+
+	/*! 
+	 * \brief Get the identifier of the cluster of tiles/processors assigned
+	 * \note Invalid data may be returned if not previously setted 
+	 */
+	inline uint32_t get_cluster() const noexcept {
+		return this->cluster_id;
+	}
 
 	/*! 
 	 * \brief Set a callback function for write/read data asynchronously
@@ -103,6 +118,7 @@ public:
 
 protected:
 	std::function<void()> bbq_notify_callback;
+	uint32_t cluster_id;                   /*!< ID of the cluster of processors */
 
 private:
 	mango_id_t id;				/*!< event id */

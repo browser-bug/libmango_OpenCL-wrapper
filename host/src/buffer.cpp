@@ -22,9 +22,10 @@ std::shared_ptr<const Event> Buffer::write(const void *GN_buffer, mango_size_t g
 		global_size = size;
 	}
 
-	mango_log->Info("Buffer::write: mem_tile=%d phy_addr=0x%x size=%u\n", mem_tile, phy_addr, global_size);
+	mango_log->Info("Buffer::write: mem_tile=%d cluster_id=%d, phy_addr=0x%x size=%u\n",
+			mem_tile, cluster_id, phy_addr, global_size);
 
-	int err = hn_write_memory(mem_tile, get_phy_addr(), global_size, (char*)GN_buffer);
+	int err = hn_write_memory(mem_tile, get_phy_addr(), global_size, (char*)GN_buffer, cluster_id);
 	if (HN_SUCCEEDED != err) {
 		mango_log->Error("Unable to write memory at memory tile %d [err=%d]", mem_tile, err);
 	}
@@ -38,9 +39,10 @@ std::shared_ptr<const Event> Buffer::read(void *GN_buffer, mango_size_t global_s
 		global_size = size;
 	}
 
-	mango_log->Info("Buffer::read: mem_tile=%d phy_addr=0x%x size=%u\n", get_mem_tile(), get_phy_addr(), global_size);
+	mango_log->Info("Buffer::read: mem_tile=%d cluster=%d phy_addr=0x%x size=%u\n",
+			get_mem_tile(), get_cluster(), get_phy_addr(), global_size);
 
-	int err = hn_read_memory(get_mem_tile(), get_phy_addr(), global_size, (char*)GN_buffer);
+	int err = hn_read_memory(get_mem_tile(), get_phy_addr(), global_size, (char*)GN_buffer, get_cluster());
 	if (HN_SUCCEEDED != err) {
 		mango_log->Error("Unable to read memory at memory tile %d [err=%d]", get_mem_tile(), err);
 	}
@@ -64,10 +66,11 @@ mango_size_t FIFOBuffer::synch_write(const void *GN_buffer, mango_size_t global_
 	for(off = 0; off < global_size; off += get_size()){
 
 		event->wait_state(mango_event_status_t::WRITE);
-		mango_log->Info("FIFOBuffer::synch_write: mem_tile=%d phy_addr=0x%x size=%u\n", get_mem_tile(), get_phy_addr(), get_size());
+		mango_log->Info("FIFOBuffer::synch_write: mem_tile=%d cluster_id=%d phy_addr=0x%x size=%u\n",
+				get_mem_tile(), get_cluster(), get_phy_addr(), get_size());
 
 		int err = hn_write_memory(get_mem_tile(), get_phy_addr(), get_size(),
-							 (char*)GN_buffer+off);
+							 (char*)GN_buffer+off, cluster_id);
 		if (HN_SUCCEEDED != err) {
 			mango_log->Error("Unable to write memory at memory tile %d [err=%d]", get_mem_tile(), err);
 		}
@@ -85,9 +88,10 @@ mango_size_t FIFOBuffer::synch_read(void *GN_buffer, mango_size_t global_size) c
 	for(off = 0; off < global_size; off += get_size()){
 		event->wait_state(READ);
 
-		mango_log->Info("FIFOBuffer::synch_read: mem_tile=%d phy_addr=0x%x size=%u\n", get_mem_tile(), get_phy_addr(), get_size());
+		mango_log->Info("FIFOBuffer::synch_read: mem_tile=%d cluster_id=%d phy_addr=0x%x size=%u\n",
+				get_mem_tile(), get_cluster(), get_phy_addr(), get_size());
 
-		int err = hn_read_memory(get_mem_tile(), get_phy_addr(), get_size(), (char*)GN_buffer+off);
+		int err = hn_read_memory(get_mem_tile(), get_phy_addr(), get_size(), (char*)GN_buffer+off, get_cluster());
 		if (HN_SUCCEEDED != err) {
 			mango_log->Error("Unable to read memory at memory tile %d [err=%d]", get_mem_tile(), err);
 		}

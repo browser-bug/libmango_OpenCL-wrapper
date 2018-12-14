@@ -137,6 +137,16 @@ public:
 		this->mem_tile = mem_tile;
 	}
 
+
+	inline uint32_t get_cluster() const noexcept {
+		return this->cluster_id;
+	}
+
+	inline void set_cluster(uint32_t cluster_id)	noexcept {
+		this->cluster_id = cluster_id;
+	}
+
+
 	inline std::shared_ptr<Unit> get_assigned_unit() const noexcept {
 		return this->unit;
 	}
@@ -183,20 +193,21 @@ protected:
 	}
 
 private:
-	const mango_id_t id;		/*!< kernel id */
-	KernelFunction *kernel; /*!< pointer to kernel in GN memory */
-	std::vector<mango_id_t> buffers_in;	/*!< Read buffers */
+	const mango_id_t id;		     /*!< Kernel id */
+	KernelFunction *kernel;              /*!< Pointer to kernel in GN memory */
+	std::vector<mango_id_t> buffers_in;  /*!< Read buffers */
 	std::vector<mango_id_t> buffers_out; /*!< Write buffers */
 
 	std::shared_ptr<TLB> my_tlb;	/*!< The tlb for buffers and events */
 
-	int thread_count;  /*!< Number of cores needed for this kernel; 0 means as 	many as possible */
-	std::shared_ptr<Unit> unit; /*!< The unit allocated to this kernel; NULL before mango_resource_allocation is invoked. */
+	int thread_count;               /*!< Number of cores needed for this kernel; 0 means as many as possible */
+	std::shared_ptr<Unit> unit;     /*!< The unit allocated to this kernel; NULL before mango_resource_allocation is invoked. */
 	std::shared_ptr<KernelCompletionEvent> termination_event; /*!< Synchronization event */
-	std::vector<std::shared_ptr<Event>> task_events; /*!< Synch for tasks */
-	mango_addr_t vaddr; /*! Virtual address where the kernel binary is allocated */
-	mango_addr_t phy_addr; /*! Physical address where the kernel binary is allocated */
-	mango_id_t mem_tile; /*! Tile where the kernel binary is allocated */
+	std::vector<std::shared_ptr<Event>> task_events;          /*!< Synch for tasks */
+	mango_addr_t vaddr;             /*! Virtual address where the kernel binary is allocated */
+	mango_addr_t phy_addr;          /*! Physical address where the kernel binary is allocated */
+	mango_id_t mem_tile;            /*! Tile where the kernel binary is allocated */
+	uint32_t cluster_id;            /*!< ID of the cluster of processors */
 };
 
 }

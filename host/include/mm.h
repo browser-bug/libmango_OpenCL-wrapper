@@ -39,7 +39,8 @@ private:
                                                                     virtual address. */
 
 	void set_tlb_kb(mango_id_t unit, mango_id_t mem_bank, mango_addr_t starting_addr,
-			mango_size_t size, mango_addr_t phy_addr, int entry) const noexcept;
+			mango_size_t size, mango_addr_t phy_addr, int entry,
+			uint32_t cluster_id) const noexcept;
 
 	virtual void set_buff_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Buffer> b) noexcept;
 	virtual void set_event_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Event> e) noexcept;
@@ -57,7 +58,8 @@ public:
 private:
 
 	void set_tlb_kb(mango_id_t unit, mango_id_t mem_bank, mango_addr_t starting_addr,
-			mango_size_t size, mango_addr_t phy_addr, int entry) const noexcept = delete;
+			mango_size_t size, mango_addr_t phy_addr, int entry,
+			uint32_t cluster_id) const noexcept = delete;
 
 	virtual void set_buff_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Buffer> b) noexcept override;
 	virtual void set_event_tlb(std::shared_ptr<Kernel> k, std::shared_ptr<Event> e) noexcept override;

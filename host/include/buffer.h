@@ -98,10 +98,25 @@ public:
 	inline void set_phy_addr(mango_size_t addr)	noexcept { phy_addr = addr; }
 
 	/*! 
-	 * \brief Get the identifier of the memory tile assigned
-	 * \note Invalid data may be returned if not previously setted 
+	 * \brief Set the identifier of the memory tile assigned
 	 */
 	inline void set_mem_tile(mango_id_t tile)	noexcept { mem_tile = tile; }
+
+	/*! 
+	 * \brief Set the identifier of the cluster of tiles/processors assigned
+	 * \note Invalid data may be returned if not previously setted 
+	 */
+	inline void set_cluster(uint32_t cluster_id)	noexcept {
+		this->cluster_id = cluster_id;
+	}
+
+	/*! 
+	 * \brief Get the identifier of the cluster of tiles/processors assigned
+	 * \note Invalid data may be returned if not previously setted 
+	 */
+	inline uint32_t get_cluster() const noexcept {
+		return this->cluster_id;
+	}
 
 	/**
 	 * \brief It returns the pointer to the event
@@ -119,6 +134,7 @@ public:
 
 protected:
 	std::shared_ptr<Event> event;		/*!< Synchronization event */
+	uint32_t cluster_id;                    /*!< ID of the cluster of processors */
 
 private: 
 	const mango_id_t id;  			/*!< buffer id */

@@ -158,7 +158,7 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 
 		err = hn_write_image_into_memory(
 						(char *)kernel->get_kernel()->get_kernel_version(kernel->get_assigned_unit()->get_arch()).c_str(),
-						kernel->get_mem_tile(), kernel->get_physical_address());
+						kernel->get_mem_tile(), kernel->get_physical_address(), kernel->get_cluster());
 		if (err != HN_SUCCEEDED) {
 			mango_log->Error("Unable to write the kernel image memory.");
 			return nullptr;
@@ -190,7 +190,7 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 		kernel_address = kernel->get_virtual_address();
 	}
 
-	err = hn_run_kernel(kernel->get_assigned_unit()->get_id(), kernel_address, arguments);
+	err = hn_run_kernel(kernel->get_assigned_unit()->get_id(), kernel_address, arguments, kernel->get_cluster());
 	if (err != HN_SUCCEEDED) {
 		mango_log->Error("Unable to launch kernel id=%d err=%d", kernel->get_assigned_unit()->get_id(), err);
 		return nullptr;
@@ -364,6 +364,8 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 
 				auto arch_info = k.second->Targets().at(bbque_arch_type);
 				kt->set_mem_tile(arch_info->MemoryBank());
+				// TODO retrieve the correct value!
+				kt->set_cluster(0);
 				kt->set_physical_address(arch_info->Address());
 				mango_log->Debug("Memory tile %d address %p", kt->get_mem_tile(),
 						kt->get_physical_address());
@@ -380,6 +382,8 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 			if(et->get_id() == e.first) {
 				assert(e.second && "Internal error: null event from BarbequeRTRM");
 				et->set_phy_addr(e.second->PhysicalAddress());
+				// TODO retrieve the correct value!
+				et->set_cluster(0);
 				// It follows a strange pattern:
 				// - We read the value (this should change to zero the register)
 				et->read();
@@ -394,6 +398,8 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 			if(bt->get_id() == b.first){
 				assert(b.second && "Internal error: null buffer from BarbequeRTRM");
 				bt->set_mem_tile(b.second->MemoryBank());
+				// TODO retrieve the correct value!
+				bt->set_cluster(0);
 				bt->set_phy_addr(b.second->PhysicalAddress());
 
 				auto et = bt->get_event();
