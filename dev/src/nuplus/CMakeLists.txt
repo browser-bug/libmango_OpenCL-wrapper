@@ -4,12 +4,16 @@ if (CONFIG_LIBMANGO_NUPLUS)
 # Compilation flags
 
 find_program (NUPLUS_COMPILER "clang"
-	PATHS "/usr/local/bin" "/usr/local/llvm-nuplus/bin/"
-		"${MANGO_ROOT}/usr/local/llvm-nuplus/bin/")
+	HINTS "${MANGO_ROOT}/usr/local/llvm-nuplus/bin/"
+	PATHS "${MANGO_ROOT}/usr/local/llvm-nuplus/bin/"
+	NO_SYSTEM_ENVIRONMENT_PATH
+	NO_CMAKE_SYSTEM_PATH)
 
 if (${NUPLUS_COMPILER} STREQUAL "NUPLUS_COMPILER-NOTFOUND") 
 	message(FATAL_ERROR "I'm not able to find the NUPLUS compiler: PATH="
 		${MANGO_ROOT}/usr/local/llvm-nuplus/bin/)
+else (${NUPLUS_COMPILER} STREQUAL "NUPLUS_COMPILER-NOTFOUND")
+	message(STATUS "Compiler found at: ${NUPLUS_COMPILER}")
 endif (${NUPLUS_COMPILER} STREQUAL "NUPLUS_COMPILER-NOTFOUND") 
 
 set(CMAKE_C_COMPILER ${NUPLUS_COMPILER})
