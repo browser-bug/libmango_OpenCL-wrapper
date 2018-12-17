@@ -348,6 +348,9 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 	assert(bbque_tg->Buffers().size() ==
 		tg.get_buffers().size() && "Internal error: TG from BarbequeRTRM contains no sufficient buffers");
 
+	// HW cluster including the mapped resources
+	int cluster_id = bbque_tg->GetCluster();
+
 	for(auto k : bbque_tg->Tasks()){
 		mango_id_t pid = k.second->GetMappedProcessor();
 		auto bbque_arch_type = k.second->GetAssignedArch();
@@ -364,8 +367,7 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 
 				auto arch_info = k.second->Targets().at(bbque_arch_type);
 				kt->set_mem_tile(arch_info->MemoryBank());
-				// TODO retrieve the correct value!
-				kt->set_cluster(0);
+				kt->set_cluster(cluster_id);
 				kt->set_physical_address(arch_info->Address());
 				mango_log->Debug("Memory tile %d address %p", kt->get_mem_tile(),
 						kt->get_physical_address());
@@ -382,8 +384,7 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 			if(et->get_id() == e.first) {
 				assert(e.second && "Internal error: null event from BarbequeRTRM");
 				et->set_phy_addr(e.second->PhysicalAddress());
-				// TODO retrieve the correct value!
-				et->set_cluster(0);
+				et->set_cluster(cluster_id);
 				// It follows a strange pattern:
 				// - We read the value (this should change to zero the register)
 				et->read();
@@ -398,8 +399,7 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 			if(bt->get_id() == b.first){
 				assert(b.second && "Internal error: null buffer from BarbequeRTRM");
 				bt->set_mem_tile(b.second->MemoryBank());
-				// TODO retrieve the correct value!
-				bt->set_cluster(0);
+				bt->set_cluster(cluster_id);
 				bt->set_phy_addr(b.second->PhysicalAddress());
 
 				auto et = bt->get_event();
