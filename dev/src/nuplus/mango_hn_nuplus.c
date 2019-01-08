@@ -21,13 +21,11 @@ void mango_nuplus_close(int status){
 
 void mango_nuplus_write_synchronization(mango_event_t *e, uint32_t value){
         uint32_t reg = value;
-	mango_nuplus_endian_row (&reg, 1); 
         *(e->vaddr) = reg;
 }
 
 uint32_t mango_nuplus_read_synchronization(mango_event_t *e){
         uint32_t reg = *(e->vaddr);
-        mango_nuplus_endian_row (&reg, 1);
         return reg;
 }
 
@@ -63,18 +61,5 @@ uint32_t mango_nuplus_atox(const char *s) {
 	++s;
   }
   return sign==-1?-v:v;
-}
-
-void mango_nuplus_endian_row (uint32_t * data, int size) {
-  uint8_t * buffer;
-
-  //for(int i = 0; i < size; i++){
-      //buffer = (uint8_t *)&data[i];
-      //data[i] = ((buffer[0] << 24) & 0xFF000000) | ((buffer[1] << 16) & 0x00FF0000) | ((buffer[2] << 8) & 0x0000FF00) | (buffer[3] & 0x000000FF);
-      *data = ( ((*data & 0x000000FF) << 24) | 
-                ((*data & 0x0000FF00) << 8)  | 
-                ((*data & 0x00FF0000) >> 8)  | 
-                ((*data & 0xFF000000) >> 24) );
-  //}
 }
 
