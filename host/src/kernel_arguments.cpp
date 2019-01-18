@@ -98,12 +98,17 @@ std::string KernelArguments::get_arguments(mango_unit_type_t arch_type) const no
         uint32_t num_tiles;
         uint32_t num_tiles_x;
         uint32_t num_tiles_y;
-        hn_get_num_tiles(&num_tiles, &num_tiles_x, &num_tiles_y);
+        uint32_t num_clusters;
         unsigned long long mem_size = 0;
-        for (uint32_t i = 0; i < num_tiles; i++) {
-            uint32_t mem_size_cur = 0;
-            hn_get_memory_size (i, &mem_size_cur);
-            mem_size += mem_size_cur;
+        hn_get_num_clusters (&num_clusters);
+
+        for (uint32_t cluster_id = 0; cluster_id< num_clusters; cluster_id++){
+        	hn_get_num_tiles(&num_tiles, &num_tiles_x, &num_tiles_y, cluster_id);
+        	for (uint32_t i = 0; i < num_tiles; i++) {
+            	uint32_t mem_size_cur = 0;
+            	hn_get_memory_size (i, &mem_size_cur, cluster_id);
+            	mem_size += mem_size_cur;
+        	}
         }
         ss << kernel->get_kernel()->get_kernel_version(arch_type);
 		ss << " 0x" << std::hex << mem_size;
