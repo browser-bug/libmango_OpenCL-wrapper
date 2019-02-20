@@ -18,10 +18,12 @@ static std::string ProfilingLabel[NR_COUNTERS] = {
 
 void Profiler::update_counters_peak(uint32_t processor_id, hn_stats_monitor_st & new_values) {
 	auto proc_entry = per_proc_stats.find(processor_id);
-	if (proc_entry == per_proc_stats.end())
+	if (proc_entry == per_proc_stats.end()) {
 		per_proc_stats.emplace(processor_id, std::make_shared<accumulator_array>());
+		proc_entry = per_proc_stats.find(processor_id);
+	}
 
-	auto & stats(*(proc_entry->second.get())); // the array of accumulators
+	auto & stats = *(proc_entry->second.get()); // the array of accumulators
 	if (new_values.timestamp != curr_values_peak.timestamp) {
 		stats[IRET](new_values.core_instr - curr_values_peak.core_instr);
 		stats[CPI](new_values.core_cpi - curr_values_peak.core_cpi);

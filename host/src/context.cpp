@@ -473,8 +473,15 @@ std::shared_ptr<Event> BBQContext::start_kernel(std::shared_ptr<Kernel> kernel,
 
 void BBQContext::on_kernel_termination(mango_id_t kernel_id) noexcept {
 #ifdef PROFILING_MODE
-	auto kernel = mango_kernels->at(kernel_id);
-	update_profiling_data(kernel);
+	mango_log->Debug("on_kernel_termination: look-up kernel %d", kernel_id);
+	for (auto & kernel: *mango_kernels) {
+		if (kernel->get_id() == kernel_id) {
+			mango_log->Debug("on_kernel_termination: updating kernel %d profiling",
+					kernel->get_id());
+			update_profiling_data(kernel);
+			break;
+		}
+	}
 #endif
 	this->bbque_app_ctrl.NotifyTaskStop(kernel_id);
 }
