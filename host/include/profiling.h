@@ -43,7 +43,7 @@ enum ProfilingCounter {
  */
 class Profiler {
 
-using accumulator_array = std::array<accumulator_set<double, features<tag::mean, tag::min, tag::max>>, _NR_COUNTERS>;
+using accumulator_array = std::array<accumulator_set<float, features<tag::mean, tag::min, tag::max>>, _NR_COUNTERS>;
 
 public:
 	/*! \brief Constructor
