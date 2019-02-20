@@ -11,7 +11,7 @@
 #include "kernel.h"
 #include "kernel_arguments.h"
 
-#ifdef CONFIG_LIBMANGO_PROFILING_MODE
+#ifdef PROFILING_MODE
 #include "profiling.h"
 #else
 #include "logger.h"
