@@ -490,13 +490,16 @@ void BBQContext::on_kernel_termination(mango_id_t kernel_id) noexcept {
 #ifdef PROFILING_MODE
 
 void BBQContext::update_profiling_data(std::shared_ptr<Kernel> kernel) noexcept {
-	auto kernel_id = kernel->get_id();
-	auto unit = kernel->get_assigned_unit();
+	auto kernel_id  = kernel->get_id();
+	auto unit       = kernel->get_assigned_unit();
+	auto cluster_id = kernel->get_cluster();
+	mango_log->Debug("Profiling: kernel %d on arch of type %d",
+		kernel_id, unit->get_arch());
 	// PEAK
 	if (unit->get_arch() == mango_unit_type_t::PEAK) {
 		uint32_t err, cores;
 		hn_stats_monitor_st * values = new hn_stats_monitor_st;
-		err = hn_stats_monitor_read(unit->get_id(), &cores, &values);
+		err = hn_stats_monitor_read(unit->get_id(), &cores, &values, cluster_id);
 		if (err == 0) {
 			auto kern_profile = per_kernel_profiling[kernel_id];
 			kern_profile->update_counters_peak(unit->get_id(), *values);
