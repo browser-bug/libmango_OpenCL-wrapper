@@ -512,7 +512,7 @@ void BBQContext::update_profiling_data(std::shared_ptr<Kernel> kernel) noexcept 
 		delete values;
 	}
 	else
-		mango_log->Debug("Profiling: support missing for processor %d", unit->get_id());
+		mango_log->Notice("Profiling: support missing for processor %d ", unit->get_id());
 }
 
 
