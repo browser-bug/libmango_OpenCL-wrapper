@@ -55,9 +55,9 @@ mango_exit_code_t Buffer::resize(mango_size_t size) noexcept {
 
 	mango_log->Warn("Buffer::resize: Calls to this function may currently cause race conditions");
 
-	/*! \TODO fix this, as it should not be possible to resize while buffer 
+	/*! \TODO fix this, as it should not be possible to resize while buffer
 			is in use */
-	return mango_exit_code_t::SUCCESS; 
+	return mango_exit_code_t::SUCCESS;
 }
 
 mango_size_t FIFOBuffer::synch_write(const void *GN_buffer, mango_size_t global_size) const noexcept {
@@ -103,14 +103,14 @@ mango_size_t FIFOBuffer::synch_read(void *GN_buffer, mango_size_t global_size) c
 
 std::shared_ptr<const Event> FIFOBuffer::write(const void *GN_buffer, mango_size_t global_size) const noexcept {
 	event->set_fifo_task( std::make_unique<std::thread>(
-			&FIFOBuffer::synch_write, 
+			&FIFOBuffer::synch_write,
 			this, GN_buffer, global_size));
 	return event;
 }
 
 std::shared_ptr<const Event> FIFOBuffer::read(void *GN_buffer, mango_size_t global_size) const noexcept {
 	event->set_fifo_task( std::make_unique<std::thread>(
-			&FIFOBuffer::synch_read, 
+			&FIFOBuffer::synch_read,
 			this, GN_buffer, global_size));
 	return event;
 }
