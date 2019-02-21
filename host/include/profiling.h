@@ -21,6 +21,14 @@
 
 #define _NR_COUNTERS    3
 
+
+#define PROF_BUFFER_DIV1  "=======================+=========================================== "
+#define PROF_BUFFER_HEAD1 "| Buffer %3d           |            Transfer time (ms)            | "
+#define PROF_BUFFER_DIV2  "-------------+---------+------------------------------------------- "
+#define PROF_BUFFER_HEAD2 "| Operation  |  count  |      min       max       avg      var    | "
+#define PROF_BUFFER_FILL  "| %-10s | %6d  | %8.2f   %8.2f   %8.2f   %6.2f  | "
+
+
 using namespace boost::accumulators;
 
 
@@ -36,6 +44,18 @@ enum ProfilingCounter {
 
 	NR_COUNTERS
 };
+
+enum ProfilingOperation {
+	PROF_READ = 0,
+	PROF_WRITE,
+	PROF_SYNC_READ,
+	PROF_SYNC_WRITE,
+
+	NR_OPERATIONS
+};
+
+#define _NR_TIMINGS NR_OPERATIONS
+using time_accumul_array = std::array<accumulator_set<int, features<tag::mean, tag::min, tag::max, tag::variance> >, _NR_TIMINGS>;
 
 
 /*! \class Profiler

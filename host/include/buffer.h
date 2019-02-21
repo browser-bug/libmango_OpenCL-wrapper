@@ -6,6 +6,7 @@
 
 
 #include "event.h"
+#include "profiling.h"
 
 namespace mango {
 
@@ -23,6 +24,10 @@ public:
 		const std::vector<mango_id_t> &kernels_in={}, 
 		const std::vector<mango_id_t> &kernels_out={}
 		) noexcept;
+
+
+	virtual ~Buffer();
+
 
 	/*! \brief Memory transfer from GN to HN in DIRECT mode
 	 * \param GN_buffer A pointer to memory in the GN address space
@@ -135,6 +140,7 @@ public:
 protected:
 	std::shared_ptr<Event> event;		/*!< Synchronization event */
 	uint32_t cluster_id;                    /*!< ID of the cluster of processors */
+	std::shared_ptr<time_accumul_array> timings;             /*!< Array of accumulators for timings */
 
 private: 
 	const mango_id_t id;  			/*!< buffer id */
