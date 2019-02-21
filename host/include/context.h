@@ -11,11 +11,8 @@
 #include "kernel.h"
 #include "kernel_arguments.h"
 
-#ifdef PROFILING_MODE
 #include "profiling.h"
-#else
 #include "logger.h"
-#endif
 
 
 namespace mango {
