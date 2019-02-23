@@ -198,6 +198,9 @@ Kernel::Kernel(mango_id_t kid, KernelFunction *k, std::vector<mango_id_t> buffer
 	assert(k && "Kernel function is null.");
 	assert(k->length() > 0 && "Kernel function is empty.");
 
+#ifdef PROFILING_MODE
+	this->hwc_profiling = std::make_shared<Profiler>(kid);
+#endif
 	this->termination_event = std::make_shared<KernelCompletionEvent>(kid);
 
 	for(int i=0; i<3; i++)	{ // TODO Is this correct? In that case please document
@@ -208,6 +211,54 @@ Kernel::Kernel(mango_id_t kid, KernelFunction *k, std::vector<mango_id_t> buffer
 
 	my_tlb = std::make_shared<TLB>();
 }
+
+Kernel::~Kernel() {
+	mango_log->Crit("Kernel: id=%d destroying...", id);
+#ifdef PROFILING_MODE
+	hwc_profiling->print_stats(mango_log);
+#endif
+}
+
+#ifdef PROFILING_MODE
+void Kernel::update_profiling_data() noexcept {
+
+	mango_log->Debug("Profiling: kernel id=%d updating...", id);
+	if (unit == nullptr) {
+		mango_log->Warn("Profiling: kernel id=%d is missing unit mapping", id);
+		return;
+	}
+
+	// PEAK
+	if (unit->get_arch() == mango_unit_type_t::PEAK) {
+		mango_log->Info("Profiling: kernel id=%d on arch of type %d (PEAK)",
+			id, unit->get_arch());
+		uint32_t err, cores;
+		hn_stats_monitor_st * values = new hn_stats_monitor_st;
+		err = hn_stats_monitor_read(unit->get_id(), &cores, &values, cluster_id);
+		if (err == 0) {
+			mango_log->Debug("Profiling: kernel id=%d updating PEAK counters...", id);
+			hwc_profiling->update_counters_peak(
+				mango_log, unit->get_id(), *values);
+		}
+		else {
+			mango_log->Error("Profiling: error %d", err);
+			mango_log->Error("Profiling: check BarbequeRTRM building configuration "
+					"- is MANGO Power Management enabled?");
+		}
+		delete values;
+	}
+	else
+		mango_log->Notice("Profiling: support missing for processor %d ",
+			unit->get_id());
+}
+
+
+
+void Kernel::print_profiling_data() noexcept {
+	hwc_profiling->print_stats(mango_log);
+}
+
+#endif
 
 
 } // namespace mango

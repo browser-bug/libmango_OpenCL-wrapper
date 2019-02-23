@@ -3,8 +3,14 @@
  */
 #ifndef KERNEL_H
 #define KERNEL_H
+
 #include "buffer.h"
 #include "tlb.h"
+
+#ifdef PROFILING_MODE
+#include "profiling.h"
+#endif
+
 #include <algorithm>
 #include <map>
 #include <string>
@@ -83,6 +89,8 @@ class Kernel {
 public:
 	Kernel(mango_id_t kid, KernelFunction *k, std::vector<mango_id_t> buffers_in,
 		std::vector<mango_id_t> buffers_out) noexcept;
+
+	virtual ~Kernel();
 	
 	inline bool operator==(const Kernel &other) const noexcept {
 		return id==other.id;
@@ -186,6 +194,12 @@ public:
 		return thread_count;
 	}
 
+#ifdef PROFILING_MODE
+	void update_profiling_data() noexcept;
+
+	void print_profiling_data() noexcept;
+#endif
+
 protected:
 	inline void set_event(std::shared_ptr<KernelCompletionEvent> event) noexcept {
 		this->termination_event = event;
@@ -207,6 +221,10 @@ private:
 	mango_addr_t phy_addr;          /*! Physical address where the kernel binary is allocated */
 	mango_id_t mem_tile;            /*! Tile where the kernel binary is allocated */
 	uint32_t cluster_id;            /*!< ID of the cluster of processors */
+
+#ifdef PROFILING_MODE
+	std::shared_ptr<Profiler> hwc_profiling; /** Container of HW counters values */
+#endif
 };
 
 }

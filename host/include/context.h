@@ -187,15 +187,8 @@ private:
 
 	void on_kernel_termination(mango_id_t kernel) noexcept;
 
-
 #ifdef PROFILING_MODE
 	std::vector<std::shared_ptr<Kernel>> * mango_kernels;
-
-	std::map<uint32_t, std::shared_ptr<Profiler>> per_kernel_profiling;
-
-	void update_profiling_data(std::shared_ptr<Kernel> kernel_id) noexcept;
-
-	void print_profiling_data() const;
 #endif
 
 };

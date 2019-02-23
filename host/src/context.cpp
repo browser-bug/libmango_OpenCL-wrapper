@@ -229,11 +229,10 @@ BBQContext::BBQContext(std::string const & _name, std::string const & _recipe):
 }
 
 BBQContext::~BBQContext() noexcept {
-	bbque_tg->Print();	// TODO Debugging purposes, maybe we want to delete this?
-	bbque_app_ctrl.WaitForTermination();
-#ifdef PROFILING_MODE
-	print_profiling_data();
+#ifdef DEBUG
+	bbque_tg->Print();
 #endif
+	bbque_app_ctrl.WaitForTermination();
 	hn_end();
 }
 
@@ -375,11 +374,6 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 				kt->set_physical_address(arch_info->Address());
 				mango_log->Debug("Memory tile %d address %p", kt->get_mem_tile(),
 						kt->get_physical_address());
-			#ifdef PROFILING_MODE
-				if (per_kernel_profiling.find(k.first) == per_kernel_profiling.end())
-					per_kernel_profiling.emplace(
-						k.first, std::make_shared<Profiler>(k.first));
-			#endif
 			}
 	}
 
@@ -461,7 +455,7 @@ std::shared_ptr<Event> BBQContext::start_kernel(std::shared_ptr<Kernel> kernel,
 	(void) _e; // TODO Check why not used
 
 #ifdef PROFILING_MODE
-	update_profiling_data(kernel);
+	kernel->update_profiling_data();
 #endif
 	this->bbque_app_ctrl.NotifyTaskStart(kernel->get_id());
 	auto e = Context::start_kernel(kernel, args);
@@ -482,51 +476,14 @@ void BBQContext::on_kernel_termination(mango_id_t kernel_id) noexcept {
 		if (kernel->get_id() == kernel_id) {
 			mango_log->Debug("on_kernel_termination: updating kernel %d profiling",
 					kernel->get_id());
-			update_profiling_data(kernel);
+			kernel->update_profiling_data();
+			kernel->print_profiling_data();
 			break;
 		}
 	}
 #endif
 	this->bbque_app_ctrl.NotifyTaskStop(kernel_id);
 }
-
-
-#ifdef PROFILING_MODE
-
-void BBQContext::update_profiling_data(std::shared_ptr<Kernel> kernel) noexcept {
-	auto kernel_id  = kernel->get_id();
-	auto unit       = kernel->get_assigned_unit();
-	auto cluster_id = kernel->get_cluster();
-	mango_log->Debug("Profiling: kernel %d on arch of type %d",
-		kernel_id, unit->get_arch());
-	// PEAK
-	if (unit->get_arch() == mango_unit_type_t::PEAK) {
-		uint32_t err, cores;
-		hn_stats_monitor_st * values = new hn_stats_monitor_st;
-		err = hn_stats_monitor_read(unit->get_id(), &cores, &values, cluster_id);
-		if (err == 0) {
-			auto kern_profile = per_kernel_profiling[kernel_id];
-			kern_profile->update_counters_peak(unit->get_id(), *values);
-		}
-		else {
-			mango_log->Error("Profiling: error %d", err);
-			mango_log->Error("Profiling: Check BarbequeRTRM building configuration "
-					"- is MANGO Power Management enabled?");
-		}
-		delete values;
-	}
-	else
-		mango_log->Notice("Profiling: support missing for processor %d ", unit->get_id());
-}
-
-
-void BBQContext::print_profiling_data() const {
-	for (auto & profile_entry: per_kernel_profiling) {
-		profile_entry.second->print_stats(mango_log);
-	}
-}
-
-#endif
 
 
 } // namespace mango
