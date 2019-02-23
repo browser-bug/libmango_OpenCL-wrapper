@@ -7,13 +7,10 @@
 #ifndef CONTEXT_H
 #define CONTEXT_H
 
-#include "mm.h"
+#include "logger.h"
 #include "kernel.h"
 #include "kernel_arguments.h"
-
-#include "profiling.h"
-#include "logger.h"
-
+#include "mm.h"
 
 namespace mango {
 
