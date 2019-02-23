@@ -178,7 +178,7 @@ mango_exit_code_t MM::set_vaddr_buffers(TaskGraph &tg) noexcept {
 	for(auto& b : tg.get_buffers()){
 
 		assert(b != nullptr);
-		mango_log->Info("Mapping input buffers...");
+		mango_log->Debug("Mapping input buffers...");
 
 		for(auto k_id : b->get_kernels_in()) {
 
@@ -189,9 +189,8 @@ mango_exit_code_t MM::set_vaddr_buffers(TaskGraph &tg) noexcept {
 			set_buff_tlb(k, b);
 		}
 
-		mango_log->Info("Mapping output buffers...");
+		mango_log->Debug("Mapping output buffers...");
 		for(auto k_id : b->get_kernels_out()) {
-
 			if (k_id==0) continue;		// TODO What?
 			auto k = tg.get_kernel_by_id(k_id);
 			assert(k != nullptr);
@@ -206,11 +205,9 @@ mango_exit_code_t MM::set_vaddr_buffers(TaskGraph &tg) noexcept {
 }
 
 mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
-	mango_log->Info("Mapping events...");
-
+	mango_log->Debug("Mapping events...");
 
 	for(auto& e : tg.get_events()) {
-
 		for(auto &k_id : e->get_kernels_in()) {
 			if (k_id==0)
 				continue;	 // TODO Check
@@ -260,7 +257,8 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 			mango_addr_t start_addr = TLB_BASE_SYNCH_DCT;
 			mango_addr_t end_addr = TLB_BASE_SYNCH_DCT + 0xffffff;
 			
-			mango_log->Notice("Configured TLB for events of tile %d [%p - %p]", tile_unit, start_addr, end_addr);
+			mango_log->Notice("Configured TLB for events of tile %d [%p - %p]",
+				tile_unit, start_addr, end_addr);
 
 			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0, cluster_id);
 		}
