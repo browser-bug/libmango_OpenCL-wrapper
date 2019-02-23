@@ -13,13 +13,14 @@ using namespace boost::accumulators;
 namespace mango {
 
 
+#ifdef PROFILING_MODE
 static std::string ProfilingLabelOp[NR_OPERATIONS] = {
 	"READ",
 	"WRITE",
 	"SYNC_READ",
 	"SYNC_WRITE"
 };
-
+#endif
 
 Buffer::Buffer(mango_id_t bid, mango_size_t size, const std::vector<mango_id_t> &kernels_in,
 		const std::vector<mango_id_t> &kernels_out) noexcept : id(bid), size (size),

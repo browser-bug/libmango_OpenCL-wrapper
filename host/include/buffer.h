@@ -4,9 +4,11 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
-
 #include "event.h"
+
+#ifdef PROFILING_MODE
 #include "profiling.h"
+#endif
 
 namespace mango {
 
@@ -140,7 +142,9 @@ public:
 protected:
 	std::shared_ptr<Event> event;		/*!< Synchronization event */
 	uint32_t cluster_id;                    /*!< ID of the cluster of processors */
+#ifdef PROFILING_MODE
 	std::shared_ptr<time_accumul_array> timings;             /*!< Array of accumulators for timings */
+#endif
 
 private: 
 	const mango_id_t id;  			/*!< buffer id */
