@@ -19,15 +19,21 @@
 
 #include "logger.h"
 
-#define _NR_COUNTERS    3
 
 
 #define PROF_BUFFER_DIV1  "=======================+=========================================== "
 #define PROF_BUFFER_HEAD1 "| Buffer %3d           |            Transfer time (ms)            | "
-#define PROF_BUFFER_DIV2  "-------------+---------+------------------------------------------- "
+#define PROF_BUFFER_DIV2  "|------------+---------+------------------------------------------| "
 #define PROF_BUFFER_HEAD2 "| Operation  |  count  |      min       max       avg      var    | "
 #define PROF_BUFFER_FILL  "| %-10s | %6d  | %8.2f   %8.2f   %8.2f   %6.2f  | "
 
+
+#define PROF_KERNEL_DIV1  "===============+========================= "
+#define PROF_KERNEL_HEAD1 "| Kernel %3d   |        Values          | "
+#define PROF_KERNEL_DIV2  "|--------------+------------------------| "
+#define PROF_KERNEL_HEAD2 "| HW counter   |     processor:%3d      | "
+
+#define PROF_KERNEL_FILL  "| %-12s | %-22d | "
 
 using namespace boost::accumulators;
 
@@ -41,9 +47,12 @@ enum ProfilingCounter {
 	IRET = 0,
 	CPI,
 	MEM_ACCESS,
+	CORE_CYCLES,
 
 	NR_COUNTERS
 };
+
+#define _NR_COUNTERS    4
 
 enum ProfilingOperation {
 	PROF_READ = 0,
@@ -55,6 +64,7 @@ enum ProfilingOperation {
 };
 
 #define _NR_TIMINGS NR_OPERATIONS
+
 using time_accumul_array = std::array<accumulator_set<int, features<tag::mean, tag::min, tag::max, tag::variance> >, _NR_TIMINGS>;
 
 
@@ -63,7 +73,8 @@ using time_accumul_array = std::array<accumulator_set<int, features<tag::mean, t
  */
 class Profiler {
 
-using accumulator_array = std::array<accumulator_set<float, features<tag::mean, tag::min, tag::max>>, _NR_COUNTERS>;
+//using accumulator_array = std::array<accumulator_set<int, features<tag::mean, tag::min, tag::max>>, _NR_COUNTERS>;
+using accumulator_array = std::array<int , _NR_COUNTERS>;
 
 public:
 	/*! \brief Constructor
@@ -79,15 +90,19 @@ public:
 	}
 
 	/*! \brief Update current counters values and statistics for PEAK processors
+	 *  \param log the logger object, if null print to console
 	 *  \param processor_id the id of the processing unit
 	 *  \param new_values updated hw counters values for
 	 */
-	void update_counters_peak(uint32_t processor_id, hn_stats_monitor_st & new_values);
+	void update_counters_peak(
+		std::shared_ptr<bbque::utils::Logger> log,
+		uint32_t processor_id,
+		hn_stats_monitor_st & new_values);
 
 	/*! \brief Print the counters statistics
 	 *  \param log the logger object, if null print to console
 	 */
-	void print_stats(std::shared_ptr<bbque::utils::Logger> log = nullptr) const;
+	void print_stats(std::shared_ptr<bbque::utils::Logger> log) const;
 
 private:
 	//! Set to kernel id for debug purposes
