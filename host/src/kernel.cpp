@@ -6,31 +6,35 @@
 
 namespace mango {
 
-mango_exit_code_t KernelFunction::load(const std::string &kernel_file, UnitType unit,
-					mango_file_type_t type) noexcept {
+mango_exit_code_t KernelFunction::load(
+		const std::string &kernel_file,
+		UnitType unit,
+		mango_file_type_t type) noexcept {
+
 	mango_exit_code_t res;
 
-	mango_log->Info("Unit type: %i", unit);
-	mango_log->Info("DCT Unit type: %i", UnitType::DCT);
-	mango_log->Info("NUP Unit type: %i", UnitType::NUP);
-	mango_log->Info("GN Unit type: %i", UnitType::GN);
+	mango_log->Debug("load: unit type = <%i>", unit);
+	mango_log->Debug("load: PEAK = %i", UnitType::PEAK);
+	mango_log->Debug("load: NUP  = %i", UnitType::NUP);
+	mango_log->Debug("load: DCT  = %i", UnitType::DCT);
+	mango_log->Debug("load: GN   = %i", UnitType::GN);
 
 	switch (unit){
 		case UnitType::GN:
-			mango_log->Info("Loading GN");
+			mango_log->Info("Loading GN kernel");
 			res = load_gn(kernel_file, type);
 		break;
 		case UnitType::PEAK:
-		mango_log->Info("Loading PEAK");
+		mango_log->Info("Loading PEAK kernel");
 			res = load_peak(kernel_file, type);
 		break;
 		case UnitType::DCT:
-			mango_log->Info("Loading DCT");
+			mango_log->Info("Loading DCT kernel");
 			res = load_dct(kernel_file, type);
 		break;
 
 		case UnitType::NUP:
-		  mango_log->Info("Loading NUPLUS");
+		  mango_log->Info("Loading NUPLUS kernel");
 		  res=load_nuplus(kernel_file, type);
 		break;
 
@@ -47,10 +51,10 @@ mango_exit_code_t KernelFunction::load(const std::string &kernel_file, UnitType 
 	return res;
 }
 
-mango_exit_code_t KernelFunction::load_gn(const std::string &kernel_file, mango_file_type_t type)   noexcept {
+mango_exit_code_t KernelFunction::load_gn(
+		const std::string &kernel_file, mango_file_type_t type) noexcept {
 
 	std::ifstream kernel_fd;
-
 
 	switch (type) {
 		case FileType::BINARY: 
@@ -83,7 +87,8 @@ mango_exit_code_t KernelFunction::load_gn(const std::string &kernel_file, mango_
 	return mango_exit_code_t::SUCCESS;
 }
 
-mango_exit_code_t KernelFunction::load_peak(const std::string &kernel_file, mango_file_type_t type) noexcept {
+mango_exit_code_t KernelFunction::load_peak(
+		const std::string &kernel_file, mango_file_type_t type) noexcept {
 	
 	std::ifstream kernel_fd;
 	unsigned int line_count;
@@ -95,7 +100,8 @@ mango_exit_code_t KernelFunction::load_peak(const std::string &kernel_file, mang
 			kernel_fd.open(kernel_file);
 
 			if(! kernel_fd.good()) {
-				mango_log->Error("Unable to open the kernel file: %s", kernel_file.c_str());
+				mango_log->Error("Unable to open the kernel file: %s",
+					kernel_file.c_str());
 				return mango_exit_code_t::ERR_INVALID_KERNEL_FILE;
 			}
 
@@ -124,7 +130,8 @@ mango_exit_code_t KernelFunction::load_peak(const std::string &kernel_file, mang
 	return mango_exit_code_t::SUCCESS;
 }
 
-mango_exit_code_t KernelFunction::load_nuplus(const std::string &kernel_file, mango_file_type_t type) noexcept {
+mango_exit_code_t KernelFunction::load_nuplus(
+		const std::string &kernel_file, mango_file_type_t type) noexcept {
 	
 	std::ifstream kernel_fd;
 	unsigned int line_count;
@@ -136,7 +143,8 @@ mango_exit_code_t KernelFunction::load_nuplus(const std::string &kernel_file, ma
 			kernel_fd.open(kernel_file);
 
 			if(! kernel_fd.good()) {
-				mango_log->Error("Unable to open the kernel file: %s", kernel_file.c_str());
+				mango_log->Error("Unable to open the kernel file: %s",
+					kernel_file.c_str());
 				return mango_exit_code_t::ERR_INVALID_KERNEL_FILE;
 			}
 
@@ -144,7 +152,6 @@ mango_exit_code_t KernelFunction::load_nuplus(const std::string &kernel_file, ma
 			kernel_fd.unsetf(std::ios_base::skipws);
 			line_count = std::count(std::istream_iterator<char>(kernel_fd),
 						std::istream_iterator<char>(), '\n');
-
 			kernel_fd.close();
 
 			// Each lines contains 128 hex value
@@ -166,7 +173,8 @@ mango_exit_code_t KernelFunction::load_nuplus(const std::string &kernel_file, ma
 	return mango_exit_code_t::SUCCESS;
 }
 
-mango_exit_code_t KernelFunction::load_dct(const std::string &kernel_file, mango_file_type_t type) noexcept {
+mango_exit_code_t KernelFunction::load_dct(
+		const std::string &kernel_file, mango_file_type_t type) noexcept {
 	
 	mango_log->Info("Loading DCT in load_dct");
 	version[UnitType::DCT] = kernel_file;

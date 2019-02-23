@@ -74,7 +74,6 @@ private:
 	mango_exit_code_t load_nuplus(const std::string &kernel_file, mango_file_type_t type) noexcept;
 	mango_exit_code_t load_dct(const std::string &kernel_file, mango_file_type_t type) noexcept;
 
-
 };
 
 
