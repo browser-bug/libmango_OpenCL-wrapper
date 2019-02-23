@@ -65,7 +65,7 @@ std::shared_ptr<const Event> Buffer::write(const void *GN_buffer, mango_size_t g
 		global_size = size;
 	}
 
-	mango_log->Info("Buffer::write: mem_tile=%d cluster_id=%d, phy_addr=0x%x size=%u\n",
+	mango_log->Info("Buffer::write: mem_tile=%d cluster_id=%d, phy_addr=0x%x size=%u",
 			mem_tile, cluster_id, phy_addr, global_size);
 
 #ifdef PROFILING_MODE
@@ -91,7 +91,7 @@ std::shared_ptr<const Event> Buffer::read(void *GN_buffer, mango_size_t global_s
 		global_size = size;
 	}
 
-	mango_log->Info("Buffer::read: mem_tile=%d cluster=%d phy_addr=0x%x size=%u\n",
+	mango_log->Info("Buffer::read: mem_tile=%d cluster=%d phy_addr=0x%x size=%u",
 			get_mem_tile(), get_cluster(), get_phy_addr(), global_size);
 #ifdef PROFILING_MODE
 	high_resolution_clock::time_point start_time = high_resolution_clock::now();
