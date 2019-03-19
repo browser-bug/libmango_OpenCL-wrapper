@@ -58,11 +58,15 @@ std::shared_ptr<Kernel> Context::register_kernel(mango_id_t kid, KernelFunction 
 	assert(the_kernel->get_termination_event() && "Invalid termination event");
 
 	this->kernels.emplace(kid, the_kernel);
+	mango_log->Debug("register_kernel: [id=%d] added", kid);
 
 	this->events.emplace(the_kernel->get_termination_event()->get_id(), the_kernel->get_termination_event());
+	mango_log->Debug("register_kernel: [id=%d] added termination event id=%d",
+		kid, the_kernel->get_termination_event()->get_id());
 
 	for(const auto e : the_kernel->get_task_events()) {
 		this->events.emplace(e->get_id(),e);
+		mango_log->Debug("register_kernel: [%d] added event id=%d", the_kernel->get_id(), e->get_id());
 	}
 	
 	print_debug(__FUNCTION__,__LINE__);			
@@ -367,13 +371,17 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 				mango_unit_type_t arch_type = arch_to_unit_type(bbque_arch_type);
 				assert(arch_type != mango_unit_type_t::STOP && "Internal error: invalid archtype");
 				kt->set_unit(std::make_shared<Unit>(pid, arch_type, ncores));
-
 				auto arch_info = k.second->Targets().at(bbque_arch_type);
+
+				mango_log->Debug("from_bbque: kernel=%d: cluster=%d mem_tile=%d phy_addr=%p",
+					kt->get_id(),
+					cluster_id,
+					arch_info->MemoryBank(),
+					arch_info->Address());
+
 				kt->set_mem_tile(arch_info->MemoryBank());
 				kt->set_cluster(cluster_id);
 				kt->set_physical_address(arch_info->Address());
-				mango_log->Debug("Memory tile %d address %p", kt->get_mem_tile(),
-						kt->get_physical_address());
 			}
 	}
 
@@ -381,6 +389,11 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 		for(auto &et : tg.get_events())
 			if(et->get_id() == e.first) {
 				assert(e.second && "Internal error: null event from BarbequeRTRM");
+				mango_log->Debug("from_bbque: event=%d: cluster=%d phy_addr=%p",
+					et->get_id(),
+					cluster_id,
+					e.second->PhysicalAddress());
+
 				et->set_phy_addr(e.second->PhysicalAddress());
 				et->set_cluster(cluster_id);
 				// It follows a strange pattern:
@@ -396,11 +409,20 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 		for(auto &bt : tg.get_buffers())
 			if(bt->get_id() == b.first){
 				assert(b.second && "Internal error: null buffer from BarbequeRTRM");
+				mango_log->Debug("from_bbque: buffer=%d: cluster=%d mem=%d phy_addr=%p",
+					bt->get_id(), cluster_id,
+					b.second->MemoryBank(),
+					b.second->PhysicalAddress());
+
 				bt->set_mem_tile(b.second->MemoryBank());
 				bt->set_cluster(cluster_id);
 				bt->set_phy_addr(b.second->PhysicalAddress());
 
 				auto et = bt->get_event();
+				mango_log->Debug("from_bbque: buffer=%d: event=%d event_phy_addr=%p",
+					bt->get_id(),
+					et->get_id(),
+					et->get_phy_addr());
 				assert(et->get_phy_addr() != 0);
 				et->read();	// Read the event BEFORE writing it to allow the initialization
 						// in case of write-accumulare register
