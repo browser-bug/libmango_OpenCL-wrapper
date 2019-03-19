@@ -72,6 +72,7 @@ std::shared_ptr<const Event> Buffer::write(const void *GN_buffer, mango_size_t g
 	high_resolution_clock::time_point start_time = high_resolution_clock::now();
 #endif
 	int err = hn_write_memory(mem_tile, get_phy_addr(), global_size, (char*)GN_buffer, cluster_id);
+
 #ifdef PROFILING_MODE
 	high_resolution_clock::time_point finish_time = high_resolution_clock::now();
 	duration<int, std::micro> elapsed_time = duration_cast<duration<int, std::micro>>(finish_time - start_time);

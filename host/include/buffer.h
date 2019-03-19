@@ -75,7 +75,7 @@ public:
 	mango_exit_code_t resize(mango_size_t size) noexcept;
 
 	/*! 
-	 * \brief Get the event identifier
+	 * \brief Get the buffer identifier
 	 */
 	inline mango_id_t get_id() 		const noexcept { return id; }
 
@@ -85,7 +85,7 @@ public:
 	inline mango_id_t get_size() 		const noexcept { return size; }
 
 	/*! 
-	 * \brief Get the physical address of the event. This is not an actual physical address,
+	 * \brief Get the physical address of the buffer. This is not an actual physical address,
 	 * 	  but it represents an offset in the tile register.
 	 * \note Invalid data may be returned if not previously setted 
 	 */
@@ -98,7 +98,7 @@ public:
 	inline mango_id_t get_mem_tile() 	const noexcept { return mem_tile; }
 
 	/*! 
-	 * \brief Get the physical address of the event. This is not an actual physical address,
+	 * \brief Get the physical address of the buffer. This is not an actual physical address,
 	 * 	  but it represents an offset in the tile register.
 	 * \note Invalid data may be returned if not previously setted 
 	 */
