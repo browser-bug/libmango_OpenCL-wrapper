@@ -204,6 +204,7 @@ Kernel::Kernel(mango_id_t kid, KernelFunction *k, std::vector<mango_id_t> buffer
 	this->termination_event = std::make_shared<KernelCompletionEvent>(kid);
 
 	for(int i=0; i<3; i++)	{ // TODO Is this correct? In that case please document
+		mango_log->Debug("Kernel id=%d: appending event id=%d", kid, kid);
 		task_events.push_back(std::make_shared<Event>(kid));
 	}
 
