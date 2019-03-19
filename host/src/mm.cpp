@@ -227,50 +227,64 @@ mango_exit_code_t MM::set_vaddr_events(TaskGraph &tg) noexcept {
 
 		const auto unit = k->get_assigned_unit();
 		uint32_t cluster_id = k->get_cluster();
+		mango_id_t   tile_unit;
+		mango_addr_t start_addr;
+		mango_addr_t end_addr;
 
 		int err;
+		switch (unit->get_arch()) {
 
-		if (unit->get_arch() == mango_unit_type_t::PEAK) {
-			mango_id_t   tile_unit  = unit->get_id();
-			mango_addr_t start_addr = TLB_BASE_SYNCH;
-			mango_addr_t end_addr   = TLB_BASE_SYNCH + 0xffffff;
+		case mango_unit_type_t::PEAK:
+			tile_unit  = unit->get_id();
+			start_addr = TLB_BASE_SYNCH;
+			end_addr   = TLB_BASE_SYNCH + 0xffffff;
 
 			mango_log->Notice("Configured TLB for events of tile %d [%p - %p]", tile_unit,
 						start_addr, end_addr);
 
 			/* Single instance of tlb for all events */
 			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0, cluster_id);
-		}
-		else if (unit->get_arch() == mango_unit_type_t::NUP) {
-			mango_id_t   tile_unit  = unit->get_id();
-			mango_addr_t start_addr = NUP_TLB_BASE_SYNCH;
-			mango_addr_t end_addr   = NUP_TLB_BASE_SYNCH + 0xffffff;
+			break;
+
+		case mango_unit_type_t::NUP:
+			tile_unit  = unit->get_id();
+			start_addr = NUP_TLB_BASE_SYNCH;
+			end_addr   = NUP_TLB_BASE_SYNCH + 0xffffff;
 
 			mango_log->Notice("Configured TLB for events of tile %d [%p - %p]", tile_unit,
 									start_addr, end_addr);
 
 			/* Single instance of tlb for all events */
 			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0, cluster_id);
-		} 
-		else if (unit->get_arch() == mango_unit_type_t::DCT) {
-			mango_id_t tile_unit = unit->get_id();
-			mango_addr_t start_addr = TLB_BASE_SYNCH_DCT;
-			mango_addr_t end_addr = TLB_BASE_SYNCH_DCT + 0xffffff;
-			
+			break;
+
+		case mango_unit_type_t::DCT:
+			tile_unit  = unit->get_id();
+			start_addr = TLB_BASE_SYNCH_DCT;
+			end_addr   = TLB_BASE_SYNCH_DCT + 0xffffff;
+
 			mango_log->Notice("Configured TLB for events of tile %d [%p - %p]",
 				tile_unit, start_addr, end_addr);
 
 			err = hn_set_tlb(tile_unit, TLB_ENTRY_EVENTS, start_addr, end_addr, 0, 0, 1, 0, 0, cluster_id);
-		}
-		else {
-			mango_log->Warn("Unknown architecture: %d", unit->get_arch());
+			break;
+
+		case mango_unit_type_t::GN:
+			mango_log->Warn("No TLB configuration for GN architecture");
+			err = HN_SUCCEEDED;
+			break;
+
+		default:
+			mango_log->Error("Unknown architecture: %d", unit->get_arch());
+
 		}
 
-		if(err != HN_SUCCEEDED) {
+		if (err != HN_SUCCEEDED) {
 			mango_log->Error("Unable to set TLB (err=%d), undefined behaviours can happen.", err);
 		}
 
 		for(auto &e : k->get_task_events()){
+			mango_log->Info("Kernel id=%d: event id=%d", k->get_id(), e->get_id());
 			set_event_tlb(k, e);
 		}
 	}
