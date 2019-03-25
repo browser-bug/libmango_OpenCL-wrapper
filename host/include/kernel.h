@@ -195,6 +195,7 @@ public:
 	}
 
 #ifdef PROFILING_MODE
+
 	void update_profiling_data() noexcept;
 
 	void print_profiling_data() noexcept;

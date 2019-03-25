@@ -220,7 +220,9 @@ Kernel::~Kernel() {
 #endif
 }
 
+
 #ifdef PROFILING_MODE
+
 void Kernel::update_profiling_data() noexcept {
 
 	mango_log->Debug("Profiling: kernel id=%d updating...", id);
@@ -231,26 +233,30 @@ void Kernel::update_profiling_data() noexcept {
 
 	// PEAK
 	if (unit->get_arch() == mango_unit_type_t::PEAK) {
-		mango_log->Info("Profiling: kernel id=%d on arch of type %d (PEAK)",
-			id, unit->get_arch());
-		uint32_t err, cores;
-		hn_stats_monitor_st * values = new hn_stats_monitor_st;
-		err = hn_stats_monitor_read(unit->get_id(), &cores, &values, cluster_id);
+		mango_log->Info("Profiling: kernel id=%d -> processor %d [arch=%d]",
+			id, unit->get_id(), unit->get_arch());
+		uint32_t err, nr_cores;
+
+		hn_stats_monitor_st * values[NR_CORES_PER_PROC];
+		err = hn_stats_monitor_read(unit->get_id(), &nr_cores, values, cluster_id);
 		if (err == 0) {
 			mango_log->Debug("Profiling: kernel id=%d updating PEAK counters...", id);
 			hwc_profiling->update_counters_peak(
-				mango_log, unit->get_id(), *values);
+				mango_log, unit->get_id(), nr_cores, values);
 		}
 		else {
 			mango_log->Error("Profiling: error %d", err);
 			mango_log->Error("Profiling: check BarbequeRTRM building configuration "
 					"- is MANGO Power Management enabled?");
 		}
-		delete values;
+
+	//	for (uint32_t core_id = 0; core_id < nr_cores; ++core_id)
+	//		if (values[core_id]) free(values[core_id]);
 	}
-	else
-		mango_log->Notice("Profiling: support missing for processor %d ",
-			unit->get_id());
+	else {
+		mango_log->Notice("Profiling: support missing for processor %d [arch=%d]",
+			id, unit->get_id(), unit->get_arch());
+	}
 }
 
 

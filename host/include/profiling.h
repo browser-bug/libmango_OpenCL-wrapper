@@ -6,6 +6,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <vector>
 
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/stats.hpp>
@@ -29,11 +30,11 @@
 
 
 #define PROF_KERNEL_DIV1  "===============+========================= "
-#define PROF_KERNEL_HEAD1 "| Kernel %3d   |        Values          | "
+#define PROF_KERNEL_HEAD1 "| Kernel %3d   |     Processor:%3d      | "
 #define PROF_KERNEL_DIV2  "|--------------+------------------------| "
-#define PROF_KERNEL_HEAD2 "| HW counter   |     processor:%3d      | "
+#define PROF_KERNEL_HEAD2 "| HW counter   |         Core: %3d      | "
 
-#define PROF_KERNEL_FILL  "| %-12s | %-22d | "
+#define PROF_KERNEL_FILL  "| %-12s | %-22u | "
 
 using namespace boost::accumulators;
 
@@ -46,13 +47,15 @@ namespace mango {
 enum ProfilingCounter {
 	IRET = 0,
 	CPI,
-	MEM_ACCESS,
 	CORE_CYCLES,
+	MEM_ACCESS,
+	L2_MISSES,
+	POWER,
 
 	NR_COUNTERS
 };
 
-#define _NR_COUNTERS    4
+#define _NR_COUNTERS    6
 
 enum ProfilingOperation {
 	PROF_READ = 0,
@@ -65,6 +68,8 @@ enum ProfilingOperation {
 
 #define _NR_TIMINGS NR_OPERATIONS
 
+#define NR_CORES_PER_PROC 2
+
 using time_accumul_array = std::array<accumulator_set<int, features<tag::mean, tag::min, tag::max, tag::variance> >, _NR_TIMINGS>;
 
 
@@ -73,7 +78,6 @@ using time_accumul_array = std::array<accumulator_set<int, features<tag::mean, t
  */
 class Profiler {
 
-//using accumulator_array = std::array<accumulator_set<int, features<tag::mean, tag::min, tag::max>>, _NR_COUNTERS>;
 using accumulator_array = std::array<int , _NR_COUNTERS>;
 
 public:
@@ -81,7 +85,13 @@ public:
 	 *  \param id the id of the kernel to profile
 	 */
 	Profiler(uint32_t id): kernel_id(id) {
-		memset(&curr_values_peak, 0, sizeof(hn_stats_monitor_st));
+		per_core_prev_vals.resize(NR_CORES_PER_PROC);
+		per_core_stats.resize(NR_CORES_PER_PROC);
+
+		for (uint32_t core_id = 0; core_id < NR_CORES_PER_PROC; ++core_id) {
+			memset(&per_core_prev_vals[core_id], 0, sizeof(hn_stats_monitor_st));
+			per_core_stats[core_id] = std::make_shared<accumulator_array>();
+		}
 	}
 
 	/*! \brief Destructor
@@ -97,7 +107,8 @@ public:
 	void update_counters_peak(
 		std::shared_ptr<bbque::utils::Logger> log,
 		uint32_t processor_id,
-		hn_stats_monitor_st & new_values);
+		uint32_t nr_cores,
+		hn_stats_monitor_st ** new_values);
 
 	/*! \brief Print the counters statistics
 	 *  \param log the logger object, if null print to console
@@ -109,10 +120,10 @@ private:
 	uint32_t kernel_id;
 
 	//! PEAK hardware counters last values
-	hn_stats_monitor_st curr_values_peak;
+	std::vector<hn_stats_monitor_st> per_core_prev_vals;
 
 	//! Statistics on hardware counters
-	std::map<uint32_t, std::shared_ptr<accumulator_array>> per_proc_stats;
+	std::vector<std::shared_ptr<accumulator_array>> per_core_stats;
 };
 
 
