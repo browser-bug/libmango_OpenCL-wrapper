@@ -59,7 +59,7 @@ void Profiler::print_stats(std::shared_ptr<bbque::utils::Logger> log) const {
 		this->kernel_id, per_core_stats.size());
 
 	log->Notice(PROF_KERNEL_DIV1);
-	log->Notice(PROF_KERNEL_HEAD1, this->kernel_id, 0);
+	log->Notice(PROF_KERNEL_HEAD1, this->kernel_id, this->mapped_processor_id);
 
 	for (uint32_t core_id = 0; core_id < per_core_stats.size(); ++core_id) {
 		auto & stats = *(per_core_stats[core_id].get()); // the array of values

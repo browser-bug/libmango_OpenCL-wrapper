@@ -231,12 +231,13 @@ void Kernel::update_profiling_data() noexcept {
 		return;
 	}
 
-	// PEAK
-	if (unit->get_arch() == mango_unit_type_t::PEAK) {
-		mango_log->Info("Profiling: kernel id=%d -> processor %d [arch=%d]",
-			id, unit->get_id(), unit->get_arch());
-		uint32_t err, nr_cores;
+	// Assigned unit/tile/processor
+	hwc_profiling->set_mapped_processor(unit->get_id());
+	uint32_t err = 0;
 
+	// PEAK
+	if (unit->get_arch() ==  mango_unit_type_t::PEAK) {
+		uint32_t nr_cores = 0;
 		hn_stats_monitor_st * values[NR_CORES_PER_PROC];
 		err = hn_stats_monitor_read(unit->get_id(), &nr_cores, values, cluster_id);
 		if (err == 0) {

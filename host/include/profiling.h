@@ -82,9 +82,9 @@ using accumulator_array = std::array<int , _NR_COUNTERS>;
 
 public:
 	/*! \brief Constructor
-	 *  \param id the id of the kernel to profile
+	 *  \param k_id the id of the kernel to profile
 	 */
-	Profiler(uint32_t id): kernel_id(id) {
+	Profiler(uint32_t k_id): kernel_id(k_id) {
 		per_core_prev_vals.resize(NR_CORES_PER_PROC);
 		per_core_stats.resize(NR_CORES_PER_PROC);
 
@@ -97,6 +97,13 @@ public:
 	/*! \brief Destructor
 	 */
 	virtual ~Profiler() {
+	}
+
+	/*! \brief Update current counters values and statistics for PEAK processors
+	 *  \param p_id the id of the assigned processor
+	 */
+	void set_mapped_processor(uint32_t p_id) {
+		mapped_processor_id = p_id;
 	}
 
 	/*! \brief Update current counters values and statistics for PEAK processors
@@ -118,6 +125,9 @@ public:
 private:
 	//! Set to kernel id for debug purposes
 	uint32_t kernel_id;
+
+	//! Set the assigned processing unit id for debug purposes
+	uint32_t mapped_processor_id = 255;
 
 	//! PEAK hardware counters last values
 	std::vector<hn_stats_monitor_st> per_core_prev_vals;
