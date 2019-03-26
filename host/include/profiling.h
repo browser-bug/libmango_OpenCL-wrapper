@@ -18,8 +18,8 @@
 
 #include <libhn/hn.h>
 
+#include "config.h"
 #include "logger.h"
-
 
 
 #define PROF_BUFFER_DIV1  "=======================+=========================================== "
@@ -67,8 +67,6 @@ enum ProfilingOperation {
 };
 
 #define _NR_TIMINGS NR_OPERATIONS
-
-#define NR_CORES_PER_PROC 4
 
 using time_accumul_array = std::array<accumulator_set<int, features<tag::mean, tag::min, tag::max, tag::variance> >, _NR_TIMINGS>;
 

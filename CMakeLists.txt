@@ -22,9 +22,24 @@ else (BUILD_TYPE STREQUAL "Debug")
 endif (BUILD_TYPE STREQUAL "Debug")
 message (STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 
+if (CONFIG_LIBMANGO_PROFILING_MODE)
+  set (NR_CORES_PER_PROC ${CONFIG_LIBMANGO_NR_CORES_MAX})
+  message (STATUS "Cores per unit: " ${NR_CORES_PER_PROC})
+endif (CONFIG_LIBMANGO_PROFILING_MODE)
+
 configure_file (
 	"${PROJECT_SOURCE_DIR}/libmango.conf.in"
 	"${PROJECT_BINARY_DIR}/libmango.conf"
+)
+
+configure_file(
+	"${PROJECT_SOURCE_DIR}/config.h.in"
+	"${PROJECT_BINARY_DIR}/include/libmango/config.h"
+)
+
+
+include_directories(
+	"${PROJECT_BINARY_DIR}/include/libmango/"
 )
 
 add_subdirectory (include)
@@ -36,3 +51,6 @@ install (FILES "${PROJECT_BINARY_DIR}/libmango.conf"
 	DESTINATION "${BOSP_PATH}/etc/bbque/"
 )
 
+install (FILES "${PROJECT_BINARY_DIR}/include/libmango/config.h"
+	DESTINATION "${MANGO_ROOT}/include/libmango/"
+)

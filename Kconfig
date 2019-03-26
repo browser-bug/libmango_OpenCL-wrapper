@@ -29,3 +29,10 @@ config LIBMANGO_PROFILING_MODE
   ---help---
   Enable the profiling mode to collect data from the MANGO performance counters.
 
+config LIBMANGO_NR_CORES_MAX
+  int "Number of cores per processing unit"
+  depends on LIBMANGO_PROFILING_MODE
+  default 2
+  ---help---
+  Specify the max number of cores included in the platform processing units.
+
