@@ -245,21 +245,31 @@ void Kernel::update_profiling_data() noexcept {
 			hwc_profiling->update_counters_peak(
 				mango_log, unit->get_id(), nr_cores, values);
 		}
-		else {
-			mango_log->Error("Profiling: error %d", err);
-			mango_log->Error("Profiling: check BarbequeRTRM building configuration "
-					"- is MANGO Power Management enabled?");
-		}
-
-	//	for (uint32_t core_id = 0; core_id < nr_cores; ++core_id)
-	//		if (values[core_id]) free(values[core_id]);
+		// not clear who is going to release the memory of 'values[]'
 	}
+	// NUPLUS
+	else if (unit->get_arch() == mango_unit_type_t::NUP) {
+		hn_stats_monitor_st * nup_values = new hn_stats_monitor_st;
+		err = hn_nuplus_stats_read(unit->get_id(), nup_values, cluster_id);
+		if (err == 0) {
+			mango_log->Debug("Profiling: kernel id=%d updating NUPLUS counters...", id);
+			hwc_profiling->update_counters_nuplus(
+				mango_log, unit->get_id(), nup_values);
+		}
+		delete nup_values;
+	}
+	// other architectures...
 	else {
 		mango_log->Notice("Profiling: support missing for processor %d [arch=%d]",
 			id, unit->get_id(), unit->get_arch());
 	}
-}
 
+	if (err != 0) {
+		mango_log->Error("Profiling: error %d", err);
+		mango_log->Error("Profiling: check BarbequeRTRM building configuration "
+				"- is MANGO Power Management enabled?");
+	}
+}
 
 
 void Kernel::print_profiling_data() noexcept {

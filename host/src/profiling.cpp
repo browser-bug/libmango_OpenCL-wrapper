@@ -25,7 +25,7 @@ void Profiler::update_counters_peak(
 		uint32_t nr_cores,
 		hn_stats_monitor_st ** new_values) {
 
-	log->Debug("Profiling: processor=%d [nr_cores=%d]", processor_id, nr_cores);
+	log->Debug("Profiling: processor=%d [arch=PEAK nr_cores=%d]", processor_id, nr_cores);
 
 	for (uint32_t core_id = 0; core_id < nr_cores; ++core_id) {
 		std::string proc_str(std::to_string(processor_id) + "." + std::to_string(core_id));
@@ -50,6 +50,38 @@ void Profiler::update_counters_peak(
 			// last counters values
 			per_core_prev_vals[core_id] = *(new_values[core_id]);
 		}
+	}
+}
+
+
+void Profiler::update_counters_nuplus(
+		std::shared_ptr<bbque::utils::Logger> log,
+		uint32_t processor_id,
+		hn_stats_monitor_st * new_values) {
+
+	log->Debug("Profiling: processor=%d [arch=NUPLUS]", processor_id);
+	std::string proc_str(std::to_string(processor_id));
+
+	// update statistics (NUPLUS does not have counters for different cores)
+	auto & stats = *(per_core_stats[0].get()); // the array of accumulators
+	log->Debug("Profiling: [core:%s] timestamp=%u ",  proc_str.c_str(), new_values->timestamp);
+
+	if (new_values->timestamp != per_core_prev_vals[0].timestamp) {
+		log->Debug("Profiling: [proc:%s] core_instr=%u ",  proc_str.c_str(), new_values->core_instr);
+		log->Debug("Profiling: [proc:%s] cpi=%u ",         proc_str.c_str(), new_values->core_cpi);
+		log->Debug("Profiling: [proc:%s] core_cycles=%u ", proc_str.c_str(), new_values->core_cycles);
+		log->Debug("Profiling: [proc:%s] mem_access=%u ",  proc_str.c_str(), new_values->mc_accesses);
+		log->Debug("Profiling: [proc:%s] l2_misses=%u ",   proc_str.c_str(), new_values->l2_misses);
+		log->Debug("Profiling: [proc:%s] power_est=%u ",   proc_str.c_str(), (uint32_t) new_values->power_est);
+		stats[IRET]        = (new_values->core_instr  - per_core_prev_vals[0].core_instr);
+		stats[CPI]         = (new_values->core_cpi    - per_core_prev_vals[0].core_cpi);
+		stats[CORE_CYCLES] = (new_values->core_cycles - per_core_prev_vals[0].core_cycles);
+		stats[MEM_ACCESS]  = (new_values->mc_accesses - per_core_prev_vals[0].mc_accesses);
+		stats[L2_MISSES]   = (new_values->l2_misses   - per_core_prev_vals[0].l2_misses);
+		stats[POWER]       = (uint32_t) new_values->power_est;
+
+		// last counters values
+		per_core_prev_vals[0] = *(new_values);
 	}
 }
 

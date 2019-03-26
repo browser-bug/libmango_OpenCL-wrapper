@@ -68,7 +68,7 @@ enum ProfilingOperation {
 
 #define _NR_TIMINGS NR_OPERATIONS
 
-#define NR_CORES_PER_PROC 2
+#define NR_CORES_PER_PROC 4
 
 using time_accumul_array = std::array<accumulator_set<int, features<tag::mean, tag::min, tag::max, tag::variance> >, _NR_TIMINGS>;
 
@@ -109,6 +109,7 @@ public:
 	/*! \brief Update current counters values and statistics for PEAK processors
 	 *  \param log the logger object, if null print to console
 	 *  \param processor_id the id of the processing unit
+	 *  \param nr_cores the number of cores includes in the processing unit
 	 *  \param new_values updated hw counters values for
 	 */
 	void update_counters_peak(
@@ -116,6 +117,16 @@ public:
 		uint32_t processor_id,
 		uint32_t nr_cores,
 		hn_stats_monitor_st ** new_values);
+
+	/*! \brief Update current counters values and statistics for NUPLUS processors
+	 *  \param log the logger object, if null print to console
+	 *  \param processor_id the id of the processing unit
+	 *  \param new_values updated hw counters values for
+	 */
+	void update_counters_nuplus(
+		std::shared_ptr<bbque::utils::Logger> log,
+		uint32_t processor_id,
+		hn_stats_monitor_st * new_values);
 
 	/*! \brief Print the counters statistics
 	 *  \param log the logger object, if null print to console
