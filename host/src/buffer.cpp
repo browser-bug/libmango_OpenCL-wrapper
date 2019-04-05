@@ -65,8 +65,8 @@ std::shared_ptr<const Event> Buffer::write(const void *GN_buffer, mango_size_t g
 		global_size = size;
 	}
 
-	mango_log->Info("Buffer::write: mem_tile=%d cluster_id=%d, phy_addr=0x%x size=%u",
-			mem_tile, cluster_id, phy_addr, global_size);
+	mango_log->Info("Buffer::write: id=%d mem_tile=%d cluster_id=%d phy_addr=0x%x size=%u",
+			id, mem_tile, cluster_id, phy_addr, global_size);
 
 #ifdef PROFILING_MODE
 	high_resolution_clock::time_point start_time = high_resolution_clock::now();
@@ -92,8 +92,8 @@ std::shared_ptr<const Event> Buffer::read(void *GN_buffer, mango_size_t global_s
 		global_size = size;
 	}
 
-	mango_log->Info("Buffer::read: mem_tile=%d cluster=%d phy_addr=0x%x size=%u",
-			get_mem_tile(), get_cluster(), get_phy_addr(), global_size);
+	mango_log->Info("Buffer::read: id=%d mem_tile=%d cluster=%d phy_addr=0x%x size=%u",
+			id, get_mem_tile(), get_cluster(), get_phy_addr(), global_size);
 #ifdef PROFILING_MODE
 	high_resolution_clock::time_point start_time = high_resolution_clock::now();
 #endif
@@ -130,8 +130,8 @@ mango_size_t FIFOBuffer::synch_write(const void *GN_buffer, mango_size_t global_
 		high_resolution_clock::time_point start_time = high_resolution_clock::now();
 #endif
 		event->wait_state(mango_event_status_t::WRITE);
-		mango_log->Info("FIFOBuffer::synch_write: mem_tile=%d cluster_id=%d phy_addr=0x%x size=%u\n",
-				get_mem_tile(), get_cluster(), get_phy_addr(), get_size());
+		mango_log->Info("FIFOBuffer::synch_write: id=%d mem_tile=%d cluster_id=%d phy_addr=0x%x size=%u\n",
+				id, get_mem_tile(), get_cluster(), get_phy_addr(), get_size());
 
 		int err = hn_write_memory(get_mem_tile(), get_phy_addr(), get_size(),
 							 (char*)GN_buffer+off, cluster_id);
@@ -163,8 +163,8 @@ mango_size_t FIFOBuffer::synch_read(void *GN_buffer, mango_size_t global_size) c
 #endif
 		event->wait_state(READ);
 
-		mango_log->Info("FIFOBuffer::synch_read: mem_tile=%d cluster_id=%d phy_addr=0x%x size=%u\n",
-				get_mem_tile(), get_cluster(), get_phy_addr(), get_size());
+		mango_log->Info("FIFOBuffer::synch_read: id=%d mem_tile=%d cluster_id=%d phy_addr=0x%x size=%u\n",
+				id, get_mem_tile(), get_cluster(), get_phy_addr(), get_size());
 
 		int err = hn_read_memory(get_mem_tile(), get_phy_addr(), get_size(), (char*)GN_buffer+off, get_cluster());
 		if (HN_SUCCEEDED != err) {
