@@ -1,0 +1,3 @@
+
+#cmakedefine NR_CORES_PER_PROC @NR_CORES_PER_PROC@
+
