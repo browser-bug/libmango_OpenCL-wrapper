@@ -140,18 +140,18 @@ public:
 
 
 protected:
+	const mango_id_t id;  			/*!< Buffer id */
 	std::shared_ptr<Event> event;		/*!< Synchronization event */
 	uint32_t cluster_id;                    /*!< ID of the cluster of processors */
+	mango_size_t phy_addr;  		/*!< Physical address of buffer in HN memory */
+	mango_id_t mem_tile;			/*!< The memory tile attached */
+	mango_size_t size;			/*!< Size of the memory buffer */
+
 #ifdef PROFILING_MODE
 	std::shared_ptr<time_accumul_array> timings;             /*!< Array of accumulators for timings */
 #endif
 
 private: 
-	const mango_id_t id;  			/*!< buffer id */
-	mango_size_t phy_addr;  		/*!< Physical address of buffer in HN memory */
-	mango_id_t mem_tile;			/*!< The memory tile attached */
-	mango_size_t size;			/*!< Size of the memory buffer */
-
 	std::vector<mango_id_t> kernels_in;	/*!< Writer kernels */
 	std::vector<mango_id_t> kernels_out;	/*!< Reader kernels */
 		
