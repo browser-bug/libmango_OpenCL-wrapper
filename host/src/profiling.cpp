@@ -86,7 +86,7 @@ void Profiler::update_counters_nuplus(
 }
 
 
-void Profiler::print_stats(std::shared_ptr<bbque::utils::Logger> log) const {
+void Profiler::print_counters_stats(std::shared_ptr<bbque::utils::Logger> log) const {
 	log->Notice("Profiling: kernel: id=%d...[nr_stats=%d]",
 		this->kernel_id, per_core_stats.size());
 

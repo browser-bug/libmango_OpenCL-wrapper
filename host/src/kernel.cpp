@@ -214,9 +214,9 @@ Kernel::Kernel(mango_id_t kid, KernelFunction *k, std::vector<mango_id_t> buffer
 }
 
 Kernel::~Kernel() {
-	mango_log->Crit("Kernel: id=%d destroying...", id);
+	mango_log->Warn("Kernel: id=%d destroying...", id);
 #ifdef PROFILING_MODE
-	hwc_profiling->print_stats(mango_log);
+	print_profiling_data();
 #endif
 }
 
@@ -273,9 +273,26 @@ void Kernel::update_profiling_data() noexcept {
 	}
 }
 
-
 void Kernel::print_profiling_data() noexcept {
-	hwc_profiling->print_stats(mango_log);
+	// HW performance counters
+	hwc_profiling->print_counters_stats(mango_log);
+
+	// Timing profiling
+	mango_log->Notice(PROF_KERNEL_TIME_DIV);
+	mango_log->Notice(PROF_KERNEL_TIME_HEADER);
+	mango_log->Notice(PROF_KERNEL_TIME_DIV2);
+	mango_log->Notice(PROF_KERNEL_TIME_HEADER2);
+	mango_log->Notice(PROF_KERNEL_TIME_DIV2);
+
+	mango_log->Notice("| %7d | %7d |   %8.2f    %8.2f    %8.2f   %8.2f   |",
+			id,
+			boost::accumulators::count(timings),
+			boost::accumulators::min(timings),
+			boost::accumulators::max(timings),
+			boost::accumulators::mean(timings),
+			boost::accumulators::variance(timings));
+
+	mango_log->Notice(PROF_KERNEL_TIME_DIV);
 }
 
 #endif

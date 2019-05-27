@@ -9,6 +9,7 @@
 
 #include <libhn/hn.h>
 
+
 namespace mango {
 
 void Context::print_debug(const char *function, int line) const noexcept {
@@ -197,6 +198,9 @@ std::shared_ptr<Event> Context::start_kernel(std::shared_ptr<Kernel> kernel,
 		kernel_address = kernel->get_virtual_address();
 	}
 
+#ifdef PROFILING_MODE
+	kernel->profiling_time_start();
+#endif
 	err = hn_run_kernel(kernel->get_assigned_unit()->get_id(), kernel_address, arguments, kernel->get_cluster());
 	if (err != HN_SUCCEEDED) {
 		mango_log->Error("Unable to launch kernel id=%d err=%d",
@@ -498,6 +502,7 @@ void BBQContext::on_kernel_termination(mango_id_t kernel_id) noexcept {
 		if (kernel->get_id() == kernel_id) {
 			mango_log->Debug("on_kernel_termination: updating kernel %d profiling",
 					kernel->get_id());
+			kernel->profiling_time_stop();
 			kernel->update_profiling_data();
 			kernel->print_profiling_data();
 			break;

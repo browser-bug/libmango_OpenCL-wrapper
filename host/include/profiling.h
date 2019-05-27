@@ -34,7 +34,20 @@
 #define PROF_KERNEL_DIV2  "|--------------+------------------------| "
 #define PROF_KERNEL_HEAD2 "| HW counter   |         Core: %3d      | "
 
-#define PROF_KERNEL_FILL  "| %-12s | %-22u | "
+#define PROF_KERNEL_FILL  "| %-12s | %22u | "
+
+
+#define PROF_KERNEL_TIME_DIV \
+	"==========+=========+=================================================="
+
+#define PROF_KERNEL_TIME_DIV2 \
+	"----------+---------+-------------------------------------------------|"
+
+#define PROF_KERNEL_TIME_HEADER \
+	"| Kernel  |  count  |                 Completion time (ms)            |"
+
+#define PROF_KERNEL_TIME_HEADER2 \
+	"|         |         |       min        max        avg        var      |"
 
 using namespace boost::accumulators;
 
@@ -129,7 +142,7 @@ public:
 	/*! \brief Print the counters statistics
 	 *  \param log the logger object, if null print to console
 	 */
-	void print_stats(std::shared_ptr<bbque::utils::Logger> log) const;
+	void print_counters_stats(std::shared_ptr<bbque::utils::Logger> log) const;
 
 private:
 	//! Set to kernel id for debug purposes

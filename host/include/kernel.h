@@ -12,8 +12,12 @@
 #endif
 
 #include <algorithm>
+#include <chrono>
 #include <map>
 #include <string>
+
+using namespace std::chrono;
+using namespace boost::accumulators;
 
 namespace mango {
 
@@ -196,9 +200,21 @@ public:
 
 #ifdef PROFILING_MODE
 
+	inline void profiling_time_start() noexcept {
+		this->start_time = high_resolution_clock::now();
+	}
+
+	inline void profiling_time_stop() noexcept {
+		this->finish_time = high_resolution_clock::now();
+		duration<int, std::micro> elapsed_time =
+			duration_cast<duration<int, std::micro>>(finish_time - start_time);
+		timings(elapsed_time.count()/1e3);
+	}
+
 	void update_profiling_data() noexcept;
 
 	void print_profiling_data() noexcept;
+
 #endif
 
 protected:
@@ -224,7 +240,10 @@ private:
 	uint32_t cluster_id;            /*!< ID of the cluster of processors */
 
 #ifdef PROFILING_MODE
-	std::shared_ptr<Profiler> hwc_profiling; /** Container of HW counters values */
+	std::shared_ptr<Profiler> hwc_profiling; /*! Container of HW counters values */
+	accumulator_set<float, features<tag::mean, tag::min, tag::max, tag::variance>>  timings;  /*!< Accumulator for timings statistics */
+	high_resolution_clock::time_point start_time;
+	high_resolution_clock::time_point finish_time;
 #endif
 };
 
