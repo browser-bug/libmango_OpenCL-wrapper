@@ -247,7 +247,8 @@ void Kernel::update_profiling_data() noexcept {
 		}
 		// not clear who is going to release the memory of 'values[]'
 	}
-	// NUPLUS
+	// NUPLUS (not stable)
+#if 0
 	else if (unit->get_arch() == mango_unit_type_t::NUP) {
 		hn_stats_monitor_st * nup_values = new hn_stats_monitor_st;
 		err = hn_nuplus_stats_read(unit->get_id(), nup_values, cluster_id);
@@ -258,6 +259,7 @@ void Kernel::update_profiling_data() noexcept {
 		}
 		delete nup_values;
 	}
+#endif
 	// other architectures...
 	else {
 		mango_log->Notice("Profiling: support missing for processor %d [arch=%d]",
