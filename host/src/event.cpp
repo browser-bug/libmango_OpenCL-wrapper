@@ -12,28 +12,29 @@ Event::Event() noexcept : bbq_notify_callback(nullptr) {
 }
 
 
-Event::Event(mango_id_t kernel_id) noexcept : Event()
-{
+Event::Event(mango_id_t kernel_id) noexcept : Event() {
+
 	kernels_in  = std::vector<mango_id_t>({kernel_id}) ;
 	kernels_out = std::vector<mango_id_t>({kernel_id}) ;
 }
 
-Event::Event (const std::vector<mango_id_t> &kernel_id_in,
-				const std::vector<mango_id_t> &kernel_id_out ) noexcept : Event() {
+Event::Event (
+		const std::vector<mango_id_t> &kernel_id_in,
+		const std::vector<mango_id_t> &kernel_id_out ) noexcept : Event() {
+
 	kernels_in  = kernel_id_in;
 	kernels_out = kernel_id_out;
 }
 
-
-
 void Event::wait_state(uint32_t state) const noexcept {
+
 	uint32_t value;
 	mango_log->Info("Wait state %d: id %d phy_addr 0x%08x",	state, id, phy_addr);
 
 	do {
 		value = lock();
 
-		if (value!=state){
+		if (value != state) {
 			mango_log->Debug("Expected %d, instead it's %d\n", state, value);
 			if(HN_SUCCEEDED != hn_write_synch_register(phy_addr, value, cluster_id)) {
 				mango_log->Warn("Writing to sync register failed.");
@@ -41,7 +42,7 @@ void Event::wait_state(uint32_t state) const noexcept {
 			std::this_thread::yield();
 		}
 
-	}	while(value!=state);
+	} while (value != state);
 }
 
 uint32_t Event::wait() const noexcept {
@@ -51,58 +52,54 @@ uint32_t Event::wait() const noexcept {
 		fifo_task->join();
 		mango_log->Debug("End FIFO Ops");
 	}
-	else wait_state(1);
-
+	else {
+		wait_state(1);
+	}
 	return 0;
 }
 
 
 uint32_t Event::lock() const noexcept {
+
 	uint32_t value;
 	do {
 		value = read();
-	} while(value==0);
+	} while (value == 0);
 	return value;
 }
 
 uint32_t Event::read() const noexcept {
 
 	uint32_t value;
-
 	hn_read_synch_register(phy_addr, &value, cluster_id);
-
 	return value;
 }
 
-void Event::write(uint32_t value) const noexcept
-{
+void Event::write(uint32_t value) const noexcept {
 
 	mango_log->Info("Writing on an event: phy_addr 0x%x, value %u, id %d cluster %d",
 			phy_addr, value, id, cluster_id);
 
-	if(HN_SUCCEEDED != hn_write_synch_register(phy_addr, value, cluster_id)) {
+	if (HN_SUCCEEDED != hn_write_synch_register(phy_addr, value, cluster_id)) {
 		mango_log->Warn("Writing to sync register failed.");
 	}
 }
 
 void KernelCompletionEvent::write(uint32_t value) const noexcept {
+
 	Event::write(value);
-
-	if (value==READ && bbq_notify_callback!=nullptr) {
+	if ((value==READ) && (bbq_notify_callback != nullptr)) {
 		mango_log->Debug("Notifying buffer write callback");
-
 		bbq_notify_callback();
 	}
-
 }
 
 uint32_t KernelCompletionEvent::wait() const noexcept {
-	uint32_t val = Event::wait();
 
+	uint32_t val = Event::wait();
 	mango_log->Debug("Notifying end of kernel callback");
 
-
-	if (bbq_notify_callback!=nullptr) {
+	if (bbq_notify_callback != nullptr) {
 		mango_log->Debug("Notifying buffer read callback");
 		bbq_notify_callback();
 	} else {
