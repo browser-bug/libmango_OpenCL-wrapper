@@ -370,6 +370,12 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 		int nr_cores = k.second->GetAssignedCoresCount();
 		if (nr_cores == 0)
 			nr_cores = k.second->GetThreadCount();
+
+		int sys_id = k.second->GetAssignedSystem();
+		mango_log->Debug("from_bbque: kernel=%d: to system node=%d",
+			k.second->Id(),
+			sys_id);
+
 		// TODO: cores not handled
 		// assert(nr_cores > 0 && "Internal error: less than 1 core from BarbequeRTRM");
 
