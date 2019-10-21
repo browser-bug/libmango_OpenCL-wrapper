@@ -5,10 +5,10 @@ file(GLOB OPENCL_SOURCES *.cpp)
 add_library (opencl SHARED ${OPENCL_SOURCES})
 add_library (openclStatic STATIC ${OPENCL_SOURCES})
 
-target_include_directories (opencl PUBLIC ${OpenCL_SOURCE_DIR}/include)
-target_include_directories(opencl PUBLIC ${OpenCL_SOURCE_DIR}/../include)
+target_include_directories (opencl PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(opencl PUBLIC ${PROJECT_SOURCE_DIR}/../include)
 
-#target_link_libraries(opencl mango)
-#target_link_libraries(opencl mangoStatic)
+target_link_libraries(opencl mango)
+target_link_libraries(opencl mangoStatic)
 
 
