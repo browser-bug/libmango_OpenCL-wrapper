@@ -1,10 +1,10 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (LIBMANGO)
 
-set(MANGO_ROOT "/" CACHE STRING "MANGO installation root directory")
+set(MANGO_ROOT "/opt/mango" CACHE STRING "MANGO installation root directory")
 
-include(../global.cmake)
-include(../bosp/build/configuration/bosp-config.cmake)
+include(~/mangolibs/global.cmake)
+include(~/mangolibs/bosp/build/configuration/bosp-config.cmake)
 
 # Set DEBUG compilation
 if (CONFIG_BBQUE_BUILD_DEBUG)

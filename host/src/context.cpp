@@ -359,32 +359,22 @@ void BBQContext::from_bbque(TaskGraph &tg) noexcept {
 	assert(bbque_tg->Buffers().size() ==
 		tg.get_buffers().size() && "Internal error: TG from BarbequeRTRM contains no sufficient buffers");
 
-	// HW cluster including the assigned resources
+	// HW cluster including the mapped resources
 	int cluster_id = bbque_tg->GetCluster();
 
 	for(auto k : bbque_tg->Tasks()){
-		// Assigned resources
-		mango_id_t pid = k.second->GetAssignedProcessor();
+		mango_id_t pid = k.second->GetMappedProcessor();
 		auto bbque_arch_type = k.second->GetAssignedArch();
-
-		int nr_cores = k.second->GetAssignedCoresCount();
-		if (nr_cores == 0)
-			nr_cores = k.second->GetThreadCount();
-
-		int sys_id = k.second->GetAssignedSystem();
-		mango_log->Debug("from_bbque: kernel=%d: to system node=%d",
-			k.second->Id(),
-			sys_id);
-
+		int ncores = k.second->GetMappedCores();
 		// TODO: cores not handled
-		// assert(nr_cores > 0 && "Internal error: less than 1 core from BarbequeRTRM");
+		// assert(ncores > 0 && "Internal error: less than 1 core from BarbequeRTRM");
 
-		mango_log->Debug("from_bbque: kernel=%d: to archtype %d", k.first, bbque_arch_type);
+		mango_log->Debug("Assigning kernel %d to archtype %d", k.first, bbque_arch_type);
 		for(auto &kt : tg.get_kernels())
 			if (k.first == kt->get_id()) {
 				mango_unit_type_t arch_type = arch_to_unit_type(bbque_arch_type);
 				assert(arch_type != mango_unit_type_t::STOP && "Internal error: invalid archtype");
-				kt->set_unit(std::make_shared<Unit>(pid, arch_type, nr_cores));
+				kt->set_unit(std::make_shared<Unit>(pid, arch_type, ncores));
 				auto arch_info = k.second->Targets().at(bbque_arch_type);
 
 				mango_log->Debug("from_bbque: kernel=%d: cluster=%d mem_tile=%d phy_addr=%p",
