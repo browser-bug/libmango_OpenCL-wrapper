@@ -8,7 +8,7 @@
 #endif	
 
 // Including libmango
-#include "mango.h"
+//#include "mango.h"
 
 #ifdef __cplusplus
 extern "C"{
