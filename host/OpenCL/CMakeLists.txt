@@ -4,3 +4,4 @@ project(OpenCL VERSION 1.0.1)
 
 add_subdirectory(src)
 add_subdirectory(test)
+# add_subdirectory(samples)
