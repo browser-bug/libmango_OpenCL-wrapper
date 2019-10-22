@@ -41,5 +41,10 @@ endif (CONFIG_LIBMANGO_GN)
 target_link_libraries(opencl PUBLIC ${MANGO_ROOT}/lib/libmango.so)
 target_link_libraries(openclStatic PUBLIC ${MANGO_ROOT}/lib/libmango.a)
 
+# Original OpenCL Library linking
+# Use this just for real OpenCL application tests
+target_link_libraries(opencl PUBLIC "/usr/local/cuda-10.1/lib64/libOpenCL.so")
+target_link_libraries(openclStatic PUBLIC "/usr/local/cuda-10.1/lib64/libOpenCL.so")
+
 install (TARGETS opencl DESTINATION ${MANGO_ROOT}/lib)
 install (TARGETS openclStatic DESTINATION ${MANGO_ROOT}/lib)

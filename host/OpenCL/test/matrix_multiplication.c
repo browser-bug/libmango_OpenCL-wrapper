@@ -159,7 +159,8 @@ int main(int argc, char** argv)
    char *KernelSource;
    long lFileSize;
 
-   lFileSize = LoadOpenCLKernel("matrixmul_kernel.cl", &KernelSource);
+   // For simplicity change it to your absolute path.
+   lFileSize = LoadOpenCLKernel("/home/bernardo/AOSproject/libmango_test/host/OpenCL/test/kernel/kernel.cl", &KernelSource);
    if( lFileSize < 0L ) {
        perror("File read failed");
        return 1;
@@ -246,8 +247,8 @@ int main(int argc, char** argv)
    }
 
    //print out the results
-   /*
-   printf("\n\nMatrix C (Results)\n");
+   
+   /* printf("\n\nMatrix C (Results)\n");
    int i;
    for(i = 0; i < size_C; i++)
    {
@@ -255,8 +256,8 @@ int main(int argc, char** argv)
       if(((i + 1) % WC) == 0)
       printf("\n");
    }
-   printf("\n");
-   */
+   printf("\n"); */
+  
    printf("Matrix multiplication completed...\n");
 
    //Shutdown and cleanup
