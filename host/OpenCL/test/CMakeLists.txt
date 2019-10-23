@@ -1,5 +1,5 @@
 # I assume you want to use LibProject as a library in MainProject.
 include_directories(${OpenCL_SOURCE_DIR}/include)
 link_directories(${OpenCL_SOURCE_DIR}/src)
-add_executable(Test main.c)
+add_executable(Test opencl_matrix_multiplication.c)
 target_link_libraries(Test opencl)
