@@ -3,8 +3,8 @@ project (LIBMANGO)
 
 set(MANGO_ROOT "/opt/mango" CACHE STRING "MANGO installation root directory")
 
-include(~/mangolibs/global.cmake)
-include(~/mangolibs/bosp/build/configuration/bosp-config.cmake)
+include(~/AOS/mangolibs/global.cmake)
+include(~/AOS/mangolibs/bosp/build/configuration/bosp-config.cmake)
 
 # Set DEBUG compilation
 if (CONFIG_BBQUE_BUILD_DEBUG)
