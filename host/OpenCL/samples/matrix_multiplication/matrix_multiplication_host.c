@@ -16,7 +16,7 @@ nimum_/*
 #include <stdio.h>
 #include <string.h>
 
-#include "host/mango.h"
+#include "mango.h"
 
 #define KID 1
 #define B1 1
