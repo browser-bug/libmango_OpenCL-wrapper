@@ -227,7 +227,7 @@ int main(int argc, char** argv)
     // Create the input and output arrays in device memory for our calculation
     d_A = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, mem_size_A, h_A, &err);
     d_B = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, mem_size_B, h_B, &err);
-    
+
     d_C = clCreateBuffer(context, CL_MEM_READ_WRITE, mem_size_A, h_C, &err);
 
    if (!d_A || !d_B || !d_C)
@@ -277,7 +277,7 @@ int main(int argc, char** argv)
    }else{
       printf("WRITE WORKED\n");
    }
-/*
+
    //Retrieve result from device
    err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, 0, NULL, NULL);
 
@@ -289,7 +289,7 @@ int main(int argc, char** argv)
 
    //print out the results
    
-   /* printf("\n\nMatrix C (Results)\n");
+   printf("\n\nMatrix C (Results)\n");
    int i;
    for(i = 0; i < size_C; i++)
    {
@@ -314,8 +314,7 @@ int main(int argc, char** argv)
    clReleaseKernel(kernel);
    clReleaseCommandQueue(commands);
    clReleaseContext(context);
-
-*/
+   printf("OPENCL MATRIX MULT COMPLETED!\n");
    return 0;
 }
 
