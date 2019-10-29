@@ -585,8 +585,8 @@ clGetDeviceIDs(cl_platform_id   /* platform */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainDevice(cl_device_id /* device */) CL_API_SUFFIX__VERSION_1_2;
     
-// extern CL_API_ENTRY cl_int CL_API_CALL
-// clReleaseDevice(cl_device_id /* device */) CL_API_SUFFIX__VERSION_1_2;
+ extern CL_API_ENTRY cl_int CL_API_CALL
+ clReleaseDevice(cl_device_id /* device */) CL_API_SUFFIX__VERSION_1_2;
     
 // /* Context APIs  */
 extern CL_API_ENTRY cl_context CL_API_CALL
@@ -607,8 +607,8 @@ clCreateContext(const cl_context_properties * /* properties */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainContext(cl_context /* context */) CL_API_SUFFIX__VERSION_1_0;
 
-// extern CL_API_ENTRY cl_int CL_API_CALL
-// clReleaseContext(cl_context /* context */) CL_API_SUFFIX__VERSION_1_0;
+ extern CL_API_ENTRY cl_int CL_API_CALL
+ clReleaseContext(cl_context /* context */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clGetContextInfo(cl_context         /* context */, 
@@ -627,8 +627,8 @@ clCreateCommandQueue(cl_context                     /* context */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainCommandQueue(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
 
-// extern CL_API_ENTRY cl_int CL_API_CALL
-// clReleaseCommandQueue(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
+ extern CL_API_ENTRY cl_int CL_API_CALL
+ clReleaseCommandQueue(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clGetCommandQueueInfo(cl_command_queue      /* command_queue */,
@@ -685,8 +685,8 @@ clCreateBuffer(cl_context   /* context */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainMemObject(cl_mem /* memobj */) CL_API_SUFFIX__VERSION_1_0;
 
-// extern CL_API_ENTRY cl_int CL_API_CALL
-// clReleaseMemObject(cl_mem /* memobj */) CL_API_SUFFIX__VERSION_1_0;
+ extern CL_API_ENTRY cl_int CL_API_CALL
+ clReleaseMemObject(cl_mem  memobj ) ;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clGetSupportedImageFormats(cl_context           /* context */,
@@ -762,8 +762,8 @@ clCreateProgramWithSource(cl_context        /* context */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainProgram(cl_program /* program */) CL_API_SUFFIX__VERSION_1_0;
 
-// extern CL_API_ENTRY cl_int CL_API_CALL
-// clReleaseProgram(cl_program /* program */) CL_API_SUFFIX__VERSION_1_0;
+ extern CL_API_ENTRY cl_int CL_API_CALL
+ clReleaseProgram(cl_program /* program */) CL_API_SUFFIX__VERSION_1_0;
 
 extern CL_API_ENTRY cl_int CL_API_CALL
 clBuildProgram(cl_program           /* program */,
@@ -829,8 +829,8 @@ clCreateKernel(cl_program      /* program */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainKernel(cl_kernel    /* kernel */) CL_API_SUFFIX__VERSION_1_0;
 
-// extern CL_API_ENTRY cl_int CL_API_CALL
-// clReleaseKernel(cl_kernel   /* kernel */) CL_API_SUFFIX__VERSION_1_0;
+ extern CL_API_ENTRY cl_int CL_API_CALL
+ clReleaseKernel(cl_kernel   /* kernel */) CL_API_SUFFIX__VERSION_1_0;
 
 extern CL_API_ENTRY cl_int CL_API_CALL
 clSetKernelArg(cl_kernel    /* kernel */,
@@ -909,16 +909,16 @@ clSetKernelArg(cl_kernel    /* kernel */,
 // clFinish(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
 
 // /* Enqueued Commands APIs */
-// extern CL_API_ENTRY cl_int CL_API_CALL
-// clEnqueueReadBuffer(cl_command_queue    /* command_queue */,
-//                     cl_mem              /* buffer */,
-//                     cl_bool             /* blocking_read */,
-//                     size_t              /* offset */,
-//                     size_t              /* size */, 
-//                     void *              /* ptr */,
-//                     cl_uint             /* num_events_in_wait_list */,
-//                     const cl_event *    /* event_wait_list */,
-//                     cl_event *          /* event */) CL_API_SUFFIX__VERSION_1_0;
+ extern CL_API_ENTRY cl_int CL_API_CALL
+ clEnqueueReadBuffer(cl_command_queue    /* command_queue */,
+                     cl_mem              /* buffer */,
+                     cl_bool             /* blocking_read */,
+                     size_t              /* offset */,
+                     size_t              /* size */, 
+                     void *              /* ptr */,
+                     cl_uint             /* num_events_in_wait_list */,
+                     const cl_event *    /* event_wait_list */,
+                     cl_event *          /* event */) CL_API_SUFFIX__VERSION_1_0;
                             
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clEnqueueReadBufferRect(cl_command_queue    /* command_queue */,
