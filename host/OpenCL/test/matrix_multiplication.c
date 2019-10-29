@@ -222,43 +222,46 @@ int main(int argc, char **argv)
 
     int wA = WA;
     int wC = WC;
-    
-    // printf("Passing the d_C buffer address: %p\n", (void *)d_C);
-    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)d_C);
-    // err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&d_A);
-    // err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&d_B);
-    // err |= clSetKernelArg(kernel, 3, sizeof(int), (void *)&wA);
-    // err |= clSetKernelArg(kernel, 4, sizeof(int), (void *)&wC);
 
-    // if (err != CL_SUCCESS)
-    // {
-    //     printf("Error: Failed to set kernel arguments! %d\n", err);
-    //     exit(1);
-    // }
+    // FIX : the original version was (void *)&d_C but it works only without the & operator
+    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)d_A);
+    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)d_B);
+    err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)d_C);
+    err |= clSetKernelArg(kernel, 3, sizeof(int), (void *)&wA);
+    err |= clSetKernelArg(kernel, 4, sizeof(int), (void *)&wC);
+
+    if (err != CL_SUCCESS)
+    {
+        printf("Error: Failed to set kernel arguments! %d\n", err);
+        exit(1);
+    }
+
+    localWorkSize[0] = 16;
+    localWorkSize[1] = 16;
+    globalWorkSize[0] = 1024;
+    globalWorkSize[1] = 1024;
+
+    // Adding an event to synchronization purpuses
+    cl_event event;
+    err = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, globalWorkSize, localWorkSize, 0, NULL, NULL);
+
+    if (err != CL_SUCCESS)
+    {
+        printf("Error: Failed to execute kernel! %d\n", err);
+        exit(1);
+    }
 
     printf("FINE DELL'ESECUZIONE. TEST SUPERATO!\n");
 
-    //    localWorkSize[0] = 16;
-    //    localWorkSize[1] = 16;
-    //    globalWorkSize[0] = 1024;
-    //    globalWorkSize[1] = 1024;
+    // //Retrieve result from device
+    // clWaitForEvents(1, &event);
+    // err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, 0, NULL, NULL);
 
-    //    err = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, globalWorkSize, localWorkSize, 0, NULL, NULL);
-
-    //    if (err != CL_SUCCESS)
-    //    {
-    //        printf("Error: Failed to execute kernel! %d\n", err);
-    //        exit(1);
-    //    }
-
-    //    //Retrieve result from device
-    //    err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, 0, NULL, NULL);
-
-    //    if (err != CL_SUCCESS)
-    //    {
-    //        printf("Error: Failed to read output array! %d\n", err);
-    //        exit(1);
-    //    }
+    // if (err != CL_SUCCESS)
+    // {
+    //     printf("Error: Failed to read output array! %d\n", err);
+    //     exit(1);
+    // }
 
     //    //print out the results
 
@@ -283,7 +286,7 @@ int main(int argc, char **argv)
     //    clReleaseMemObject(d_C);
     //    clReleaseMemObject(d_B);
 
-    //    clReleaseProgram(program);
+    // clReleaseProgram(program);
     //    clReleaseKernel(kernel);
     //    clReleaseCommandQueue(commands);
     //    clReleaseContext(context);

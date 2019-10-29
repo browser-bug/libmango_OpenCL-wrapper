@@ -15,6 +15,8 @@ uint32_t buffer_id = 1;
 extern "C"
 {
 
+    std::vector<mango::Arg *> arguments;
+
     struct _cl_context
     {
         cl_program p;
@@ -41,7 +43,12 @@ extern "C"
     {
         uint32_t id;
         mango_kernel_t kernel;
-        std::vector<mango::Arg> arguments;
+        std::vector<mango::Arg *> args;
+    };
+
+    struct _cl_event
+    {
+        mango_event_t ev;
     };
 
     /* API IMPLEMENTATION */
@@ -143,6 +150,7 @@ extern "C"
 
         program->tg = NULL;
         program->tg = mango_task_graph_add_kernel(NULL, &(kern->kernel));
+        std::cout << "[TASK_GRAPH] added new kernel to tg (address) : " << program->tg << std::endl;
         program->kernel = kern->kernel;
 
         *errcode_ret = CL_SUCCESS;
@@ -162,7 +170,7 @@ extern "C"
         memory->id = buffer_id;
         buffer_id++;
 
-        // FIX this need to be generic, B1 can't be static
+        // FIX this need to be generic
         if (flags != (CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR))
         {
             memory->buffer = mango_register_memory(memory->id, size, BUFFER, 1, 0, context->p->kernel);
@@ -173,6 +181,21 @@ extern "C"
         }
 
         context->p->tg = mango_task_graph_add_buffer(context->p->tg, &(memory->buffer));
+
+        std::cout << "[TASK_GRAPH] added new buffer to tg (address) : " << context->p->tg << std::endl;
+
+        // Data transfer host->device
+        if (host_ptr != NULL)
+        {
+            mango_write(host_ptr, memory->buffer, DIRECT, 0);
+        }
+        else
+        {
+            // FIX : throwing error onSetup: Task-graph synchronization event missing (associated to the output buffer)
+            printf("[BUFFER] Allocating new resources\n");
+            // mango_resource_allocation(context->p->tg);
+            printf("[BUFFER] Allocation completed\n");
+        }
 
         // std::cout << "Returning memory with address: " << memory << std::endl;
         return memory;
@@ -205,14 +228,83 @@ extern "C"
             break;
         }
 
-
+        // std::vector<mango::Arg *> args;
         // FIX arg_value must be the address of a mango_buffer_t
         std::cout << "Passing mango_buffer with address: " << arg_value << " and value: " << (*(uint32_t *)value) << std::endl;
         mango_arg_t *arg = mango_arg(kernel->kernel, value, arg_size, arg_type);
 
-        std::cout << "created arg at address: " << arg << std::endl;
-        kernel->arguments.push_back((mango::Arg *)arg);
+        // std::cout << "created arg at address: " << arg << std::endl;
+        arguments.push_back((mango::Arg *)arg);
+        // std::cout << "Added new argument: " << (mango_arg_t *)arguments.back() << " [VEC_SIZE] = " << arguments.size() << std::endl;
 
         return CL_SUCCESS;
+    }
+
+    cl_int clEnqueueNDRangeKernel(cl_command_queue command_queue,
+                                  cl_kernel kernel,
+                                  cl_uint work_dim,
+                                  const size_t *global_work_offset,
+                                  const size_t *global_work_size,
+                                  const size_t *local_work_size,
+                                  cl_uint num_events_in_wait_list,
+                                  const cl_event *event_wait_list,
+                                  cl_event *event)
+    {
+        /* Check for events */
+        // mango_arg_t *arg_ev = NULL;
+        // if (event != NULL)
+        // {
+        //     cl_event e = *event;
+        //     e = (cl_event)malloc(sizeof(struct _cl_event));
+        //     e->ev = mango_register_event(1, 0, kernel->kernel);
+        //     arg_ev = mango_arg(kernel->kernel, &(e->ev), sizeof(uint64_t), EVENT);
+        // }
+
+        /* Putting togheter the arguments */
+        // TODO convert the vector data into the variadic parameter of mango_set_args
+
+        std::cout << "Setting args for kernel: " << kernel->kernel << std::endl;
+        mango_args_t *args = mango_set_args(kernel->kernel, 0);
+        printf("Succesfully created args\n");
+
+        /* spawn kernel */
+        mango_event_t ev = mango_start_kernel(kernel->kernel, args, NULL);
+
+        /* wait for kernel completion */
+        mango_wait(ev);
+
+        return CL_SUCCESS;
+    }
+
+    cl_int clWaitForEvents(cl_uint num_events,
+                           const cl_event *event_list)
+    {
+        // TODO : make it iterate over the event list
+        cl_event e = *event_list;
+        mango_wait(e->ev);
+
+        return CL_SUCCESS;
+    }
+
+    cl_int clEnqueueReadBuffer(cl_command_queue command_queue,
+                               cl_mem buffer, /* kernel buffer to be read */
+                               cl_bool blocking_read,
+                               size_t offset,
+                               size_t size,
+                               void *ptr, /* host buffer */
+                               cl_uint num_events_in_wait_list,
+                               const cl_event *event_wait_list,
+                               cl_event *event)
+    {
+        mango_read(ptr, buffer->buffer, DIRECT, 0);
+
+        return CL_SUCCESS;
+    }
+
+    cl_int clReleaseProgram(cl_program program)
+    {
+        mango_resource_deallocation(program->tg);
+        mango_task_graph_destroy_all(program->tg);
+        mango_release();
     }
 }
