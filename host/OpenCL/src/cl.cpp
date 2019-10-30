@@ -18,7 +18,7 @@ struct _cl_program
     kernelfunction *kernfunc;
     mango_task_graph_t *tg;
     // TO BE FIXED: maybe it has to be moved
-    mango_kernel_t kernel;
+    mango_kernel_t mango_kernel;
 };
 
 
@@ -28,20 +28,25 @@ struct _cl_mem
     uint32_t id;
     mango_buffer_t buffer;
     void * data;
+    // e is used to get_buffer_event of memC
+    mango_event_t e ;
+    // mango_ev is used as event from the kernel, it is here because in clEnqueuReadBuffer i didnt have access to kernel
+    mango_event_t mango_ev;
+    
 };
 
 
 struct _cl_kernel
 {
     uint32_t id;
-    mango_kernel_t kernel;
+    mango_kernel_t mango_kernel;
     std::vector<mango::Arg *> arguments;
+    mango_event_t mango_ev;
 };
 
 struct _cl_platform_id
 {
 
-	struct _cl_device_id *devices;
 };
 
 
@@ -93,9 +98,9 @@ cl_context clCreateContext(const cl_context_properties *  properties ,
         if (mango_init("test", "test_manga") == SUCCESS)
         {
             
-            cl_context mycontext = NULL;
-            mycontext = (cl_context)malloc(sizeof(struct _cl_context));
-            return mycontext;
+            cl_context context = NULL;
+            context = (cl_context)malloc(sizeof(struct _cl_context));
+            return context;
         }
  }
 
@@ -127,17 +132,17 @@ cl_program clCreateProgramWithBinary(cl_context                      context ,
                            cl_int *                       errcode_ret )
 {
 
-    cl_program myprogram = NULL;
-    myprogram = (cl_program)malloc(sizeof(struct _cl_program));
-    myprogram->kernfunc = mango_kernelfunction_init();
+    cl_program program = NULL;
+    program = (cl_program)malloc(sizeof(struct _cl_program));
+    program->kernfunc = mango_kernelfunction_init();
     char kernel_file[] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
 
     // Associate program with context
-    context->p = myprogram;
+    context->p = program;
     // load the kernel binary 
-	  mango_load_kernel(kernel_file, myprogram->kernfunc, GN, BINARY);
+	  mango_load_kernel(kernel_file, program->kernfunc, GN, BINARY);
 
-     return myprogram;
+     return program;
 }
 
 
@@ -171,16 +176,16 @@ cl_kernel clCreateKernel(cl_program       program ,
 
 	*errcode_ret = CL_SUCCESS;
 	 
-  cl_kernel mykernel;
-	mykernel = (cl_kernel) malloc(sizeof(_cl_kernel));
+  cl_kernel kernel;
+	kernel = (cl_kernel) malloc(sizeof(_cl_kernel));
 
-	mykernel->id = KID;
+	kernel->id = KID;
 
-  mykernel->kernel = mango_register_kernel(mykernel->id, program->kernfunc, 2, 1, B1, B2, B3);  
+  kernel->mango_kernel = mango_register_kernel(kernel->id, program->kernfunc, 2, 1, B1, B2, B3);  
 
 	program->tg = NULL;
-  program->kernel = mykernel->kernel;
-	 return mykernel;
+  program->mango_kernel = kernel->mango_kernel;
+	 return kernel;
  
 }
 
@@ -206,9 +211,9 @@ cl_kernel clCreateKernel(cl_program       program ,
         d_C->id = i;
         // host_ptr contains a pointer to the matrix C
         d_C->data  = host_ptr;
-        d_C->buffer = mango_register_memory(d_C->id, size, BUFFER, 1, 0, context->p->kernel);
+        d_C->buffer = mango_register_memory(d_C->id, size, BUFFER, 1, 0, context->p->mango_kernel);
        
-      	context->p->tg = mango_task_graph_create(1, 3, 0, context->p->kernel, d_A->buffer, d_B->buffer, d_C->buffer);
+      	context->p->tg = mango_task_graph_create(1, 3, 0, context->p->mango_kernel, d_A->buffer, d_B->buffer, d_C->buffer);
        
         mango_resource_allocation(context->p->tg);
 
@@ -218,7 +223,7 @@ cl_kernel clCreateKernel(cl_program       program ,
           d_B = (cl_mem)malloc(sizeof(struct _cl_mem));
           d_B->id= i;
           d_B->data = host_ptr;
-          d_B->buffer = mango_register_memory(d_B->id, size, BUFFER, 0, 1, context->p->kernel);
+          d_B->buffer = mango_register_memory(d_B->id, size, BUFFER, 0, 1, context->p->mango_kernel);
 
           return d_B;
 
@@ -226,7 +231,7 @@ cl_kernel clCreateKernel(cl_program       program ,
      		d_A = (cl_mem)malloc(sizeof(struct _cl_mem));
         d_A->id = i;
         d_A->data = host_ptr;
-        d_A->buffer = mango_register_memory(d_A->id, size, BUFFER, 0, 1, context->p->kernel);
+        d_A->buffer = mango_register_memory(d_A->id, size, BUFFER, 0, 1, context->p->mango_kernel);
         return d_A;
 
      }else{
@@ -266,7 +271,6 @@ cl_kernel clCreateKernel(cl_program       program ,
   mango_arg_t *arg3 ;
   mango_arg_t *arg4 ;
   mango_arg_t *arg5 ;
-  mango_event_t e ;
   mango_arg_t *arg6;
 
   mango_args_t *args;
@@ -299,18 +303,18 @@ cl_int clSetKernelArg(cl_kernel kernel,
        
     }
     if(arg_index == 0){
-      arg1 = mango_arg( kernel->kernel, &(d_A->buffer), arg_size, arg_type);
+      arg1 = mango_arg( kernel->mango_kernel, &(d_A->buffer), arg_size, arg_type);
     }else if(arg_index == 1){
-      arg2 = mango_arg( kernel->kernel, &(d_B->buffer), arg_size, arg_type);
+      arg2 = mango_arg( kernel->mango_kernel, &(d_B->buffer), arg_size, arg_type);
     }else if (arg_index == 2){
-      arg3 = mango_arg( kernel->kernel, &(d_C->buffer), arg_size, arg_type);
+      arg3 = mango_arg( kernel->mango_kernel, &(d_C->buffer), arg_size, arg_type);
     }else if (arg_index == 3 ){
-      arg4 = mango_arg( kernel->kernel, value, arg_size, arg_type);
+      arg4 = mango_arg( kernel->mango_kernel, value, arg_size, arg_type);
     }else if (arg_index == 4){
-      arg5 = mango_arg( kernel->kernel, value, arg_size, arg_type);
-      e= mango_get_buffer_event(d_C->buffer);
-      arg6 = mango_arg( kernel->kernel, &e, sizeof(uint64_t), EVENT );
-      args =mango_set_args(kernel->kernel, 6, arg1, arg2, arg3, arg4, arg5, arg6);
+      arg5 = mango_arg( kernel->mango_kernel, value, arg_size, arg_type);
+      d_C->e= mango_get_buffer_event(d_C->buffer);
+      arg6 = mango_arg( kernel->mango_kernel, &(d_C->e), sizeof(uint64_t), EVENT );
+      args =mango_set_args(kernel->mango_kernel, 6, arg1, arg2, arg3, arg4, arg5, arg6);
     }else{
       printf("ERROR in clSEtKErnelARG!!!\n");
     }
@@ -327,7 +331,6 @@ cl_int clSetKernelArg(cl_kernel kernel,
 }
 
 
-mango_event_t ev;
  cl_int clEnqueueNDRangeKernel(cl_command_queue  command_queue ,
                         cl_kernel         kernel ,
                         cl_uint           work_dim ,
@@ -344,9 +347,9 @@ mango_event_t ev;
   mango_write(d_B->data, d_B->buffer, DIRECT, 0);
 
   /* spawn kernel */
-  ev = mango_start_kernel(kernel->kernel, args, NULL);
+  kernel->mango_ev = mango_start_kernel(kernel->mango_kernel, args, NULL);
 
-
+  d_C->mango_ev = kernel->mango_ev;
 
 
 
@@ -366,11 +369,11 @@ mango_event_t ev;
  {
 
     /* reading results */
-    mango_wait(e);
+    mango_wait(d_C->e);
     mango_read(d_C->data, d_C->buffer, DIRECT, 0);
 
     /* wait for kernel completion */
-    mango_wait(ev);
+    mango_wait(d_C->mango_ev);
 
     return CL_SUCCESS;
 
@@ -393,6 +396,7 @@ mango_event_t ev;
   mango_task_graph_destroy_all(program->tg);
   free(program);
  }
+
 
  cl_int  clReleaseKernel(cl_kernel    kernel )
  {
