@@ -12,23 +12,23 @@ uint32_t buffer_id = 1;
 #define B2 2
 #define B3 3
 
+#ifdef __cplusplus
 extern "C"
 {
+#endif
 
     std::vector<mango::Arg *> arguments;
+    mango_task_graph_t *tg = NULL;
+    mango_buffer_t writeBuf;
 
     struct _cl_context
     {
         cl_program p;
-        // cl_kern k;
-        // cl_mem m;
-        //mango_task_graph_t *tg;
     };
 
     struct _cl_program
     {
         kernelfunction *kernfunc;
-        mango_task_graph_t *tg;
         // FIX maybe it has to be moved
         mango_kernel_t kernel;
     };
@@ -51,57 +51,66 @@ extern "C"
         mango_event_t ev;
     };
 
+    struct _cl_command_queue
+    {
+    };
+
+
     /* API IMPLEMENTATION */
 
-    cl_int clGetPlatformIDs(cl_uint /* num_entries */,
-                            cl_platform_id * /* platforms */,
-                            cl_uint * /* num_platforms */)
+    cl_int clGetPlatformIDs(cl_uint num_entries,
+                            cl_platform_id *platforms,
+                            cl_uint *num_platforms)
     {
         printf("GetPlatformIDs is not implemented\n");
         return CL_SUCCESS;
     }
 
-    cl_int clGetDeviceIDs(cl_platform_id /* platform */,
-                          cl_device_type /* device_type */,
-                          cl_uint /* num_entries */,
-                          cl_device_id * /* devices */,
-                          cl_uint * /* num_devices */)
+    cl_int clGetDeviceIDs(cl_platform_id platform,
+                          cl_device_type device_type,
+                          cl_uint num_entries,
+                          cl_device_id *devices,
+                          cl_uint *num_devices)
     {
         printf("GetDeviceIDs is not implemented\n");
         return CL_SUCCESS;
     }
 
-    cl_context clCreateContext(const cl_context_properties * /* properties */,
-                               cl_uint /* num_devices */,
-                               const cl_device_id * /* devices */,
-                               void(CL_CALLBACK * /* pfn_notify */)(const char *, const void *, size_t, void *),
-                               void * /* user_data */,
-                               cl_int * /* errcode_ret */)
+    cl_context context = NULL;
+    cl_context clCreateContext(const cl_context_properties *properties,
+                               cl_uint num_devices,
+                               const cl_device_id *devices,
+                               void(CL_CALLBACK *pfn_notify)(const char *, const void *, size_t, void *),
+                               void *user_data,
+                               cl_int *errcode_ret)
     {
         if (mango_init("test", "test_manga") == SUCCESS)
         {
-            cl_context context = NULL;
             context = (cl_context)malloc(sizeof(struct _cl_context));
             return context;
         }
     }
 
-    cl_command_queue clCreateCommandQueue(cl_context /* context */,
-                                          cl_device_id /* device */,
-                                          cl_command_queue_properties /* properties */,
-                                          cl_int * /* errcode_ret */)
+    cl_command_queue clCreateCommandQueue(cl_context context,
+                                          cl_device_id device,
+                                          cl_command_queue_properties properties,
+                                          cl_int *errcode_ret)
     {
         printf("CreateCommandQueue is not implemented\n");
         cl_command_queue commands;
+        commands = (cl_command_queue)malloc(sizeof(struct _cl_command_queue));
         // FIX a task_graph creation section could be added
 
         return commands;
     }
 
-    cl_program clCreateProgramWithSource(cl_context context,
-                                         cl_uint count,
-                                         const char **strings,
+    cl_program program = NULL;
+    cl_program clCreateProgramWithBinary(cl_context context,
+                                         cl_uint num_devices,
+                                         const cl_device_id *device_list,
                                          const size_t *lengths,
+                                         const unsigned char **binaries,
+                                         cl_int *binary_status,
                                          cl_int *errcode_ret)
     {
         // #ifdef GNEMU
@@ -111,14 +120,13 @@ extern "C"
         // #endif
 
         // Force to read the matrix_multiplication_dev file
-        char kernel_file[] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
+        char kernel_binary[] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
 
-        cl_program program = NULL;
         program = (cl_program)malloc(sizeof(struct _cl_program));
         program->kernfunc = mango_kernelfunction_init();
 
         // Load the kernel in PEAK mode
-        mango_load_kernel(kernel_file, program->kernfunc, PEAK, BINARY);
+        mango_load_kernel(kernel_binary, program->kernfunc, GN, BINARY);
 
         // Associate program with context
         context->p = program;
@@ -133,24 +141,22 @@ extern "C"
                           void *user_data)
     {
         printf("BuildProgram is not implemented\n");
-
         return CL_SUCCESS;
     }
 
+    cl_kernel kern = NULL;
     cl_kernel clCreateKernel(cl_program program,
                              const char *kernel_name,
                              cl_int *errcode_ret)
     {
-        cl_kernel kern = NULL;
         kern = (cl_kernel)malloc(sizeof(struct _cl_kernel));
 
         kern->id = KID;
         // FIX find a way to make a variadic call to mango_register_kernel
         kern->kernel = mango_register_kernel(kern->id, program->kernfunc, 2, 1, B1, B2, B3);
 
-        program->tg = NULL;
-        program->tg = mango_task_graph_add_kernel(NULL, &(kern->kernel));
-        std::cout << "[TASK_GRAPH] added new kernel to tg (address) : " << program->tg << std::endl;
+        tg = mango_task_graph_add_kernel(NULL, &(kern->kernel));
+        std::cout << "[TASK_GRAPH] added new kernel to tg (address) : " << tg << std::endl;
         program->kernel = kern->kernel;
 
         *errcode_ret = CL_SUCCESS;
@@ -174,27 +180,21 @@ extern "C"
         if (flags != (CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR))
         {
             memory->buffer = mango_register_memory(memory->id, size, BUFFER, 1, 0, context->p->kernel);
+            writeBuf = memory->buffer;
         }
         else
         {
             memory->buffer = mango_register_memory(memory->id, size, BUFFER, 0, 1, context->p->kernel);
         }
 
-        context->p->tg = mango_task_graph_add_buffer(context->p->tg, &(memory->buffer));
+        tg = mango_task_graph_add_buffer(tg, &(memory->buffer));
 
-        std::cout << "[TASK_GRAPH] added new buffer to tg (address) : " << context->p->tg << std::endl;
+        std::cout << "[TASK_GRAPH] added new buffer to tg (address) : " << tg << std::endl;
 
         // Data transfer host->device
         if (host_ptr != NULL)
         {
             mango_write(host_ptr, memory->buffer, DIRECT, 0);
-        }
-        else
-        {
-            // FIX : throwing error onSetup: Task-graph synchronization event missing (associated to the output buffer)
-            printf("[BUFFER] Allocating new resources\n");
-            // mango_resource_allocation(context->p->tg);
-            printf("[BUFFER] Allocation completed\n");
         }
 
         // std::cout << "Returning memory with address: " << memory << std::endl;
@@ -214,7 +214,7 @@ extern "C"
         case sizeof(cl_mem):
             arg_size = sizeof(uint64_t);
             arg_type = BUFFER;
-            value = &(((cl_mem)arg_value)->buffer);
+            value = &((*(cl_mem *)arg_value)->buffer);
             break;
 
         case sizeof(int):
@@ -225,7 +225,6 @@ extern "C"
 
         default:
             return CL_BUILD_ERROR;
-            break;
         }
 
         // std::vector<mango::Arg *> args;
@@ -251,20 +250,26 @@ extern "C"
                                   cl_event *event)
     {
         /* Check for events */
-        // mango_arg_t *arg_ev = NULL;
-        // if (event != NULL)
-        // {
-        //     cl_event e = *event;
-        //     e = (cl_event)malloc(sizeof(struct _cl_event));
-        //     e->ev = mango_register_event(1, 0, kernel->kernel);
-        //     arg_ev = mango_arg(kernel->kernel, &(e->ev), sizeof(uint64_t), EVENT);
-        // }
+        mango_arg_t *arg_ev = NULL;
+        if (event != NULL)
+        {
+            cl_event e = *event;
+            e = (cl_event)malloc(sizeof(struct _cl_event));
+            e->ev = mango_get_buffer_event(writeBuf);
+            arg_ev = mango_arg(kernel->kernel, &(e->ev), sizeof(uint64_t), EVENT);
+        }
+
+        tg = mango_task_graph_add_event(tg, NULL);
+
+        printf("[BUFFER] Allocating new resources\n");
+        mango_resource_allocation(tg);
+        printf("[BUFFER] Allocation completed\n");
 
         /* Putting togheter the arguments */
         // TODO convert the vector data into the variadic parameter of mango_set_args
 
         std::cout << "Setting args for kernel: " << kernel->kernel << std::endl;
-        mango_args_t *args = mango_set_args(kernel->kernel, 0);
+        mango_args_t *args = mango_set_args(kernel->kernel, 6, arguments.at(0),arguments.at(1),arguments.at(2),arguments.at(3),arguments.at(4),arg_ev);
         printf("Succesfully created args\n");
 
         /* spawn kernel */
@@ -303,8 +308,11 @@ extern "C"
 
     cl_int clReleaseProgram(cl_program program)
     {
-        mango_resource_deallocation(program->tg);
-        mango_task_graph_destroy_all(program->tg);
+        mango_resource_deallocation(tg);
+        mango_task_graph_destroy_all(tg);
         mango_release();
     }
+
+#ifdef __cplusplus
 }
+#endif

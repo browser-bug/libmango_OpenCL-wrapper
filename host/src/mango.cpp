@@ -324,6 +324,8 @@ extern "C"
 		va_end(list);
 		auto k = cxt->get_kernel(kernel);
 
+		std::cout << "[DEBUG] Correctly retrieved the kernel : " << kernel << std::endl;
+
 		assert(k && "Kernel not found.");
 
 		return (mango_args_t *)new mango::KernelArguments(arguments, k);
@@ -418,6 +420,27 @@ extern "C"
 		}
 
 		*tgp += cxt->get_kernel(*kernel);
+		return (TaskGraph *)tgp;
+	}
+
+	mango_task_graph_t *mango_task_graph_add_event(mango_task_graph_t *tg, mango_event_t *event)
+	{
+		mango::TaskGraph *tgp = (mango::TaskGraph *)tg;
+		if (tgp == NULL)
+		{
+			tgp = new mango::TaskGraph();
+			printf("[EVENT] creating a new task_graph object\n");
+		}
+
+		if (event != NULL)
+		{
+			printf("[EVENT] adding event: %d\n", *event);
+			*tgp += cxt->get_event(*event);
+		}
+
+		// FIX: this is not properly its function, so this must be moved somewhere else
+		for (auto &e : cxt->get_events())
+			*tgp += e.second;
 		return (TaskGraph *)tgp;
 	}
 }

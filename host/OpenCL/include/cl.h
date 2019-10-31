@@ -737,21 +737,21 @@ clCreateBuffer(cl_context   /* context */,
 //                  size_t *           /* param_value_size_ret */) CL_API_SUFFIX__VERSION_1_0;
                             
 // /* Program Object APIs  */
-extern CL_API_ENTRY cl_program CL_API_CALL
-clCreateProgramWithSource(cl_context        /* context */,
-                          cl_uint           /* count */,
-                          const char **     /* strings */,
-                          const size_t *    /* lengths */,
-                          cl_int *          /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
-
 // extern CL_API_ENTRY cl_program CL_API_CALL
-// clCreateProgramWithBinary(cl_context                     /* context */,
-//                           cl_uint                        /* num_devices */,
-//                           const cl_device_id *           /* device_list */,
-//                           const size_t *                 /* lengths */,
-//                           const unsigned char **         /* binaries */,
-//                           cl_int *                       /* binary_status */,
-//                           cl_int *                       /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
+// clCreateProgramWithSource(cl_context        /* context */,
+//                           cl_uint           /* count */,
+//                           const char **     /* strings */,
+//                           const size_t *    /* lengths */,
+//                           cl_int *          /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
+
+extern CL_API_ENTRY cl_program CL_API_CALL
+clCreateProgramWithBinary(cl_context                     /* context */,
+                          cl_uint                        /* num_devices */,
+                          const cl_device_id *           /* device_list */,
+                          const size_t *                 /* lengths */,
+                          const unsigned char **         /* binaries */,
+                          cl_int *                       /* binary_status */,
+                          cl_int *                       /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_program CL_API_CALL
 // clCreateProgramWithBuiltInKernels(cl_context            /* context */,
