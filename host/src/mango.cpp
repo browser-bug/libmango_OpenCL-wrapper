@@ -160,15 +160,19 @@ mango_task_graph_t *mango_task_graph_create(int k, int b, int e, ...) {
 	va_list list;
 	va_start(list, e);
 	mango::TaskGraph *tg = new mango::TaskGraph();
+
 	for(int i=0; i<k; i++)
 		*tg+=cxt->get_kernel(va_arg(list, mango_kernel_t));
 	for(int i=0; i<b; i++)
 		*tg+=cxt->get_buffer(va_arg(list, mango_buffer_t));
 	for(int i=0; i<e; i++)
 		*tg+=cxt->get_event(va_arg(list, mango_event_t));
+	
 	va_end(list);
+
 	for(auto &e : cxt->get_events())
 		*tg+=e.second;
+
 	return (TaskGraph *)tg;
 }
 
@@ -355,6 +359,59 @@ uint32_t mango_read_synchronization(mango_event_t event) {
 
 uint16_t mango_get_max_nr_buffers(void) {
 	return mango::Context::mango_get_max_nr_buffers();
+}
+
+
+/* OpenCL Wrapper Utils Implementations */
+
+mango_task_graph_t *mango_task_graph_add_buffer(mango_task_graph_t *tg, mango_buffer_t *buffer)
+{
+	printf("[BUFFER] adding buffer: %d\n", *buffer);
+	// *((mango::TaskGraph *)tg)
+	assert(buffer != NULL && "Buffer must be a valid pointer!");
+	mango::TaskGraph *tgp = (mango::TaskGraph *)tg;
+	if (tgp == NULL)
+	{
+		tgp = new mango::TaskGraph();
+		printf("[BUFFER] creating a new task_graph object\n");
+	}
+
+	*tgp += cxt->get_buffer(*buffer);
+	return (TaskGraph *)tgp;
+}
+
+mango_task_graph_t *mango_task_graph_add_kernel(mango_task_graph_t *tg, mango_kernel_t *kernel)
+{
+	printf("[KERNEL] adding kernel: %d\n", *kernel);
+	// *((mango::TaskGraph *)tg)
+	assert(kernel != NULL && "Kernel must be a valid pointer!");
+	mango::TaskGraph *tgp = (mango::TaskGraph *)tg;
+	if (tgp == NULL)
+	{
+		tgp = new mango::TaskGraph();
+		printf("[KERNEL] creating a new task_graph object\n");
+	}
+
+	*tgp += cxt->get_kernel(*kernel);
+
+	
+
+	return (TaskGraph *)tgp;
+}
+mango_task_graph_t *mango_task_graph_update_events(mango_task_graph_t *tg){
+	mango::TaskGraph *tgp = (mango::TaskGraph *)tg;
+	if (tgp == NULL)
+	{
+		tgp = new mango::TaskGraph();
+		printf("[KERNEL] creating a new task_graph object\n");
+	}
+	int counter=0;
+	for(auto &e : cxt->get_events()){
+		*tgp+=e.second;
+		counter++;
+	}
+	printf("[EVENTS] %d events added to TaskGraph\n",counter);
+	return (TaskGraph *)tgp;
 }
 
 }
