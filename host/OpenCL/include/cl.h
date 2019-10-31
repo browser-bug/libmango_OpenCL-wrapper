@@ -818,7 +818,8 @@ clBuildProgram(cl_program           /* program */,
 extern CL_API_ENTRY cl_kernel CL_API_CALL
 clCreateKernel(cl_program      /* program */,
                const char *    /* kernel_name */,
-               cl_int *        /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
+               cl_int *        /* errcode_ret */,
+				...) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clCreateKernelsInProgram(cl_program     /* program */,
@@ -828,6 +829,11 @@ clCreateKernel(cl_program      /* program */,
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainKernel(cl_kernel    /* kernel */) CL_API_SUFFIX__VERSION_1_0;
+
+//  THIS FUNCTION IS NECESSARY SINCE IN MANGO WE HAVE AN UPDATE OF EVENTS AFTER EACH BUFFER IS CREATED
+// AND WE ALLOCATE RESORUCE AFTER THE TASKGRAPH HAS BEEN CREATED
+ cl_int cl_update_events_allocate_resource(cl_program program);
+
 
  extern CL_API_ENTRY cl_int CL_API_CALL
  clReleaseKernel(cl_kernel   /* kernel */) CL_API_SUFFIX__VERSION_1_0;
