@@ -32,64 +32,6 @@ void randomMemInit(float* data, int size)
     data[i] = rand() / (float)RAND_MAX;
 }
 
-long LoadOpenCLKernel(char const* path, char **buf)
-{
-    FILE  *fp;
-    size_t fsz;
-    long   off_end;
-    int    rc;
-
-    printf("1st if\n");
-    /* Open the file */
-    fp = fopen(path, "r");
-    if( NULL == fp ) {
-        return -1L;
-    }
-
-    printf("2nd if\n");
-    /* Seek to the end of the file */
-    rc = fseek(fp, 0L, SEEK_END);
-    if( 0 != rc ) {
-        return -1L;
-    }
-
-    printf("3rd if\n");
-    /* Byte offset to the end of the file (size) */
-    if( 0 > (off_end = ftell(fp)) ) {
-        return -1L;
-    }
-        printf("4rd if\n");
-
-    fsz = (size_t)off_end;
-
-    /* Allocate a buffer to hold the whole file */
-    *buf = (char *) malloc( fsz+1);
-    if( NULL == *buf ) {
-        return -1L;
-    }
-
-    /* Rewind file pointer to start of file */
-    rewind(fp);
-
-    /* Slurp file into buffer */
-    if( fsz != fread(*buf, 1, fsz, fp) ) {
-        free(*buf);
-        return -1L;
-    }
-
-    /* Close the file */
-    if( EOF == fclose(fp) ) {
-        free(*buf);
-        return -1L;
-    }
-
-
-    /* Make sure the buffer is NUL-terminated, just in case */
-    (*buf)[fsz] = '\0';
-
-    /* Return the file size */
-    return (long)fsz;
-}
 
 int main(int argc, char** argv)
 {
@@ -111,23 +53,29 @@ int main(int argc, char** argv)
 
    //Allocate host memory for matrices A and B
    unsigned int size_A = WA * HA;
-   unsigned int mem_size_A = sizeof(float) * size_A;
-   float* h_A = (float*) malloc(mem_size_A);
+   unsigned int mem_size_A = sizeof(int) * size_A;
+   int* h_A = (int*) malloc(mem_size_A);
 
    unsigned int size_B = WB * HB;
-   unsigned int mem_size_B = sizeof(float) * size_B;
-   float* h_B = (float*) malloc(mem_size_B);
+   unsigned int mem_size_B = sizeof(int) * size_B;
+   int* h_B = (int*) malloc(mem_size_B);
 
    //Initialize host memory
-   randomMemInit(h_A, size_A);
-   randomMemInit(h_B, size_B);
+   //randomMemInit(h_A, size_A);
+   //randomMemInit(h_B, size_B);
+
+   for(int i=0;i<size_B;i++){
+      h_A[i] = 2;
+
+      h_B[i] = 2;
+   }
 
 
 
    //Allocate host memory for the result C
    unsigned int size_C = WC * HC;
-   unsigned int mem_size_C = sizeof(float) * size_C;
-   float* h_C = (float*) malloc(mem_size_C);
+   unsigned int mem_size_C = sizeof(int) * size_C;
+   int* h_C = (int*) malloc(mem_size_C);
 
    printf("Initializing OpenCL device...\n");
 
@@ -152,8 +100,6 @@ int main(int argc, char** argv)
    {
        printf("Error: Failed to create a compute context!\n");
        return EXIT_FAILURE;
-   }else {
-      printf("Context has been created correctly\n");
    }
 
    
@@ -163,35 +109,15 @@ int main(int argc, char** argv)
    {
        printf("Error: Failed to create a command commands!\n");
        return EXIT_FAILURE;
-   }else {
-      printf("Commands has been created correctly\n");
    }
 
-   /*
-     // Create the compute program from the source file
-     char *KernelSource;
-     long lFileSize;
-
-     // For simplicity change it to your absolute path.
-     lFileSize = LoadOpenCLKernel("/home/steven/Desktop/bernardo/libmango_test/host/OpenCL/test/kernel/kernel.cl", &KernelSource);
-     if( lFileSize < 0L ) {
-         perror("File2 read failed");
-         return 1;
-     }else{
-        printf("File read correctly\n");
-     }
-   */
-     
-
-     // it does nothing? i guess it should just load the kernel
+    // it does nothing? i guess it should just load the kernel
      program = clCreateProgramWithBinary(context, 1 , NULL, NULL, NULL, NULL, &err);
      if (!program)
      {
        printf("Error: Failed to create compute program!\n");
        return EXIT_FAILURE;
-    }else {
-      printf("Program has been created correctly\n");
-   }
+    }
 
    
 
@@ -205,8 +131,6 @@ int main(int argc, char** argv)
        //clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
        printf("%s\n", buffer);
        exit(1);
-   }else {
-      printf("Program has been built correctly\n");
    }
 
 
@@ -217,8 +141,6 @@ int main(int argc, char** argv)
    {
        printf("Error: Failed to create compute kernel!\n");
        exit(1);
-   }else {
-      printf("Kernel has been created correctly\n");
    }
 
 
@@ -234,12 +156,14 @@ int main(int argc, char** argv)
    {
        printf("Error: Failed to allocate device memory!\n");
        exit(1);
-   }else{
-    printf("OK WE DID ALLOCATE MEMORY\n");
    }
 
    printf("Running matrix multiplication for matrices A (%dx%d) and B (%dx%d) ...\n", WA,HA,WB,HB);
 
+
+    // OKAY HERE IT IS NECESSARY TO CALL A MANGO FUNCTION 
+   if(cl_update_events_allocate_resource(program) == CL_SUCCESS)
+      printf("UPDATE EVENTS AND ALLOCATE RESOURCE WORKED!\n");
 
 
    //Launch OpenCL kernel
@@ -257,25 +181,19 @@ int main(int argc, char** argv)
    {
        printf("Error: Failed to set kernel arguments! %d\n", err);
        exit(1);
-   }else{
-      printf("clSetKernelArg worked correctly\n");
    }
 
    localWorkSize[0] = 16;
    localWorkSize[1] = 16;
    globalWorkSize[0] = 1024;
    globalWorkSize[1] = 1024;
-      printf("WRITE WORKED3\n");
 
    err = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, globalWorkSize, localWorkSize, 0, NULL, NULL);
-      printf("WRITE WORKED4\n");
 
    if (err != CL_SUCCESS)
    {
        printf("Error: Failed to execute kernel! %d\n", err);
        exit(1);
-   }else{
-      printf("WRITE WORKED\n");
    }
 
    //Retrieve result from device
@@ -293,7 +211,7 @@ int main(int argc, char** argv)
    int i;
    for(i = 0; i < size_C; i++)
    {
-      printf("%f ", h_C[i]);
+      printf("%d ", h_C[i]);
       if(((i + 1) % WC) == 0)
       printf("\n");
    }
