@@ -270,6 +270,8 @@ mango_task_graph_t *mango_task_graph_add_event(mango_task_graph_t *tg, mango_eve
  */
 mango_task_graph_t *mango_task_graph_remove_event(mango_task_graph_t *tg, mango_event_t *event);
 
+mango_task_graph_t *mango_task_graph_update_events(mango_task_graph_t *tg);
+
 ///@}
 
 /*! @name Resource Allocation  */
