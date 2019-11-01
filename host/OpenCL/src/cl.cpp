@@ -12,14 +12,19 @@ uint32_t buffer_id = 1;
 #define B2 2
 #define B3 3
 
+#define WRITABLE 1
+#define READABLE 0
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-    std::vector<mango::Arg *> arguments;
+    std::vector<mango_arg_t *> arguments;
+    std::vector<cl_mem> buffers;
+    mango_buffer_t writeBuf; /* buffer to be write */
+
     mango_task_graph_t *tg = NULL;
-    mango_buffer_t writeBuf;
 
     struct _cl_context
     {
@@ -37,6 +42,8 @@ extern "C"
     {
         uint32_t id;
         mango_buffer_t buffer;
+        void *host_buffer;
+        int type;
     };
 
     struct _cl_kernel
@@ -54,7 +61,6 @@ extern "C"
     struct _cl_command_queue
     {
     };
-
 
     /* API IMPLEMENTATION */
 
@@ -175,27 +181,24 @@ extern "C"
 
         memory->id = buffer_id;
         buffer_id++;
+        memory->host_buffer = host_ptr;
 
         // FIX this need to be generic
         if (flags != (CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR))
         {
             memory->buffer = mango_register_memory(memory->id, size, BUFFER, 1, 0, context->p->kernel);
+            memory->type = WRITABLE;
             writeBuf = memory->buffer;
         }
         else
         {
             memory->buffer = mango_register_memory(memory->id, size, BUFFER, 0, 1, context->p->kernel);
+            memory->type = READABLE;
         }
 
         tg = mango_task_graph_add_buffer(tg, &(memory->buffer));
-
         std::cout << "[TASK_GRAPH] added new buffer to tg (address) : " << tg << std::endl;
-
-        // Data transfer host->device
-        if (host_ptr != NULL)
-        {
-            mango_write(host_ptr, memory->buffer, DIRECT, 0);
-        }
+        buffers.push_back(memory);
 
         // std::cout << "Returning memory with address: " << memory << std::endl;
         return memory;
@@ -233,7 +236,7 @@ extern "C"
         mango_arg_t *arg = mango_arg(kernel->kernel, value, arg_size, arg_type);
 
         // std::cout << "created arg at address: " << arg << std::endl;
-        arguments.push_back((mango::Arg *)arg);
+        arguments.push_back(arg);
         // std::cout << "Added new argument: " << (mango_arg_t *)arguments.back() << " [VEC_SIZE] = " << arguments.size() << std::endl;
 
         return CL_SUCCESS;
@@ -253,40 +256,38 @@ extern "C"
         mango_arg_t *arg_ev = NULL;
         if (event != NULL)
         {
-            cl_event e = *event;
-            e = (cl_event)malloc(sizeof(struct _cl_event));
-            e->ev = mango_get_buffer_event(writeBuf);
-            arg_ev = mango_arg(kernel->kernel, &(e->ev), sizeof(uint64_t), EVENT);
+            *event = (cl_event)malloc(sizeof(struct _cl_event));
+            (*event)->ev = mango_get_buffer_event(writeBuf);
+            arg_ev = mango_arg(kernel->kernel, &((*event)->ev), sizeof(uint64_t), EVENT);
+
+            tg = mango_task_graph_add_event(tg, NULL);
+
+            printf("[BUFFER] Allocating new resources\n");
+            mango_resource_allocation(tg);
+            printf("[BUFFER] Allocation completed\n");
+
+            /* Write host->device buffers */
+            for (auto &b : buffers)
+            {
+                if (b->type == READABLE)
+                {
+                    mango_write(b->host_buffer, b->buffer, DIRECT, 0);
+                }
+            }
+
+            /* Putting togheter the arguments */
+            // TODO convert the vector data into the variadic parameter of mango_set_args
+
+            std::cout << "Setting args for kernel: " << kernel->kernel << std::endl;
+            mango_args_t *args = mango_set_args(kernel->kernel, 6, arguments.at(0), arguments.at(1), arguments.at(2), arguments.at(3), arguments.at(4), arg_ev);
+            printf("Succesfully created args\n");
+
+            /* spawn kernel */
+            mango_event_t kernEvent = mango_start_kernel(kernel->kernel, args, NULL);
+
+            /* wait for kernel completion */
+            mango_wait(kernEvent);
         }
-
-        tg = mango_task_graph_add_event(tg, NULL);
-
-        printf("[BUFFER] Allocating new resources\n");
-        mango_resource_allocation(tg);
-        printf("[BUFFER] Allocation completed\n");
-
-        /* Putting togheter the arguments */
-        // TODO convert the vector data into the variadic parameter of mango_set_args
-
-        std::cout << "Setting args for kernel: " << kernel->kernel << std::endl;
-        mango_args_t *args = mango_set_args(kernel->kernel, 6, arguments.at(0),arguments.at(1),arguments.at(2),arguments.at(3),arguments.at(4),arg_ev);
-        printf("Succesfully created args\n");
-
-        /* spawn kernel */
-        mango_event_t ev = mango_start_kernel(kernel->kernel, args, NULL);
-
-        /* wait for kernel completion */
-        mango_wait(ev);
-
-        return CL_SUCCESS;
-    }
-
-    cl_int clWaitForEvents(cl_uint num_events,
-                           const cl_event *event_list)
-    {
-        // TODO : make it iterate over the event list
-        cl_event e = *event_list;
-        mango_wait(e->ev);
 
         return CL_SUCCESS;
     }
@@ -301,6 +302,7 @@ extern "C"
                                const cl_event *event_wait_list,
                                cl_event *event)
     {
+        mango_wait((*event)->ev);
         mango_read(ptr, buffer->buffer, DIRECT, 0);
 
         return CL_SUCCESS;

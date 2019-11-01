@@ -11,13 +11,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
-#include "cl.h"
 #include <stdbool.h>
 
+#include "cl.h"
+
 ////////////////////////////////////////////////////////////////////////////////
-#define WA 4
-#define HA 4
-#define WB 4
+#define WA 8
+#define HA 8
+#define WB 8
 
 #define HB WA
 #define WC WB
@@ -128,6 +129,25 @@ int main(int argc, char **argv)
     unsigned int mem_size_C = sizeof(float) * size_C;
     float *h_C = (float *)malloc(mem_size_C);
 
+    /* Printing initialized matrices */
+    // printf("\n\nMatrix A\n");
+    // for (int i = 0; i < size_A; i++)
+    // {
+    //     printf("%f ", h_A[i]);
+    //     if (((i + 1) % WC) == 0)
+    //         printf("\n");
+    // }
+    // printf("\n");
+
+    // printf("\n\nMatrix B\n");
+    // for (int i = 0; i < size_B; i++)
+    // {
+    //     printf("%f ", h_B[i]);
+    //     if (((i + 1) % WC) == 0)
+    //         printf("\n");
+    // }
+    // printf("\n");
+
     printf("Initializing OpenCL device...\n");
 
     cl_uint dev_cnt = 0;
@@ -215,7 +235,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-
     // Create the input and output arrays in device memory for our calculation
     d_A = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, mem_size_A, h_A, &err);
     d_B = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, mem_size_B, h_B, &err);
@@ -249,7 +268,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-
     localWorkSize[0] = 16;
     localWorkSize[1] = 16;
     globalWorkSize[0] = 1024;
@@ -265,31 +283,29 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    printf("FINE DELL'ESECUZIONE. TEST SUPERATO!\n");
 
-    // //Retrieve result from device
-    // clWaitForEvents(1, &event);
-    // err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, 0, NULL, NULL);
+    //Retrieve result from device
+    err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, 0, NULL, &event);
 
-    // if (err != CL_SUCCESS)
-    // {
-    //     printf("Error: Failed to read output array! %d\n", err);
-    //     exit(1);
-    // }
+    if (err != CL_SUCCESS)
+    {
+        printf("Error: Failed to read output array! %d\n", err);
+        exit(1);
+    }
 
-    //    //print out the results
+    //print out the results
 
-    //    /* printf("\n\nMatrix C (Results)\n");
-    //    int i;
-    //    for(i = 0; i < size_C; i++)
-    //    {
-    //       printf("%f ", h_C[i]);
-    //       if(((i + 1) % WC) == 0)
-    //       printf("\n");
-    //    }
-    //    printf("\n"); */
+    printf("\n\nMatrix C (Results)\n");
+    int i;
+    for (i = 0; i < size_C; i++)
+    {
+        printf("%f ", h_C[i]);
+        if (((i + 1) % WC) == 0)
+            printf("\n");
+    }
+    printf("\n");
 
-    //    printf("Matrix multiplication completed...\n");
+    printf("Matrix multiplication completed...\n");
 
     //Shutdown and cleanup
     free(h_A);
