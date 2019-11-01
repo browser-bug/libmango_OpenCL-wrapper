@@ -863,9 +863,9 @@ clSetKernelArg(cl_kernel    /* kernel */,
 //                          size_t *                   /* param_value_size_ret */) CL_API_SUFFIX__VERSION_1_0;
 
 // /* Event Object APIs */
-extern CL_API_ENTRY cl_int CL_API_CALL
-clWaitForEvents(cl_uint             /* num_events */,
-                const cl_event *    /* event_list */) CL_API_SUFFIX__VERSION_1_0;
+// extern CL_API_ENTRY cl_int CL_API_CALL
+// clWaitForEvents(cl_uint             /* num_events */,
+//                 const cl_event *    /* event_list */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clGetEventInfo(cl_event         /* event */,
