@@ -82,7 +82,6 @@ extern "C"
         return CL_SUCCESS;
     }
 
-    cl_context context = NULL;
     cl_context clCreateContext(const cl_context_properties *properties,
                                cl_uint num_devices,
                                const cl_device_id *devices,
@@ -92,6 +91,7 @@ extern "C"
     {
         if (mango_init("test", "test_manga") == SUCCESS)
         {
+            cl_context context = NULL;
             context = (cl_context)malloc(sizeof(struct _cl_context));
             return context;
         }

@@ -93,6 +93,23 @@ long LoadOpenCLKernel(char const *path, char **buf)
     return (long)fsz;
 }
 
+void kernel_function(float *A, float *B, float *D, int rows, int cols)
+{
+    for (int r = 0; r < rows; r++)
+    {
+        for (int c = 0; c < cols; c++)
+        {
+            float v = 0;
+            for (int p = 0; p < rows; p++)
+            {
+                v = v + A[r * cols + p] * B[p * cols + c];
+            }
+            D[r * cols + c] = v;
+        }
+    }
+    return;
+}
+
 int main(int argc, char **argv)
 {
     int err; // error code returned from api calls
@@ -128,6 +145,9 @@ int main(int argc, char **argv)
     unsigned int size_C = WC * HC;
     unsigned int mem_size_C = sizeof(float) * size_C;
     float *h_C = (float *)malloc(mem_size_C);
+
+    /* matrix used to verify the result */
+    float *h_D = malloc(sizeof(float) * size_C);
 
     /* Printing initialized matrices */
     // printf("\n\nMatrix A\n");
@@ -283,7 +303,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-
     //Retrieve result from device
     err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, 0, NULL, &event);
 
@@ -293,30 +312,55 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    //print out the results
 
-    printf("\n\nMatrix C (Results)\n");
-    int i;
-    for (i = 0; i < size_C; i++)
-    {
-        printf("%f ", h_C[i]);
-        if (((i + 1) % WC) == 0)
-            printf("\n");
-    }
-    printf("\n");
+    //Print the result
+
+    // printf("\n\nMatrix C (Results)\n");
+    // int i;
+    // for (i = 0; i < size_C; i++)
+    // {
+    //     printf("%f ", h_C[i]);
+    //     if (((i + 1) % WC) == 0)
+    //         printf("\n");
+    // }
+    // printf("\n");
+
+    clReleaseProgram(program);
 
     printf("Matrix multiplication completed...\n");
+
+    //Check the result correctness
+    kernel_function(h_A, h_B, h_D, WC, HC);
+
+    int out = 0;
+    for (int i = 0; i < WC; i++)
+        for (int j = 0; j < HC; j++)
+            if (h_D[i * HC + j] != h_C[i * HC + j])
+            {
+                printf("Incorrect value at %d, %d: %f vs %f\n", i, j, h_D[i * HC + j], h_C[i * HC + j]);
+                out++;
+            }
+
+    if (out)
+    {
+        printf("Detected %d errors in the computation\n", out);
+        exit(out);
+    }
+    else
+    {
+        printf("Matrix multiplication correctly performed\n");
+    }
 
     //Shutdown and cleanup
     free(h_A);
     free(h_B);
     free(h_C);
+    free(h_D);
 
     //    clReleaseMemObject(d_A);
     //    clReleaseMemObject(d_C);
     //    clReleaseMemObject(d_B);
 
-    clReleaseProgram(program);
     //    clReleaseKernel(kernel);
     //    clReleaseCommandQueue(commands);
     //    clReleaseContext(context);
