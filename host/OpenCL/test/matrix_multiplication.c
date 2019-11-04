@@ -26,12 +26,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Allocates a matrix with random float entries.
-void randomMemInit(float *data, int size)
+void randomMemInit(int *data, int size)
 {
     int i;
 
     for (i = 0; i < size; ++i)
-        data[i] = rand() / (float)RAND_MAX;
+        data[i] = rand() % (int)RAND_MAX;
 }
 
 long LoadOpenCLKernel(char const *path, char **buf)
@@ -93,13 +93,13 @@ long LoadOpenCLKernel(char const *path, char **buf)
     return (long)fsz;
 }
 
-void kernel_function(float *A, float *B, float *D, int rows, int cols)
+void kernel_function(int *A, int *B, int *D, int rows, int cols)
 {
     for (int r = 0; r < rows; r++)
     {
         for (int c = 0; c < cols; c++)
         {
-            float v = 0;
+            int v = 0;
             for (int p = 0; p < rows; p++)
             {
                 v = v + A[r * cols + p] * B[p * cols + c];
@@ -126,16 +126,16 @@ int main(int argc, char **argv)
     cl_mem d_C;
 
     // set seed for rand()
-    srand(2014);
+    // srand(2014);
 
     //Allocate host memory for matrices A and B
     unsigned int size_A = WA * HA;
-    unsigned int mem_size_A = sizeof(float) * size_A;
-    float *h_A = (float *)malloc(mem_size_A);
+    unsigned int mem_size_A = sizeof(int) * size_A;
+    int *h_A = (int *)malloc(mem_size_A);
 
     unsigned int size_B = WB * HB;
-    unsigned int mem_size_B = sizeof(float) * size_B;
-    float *h_B = (float *)malloc(mem_size_B);
+    unsigned int mem_size_B = sizeof(int) * size_B;
+    int *h_B = (int *)malloc(mem_size_B);
 
     //Initialize host memory
     randomMemInit(h_A, size_A);
@@ -143,11 +143,11 @@ int main(int argc, char **argv)
 
     //Allocate host memory for the result C
     unsigned int size_C = WC * HC;
-    unsigned int mem_size_C = sizeof(float) * size_C;
-    float *h_C = (float *)malloc(mem_size_C);
+    unsigned int mem_size_C = sizeof(int) * size_C;
+    int *h_C = (int *)malloc(mem_size_C);
 
     /* matrix used to verify the result */
-    float *h_D = malloc(sizeof(float) * size_C);
+    int *h_D = (int *)malloc(mem_size_C);
 
     /* Printing initialized matrices */
     // printf("\n\nMatrix A\n");
@@ -312,7 +312,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-
     //Print the result
 
     // printf("\n\nMatrix C (Results)\n");
@@ -337,7 +336,7 @@ int main(int argc, char **argv)
         for (int j = 0; j < HC; j++)
             if (h_D[i * HC + j] != h_C[i * HC + j])
             {
-                printf("Incorrect value at %d, %d: %f vs %f\n", i, j, h_D[i * HC + j], h_C[i * HC + j]);
+                printf("Incorrect value at %d, %d: %d vs %d\n", i, j, h_D[i * HC + j], h_C[i * HC + j]);
                 out++;
             }
 
@@ -349,6 +348,15 @@ int main(int argc, char **argv)
     else
     {
         printf("Matrix multiplication correctly performed\n");
+        /* Printing result matrix */
+        // printf("\n\nMatrix C\n");
+        // for (int i = 0; i < size_A; i++)
+        // {
+        //     printf("%d ", h_D[i]);
+        //     if (((i + 1) % WC) == 0)
+        //         printf("\n");
+        // }
+        // printf("\n");
     }
 
     //Shutdown and cleanup
