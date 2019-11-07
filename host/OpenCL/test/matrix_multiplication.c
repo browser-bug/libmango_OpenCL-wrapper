@@ -110,6 +110,64 @@ void kernel_function(int *A, int *B, int *D, int rows, int cols)
     return;
 }
 
+// cl_program CreateProgramFromBinary(cl_context context, cl_device_id device, const char *fileName)
+// {
+//     FILE *fp = fopen(fileName, "rb");
+//     if (fp == NULL)
+//     {
+//         return NULL;
+//     }
+
+//     // Determine the size of the binary
+//     size_t binarySize;
+//     fseek(fp, 0, SEEK_END);
+//     binarySize = ftell(fp);
+//     rewind(fp);
+
+//     unsigned char *programBinary = malloc(binarySize);
+//     fread(programBinary, 1, binarySize, fp);
+//     fclose(fp);
+
+//     cl_int errNum = 0;
+//     cl_program program;
+//     cl_int binaryStatus;
+
+//     program = clCreateProgramWithBinary(context,
+//                                         1,
+//                                         &device,
+//                                         &binarySize,
+//                                         (const unsigned char **)&programBinary,
+//                                         &binaryStatus,
+//                                         &errNum);
+//     free(programBinary);
+//     if (errNum != CL_SUCCESS)
+//     {
+//         printf("Error loading program binary.");
+//         return NULL;
+//     }
+
+//     if (binaryStatus != CL_SUCCESS)
+//     {
+//         printf("Invalid binary for device");
+//         return NULL;
+//     }
+
+//     errNum = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+//     if (errNum != CL_SUCCESS)
+//     {
+//         // Determine the reason for the error
+//         char buildLog[16384];
+//         clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG,
+//                               sizeof(buildLog), buildLog, NULL);
+
+//         printf("Error in program: \n");
+//         clReleaseProgram(program);
+//         return NULL;
+//     }
+
+//     return program;
+// }
+
 int main(int argc, char **argv)
 {
     int err; // error code returned from api calls
@@ -223,28 +281,26 @@ int main(int argc, char **argv)
     //     return EXIT_FAILURE;
     // }
 
+    // // Build the program executable
+    // err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    // if (err != CL_SUCCESS)
+    // {
+    //     size_t len;
+    //     char buffer[2048];
+    //     printf("Error: Failed to build program executable!\n");
+    //     //clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
+    //     printf("%s\n", buffer);
+    //     exit(1);
+    // }
+
     /* In case you have the binary file */
+    // char kernel_binary[] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
+    // program = CreateProgramFromBinary(context, device_id, kernel_binary);
     program = clCreateProgramWithBinary(context, 1, NULL, NULL, NULL, NULL, &err);
     if (!program)
     {
         printf("Error: Failed to create compute program!\n");
         return EXIT_FAILURE;
-    }
-    else
-    {
-        printf("Program has been created correctly\n");
-    }
-
-    // Build the program executable
-    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-    if (err != CL_SUCCESS)
-    {
-        size_t len;
-        char buffer[2048];
-        printf("Error: Failed to build program executable!\n");
-        //clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
-        printf("%s\n", buffer);
-        exit(1);
     }
 
     // Create the compute kernel in the program we wish to run
@@ -256,10 +312,10 @@ int main(int argc, char **argv)
     }
 
     // Create the input and output arrays in device memory for our calculation
-    d_A = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, mem_size_A, h_A, &err);
-    d_B = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, mem_size_B, h_B, &err);
+    d_A = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_A, h_A, &err);
+    d_B = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_B, h_B, &err);
 
-    d_C = clCreateBuffer(context, CL_MEM_READ_WRITE, mem_size_A, NULL, &err);
+    d_C = clCreateBuffer(context, CL_MEM_WRITE_ONLY, mem_size_A, NULL, &err);
 
     if (!d_A || !d_B || !d_C)
     {
@@ -294,8 +350,9 @@ int main(int argc, char **argv)
     globalWorkSize[1] = 1024;
 
     // Adding an event to synchronization purpuses
-    cl_event event;
-    err = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, globalWorkSize, localWorkSize, 1, NULL, &event);
+    // cl_event event;
+
+    err = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, globalWorkSize, localWorkSize, 1, NULL, NULL);
 
     if (err != CL_SUCCESS)
     {
@@ -303,14 +360,14 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    //Retrieve result from device
-    err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, 0, NULL, &event);
+    // //Retrieve result from device
+    // err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, 0, NULL, &event);
 
-    if (err != CL_SUCCESS)
-    {
-        printf("Error: Failed to read output array! %d\n", err);
-        exit(1);
-    }
+    // if (err != CL_SUCCESS)
+    // {
+    //     printf("Error: Failed to read output array! %d\n", err);
+    //     exit(1);
+    // }
 
     //Print the result
 
@@ -324,40 +381,38 @@ int main(int argc, char **argv)
     // }
     // printf("\n");
 
-    clReleaseProgram(program);
-
     printf("Matrix multiplication completed...\n");
 
-    //Check the result correctness
-    kernel_function(h_A, h_B, h_D, WC, HC);
+    // //Check the result correctness
+    // kernel_function(h_A, h_B, h_D, WC, HC);
 
-    int out = 0;
-    for (int i = 0; i < WC; i++)
-        for (int j = 0; j < HC; j++)
-            if (h_D[i * HC + j] != h_C[i * HC + j])
-            {
-                printf("Incorrect value at %d, %d: %d vs %d\n", i, j, h_D[i * HC + j], h_C[i * HC + j]);
-                out++;
-            }
+    // int out = 0;
+    // for (int i = 0; i < WC; i++)
+    //     for (int j = 0; j < HC; j++)
+    //         if (h_D[i * HC + j] != h_C[i * HC + j])
+    //         {
+    //             printf("Incorrect value at %d, %d: %d vs %d\n", i, j, h_D[i * HC + j], h_C[i * HC + j]);
+    //             out++;
+    //         }
 
-    if (out)
-    {
-        printf("Detected %d errors in the computation\n", out);
-        exit(out);
-    }
-    else
-    {
-        printf("Matrix multiplication correctly performed\n");
-        /* Printing result matrix */
-        // printf("\n\nMatrix C\n");
-        // for (int i = 0; i < size_A; i++)
-        // {
-        //     printf("%d ", h_D[i]);
-        //     if (((i + 1) % WC) == 0)
-        //         printf("\n");
-        // }
-        // printf("\n");
-    }
+    // if (out)
+    // {
+    //     printf("Detected %d errors in the computation\n", out);
+    //     exit(out);
+    // }
+    // else
+    // {
+    //     printf("Matrix multiplication correctly performed\n");
+    //     /* Printing result matrix */
+    //     // printf("\n\nMatrix C\n");
+    //     // for (int i = 0; i < size_A; i++)
+    //     // {
+    //     //     printf("%d ", h_D[i]);
+    //     //     if (((i + 1) % WC) == 0)
+    //     //         printf("\n");
+    //     // }
+    //     // printf("\n");
+    // }
 
     //Shutdown and cleanup
     free(h_A);
@@ -365,12 +420,18 @@ int main(int argc, char **argv)
     free(h_C);
     free(h_D);
 
+    // FIX: non fare niente
+    clReleaseProgram(program);
+    // FIX: deregister memory
     //    clReleaseMemObject(d_A);
     //    clReleaseMemObject(d_C);
     //    clReleaseMemObject(d_B);
 
+    // FIX: deregister kernel
     //    clReleaseKernel(kernel);
+    // FIX:  mango_resource_deallocation(tg); mango_task_graph_destroy_all(tg);
     //    clReleaseCommandQueue(commands);
+    // FIX: mettere mango_release()
     //    clReleaseContext(context);
 
     return 0;
