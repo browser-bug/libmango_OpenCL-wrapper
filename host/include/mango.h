@@ -129,6 +129,27 @@ mango_exit_t mango_load_kernel(const char *kname, kernelfunction *kernel, mango_
 mango_kernel_t mango_register_kernel(uint32_t kernel_id, kernelfunction *kernel, 
 					unsigned int nbuffers_in, unsigned  int nbuffers_out, ...);
 
+
+/*! \brief Register a kernel with BarbequeRTRM
+ * \param kernel_id A unique identifier of the kernel, used to match it to the
+ * recipe specification
+ * \param kernel The kernel to run, possibly in multiple version compiled for
+ * different accelerator architectures
+ * \param in Vector with buffers for input
+ * \param out Vector with buffers for output
+ * \return The registered kernel
+ *
+ * \note thread count and unit type have been moved to the RTlib
+ * \deprecated  thread_count The number of parallel instances to run. If set to
+ * 0, it is interpreted as "as many as possible" by the resource manager
+ * \deprecated  ut The list of unit types in order of preference
+ * (STOP-terminated), if NULL rely on BarbequeRTRM recipes.
+ */
+mango_kernel_t mango_register_kernel_with_buffers(uint32_t kernel_id,
+										 kernelfunction *kernel, void* _in, void* _out);
+
+
+
 /*! \brief De-register the kernel with BarbequeRTRM
  * \param kernel The kernel to remove
  */
@@ -269,8 +290,6 @@ mango_task_graph_t *mango_task_graph_add_event(mango_task_graph_t *tg, mango_eve
  * \returns The task graph (NULL if empty)
  */
 mango_task_graph_t *mango_task_graph_remove_event(mango_task_graph_t *tg, mango_event_t *event);
-
-mango_task_graph_t *mango_task_graph_update_events(mango_task_graph_t *tg);
 
 ///@}
 
@@ -421,3 +440,4 @@ mango_unit_type_t mango_get_unit_arch(mango_kernel_t kernel);
 #endif
 
 #endif /* MANGO_H */
+
