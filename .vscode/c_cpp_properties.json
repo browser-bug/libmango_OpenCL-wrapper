@@ -4,7 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/host/OpenCL/include/"
+                "/home/bernardo/AOSproject/libmango_test/host/OpenCL/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

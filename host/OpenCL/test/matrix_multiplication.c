@@ -228,23 +228,27 @@ int main(int argc, char **argv)
 
     printf("Initializing OpenCL device...\n");
 
-    cl_uint dev_cnt = 0;
-    clGetPlatformIDs(0, 0, &dev_cnt);
+    cl_uint plt_cnt = 0;
+    clGetPlatformIDs(0, 0, &plt_cnt);
 
-    cl_platform_id platform_ids[dev_cnt];
-    clGetPlatformIDs(dev_cnt, platform_ids, NULL);
+    cl_platform_id platform_ids[plt_cnt];
+    clGetPlatformIDs(plt_cnt, platform_ids, NULL);
 
     // Connect to a compute device
-    int gpu = 1;
-    err = clGetDeviceIDs(platform_ids[0], gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
+    cl_uint dev_cnt = 0;
+    clGetDeviceIDs(0, CL_DEVICE_TYPE_ALL, 0, 0, &dev_cnt);
+
+    cl_device_id device_ids[dev_cnt];
+    int gpu = 0;
+    err = clGetDeviceIDs(platform_ids[0], gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, &device_ids, NULL);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to create a device group!\n");
         return EXIT_FAILURE;
     }
 
-    // Create a compute context
-    context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
+    // Create a compute context 
+    context = clCreateContext(0, 1, &device_ids[0], NULL, NULL, &err);
     if (!context)
     {
         printf("Error: Failed to create a compute context!\n");
@@ -252,7 +256,7 @@ int main(int argc, char **argv)
     }
 
     // Create a command commands
-    commands = clCreateCommandQueue(context, device_id, 0, &err);
+    commands = clCreateCommandQueue(context, device_ids[0], 0, &err);
     if (!commands)
     {
         printf("Error: Failed to create a command commands!\n");
@@ -288,14 +292,14 @@ int main(int argc, char **argv)
     //     size_t len;
     //     char buffer[2048];
     //     printf("Error: Failed to build program executable!\n");
-    //     //clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
+    //     //clGetProgramBuildInfo(program, device_ids[0], CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
     //     printf("%s\n", buffer);
     //     exit(1);
     // }
 
     /* In case you have the binary file */
     // char kernel_binary[] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
-    // program = CreateProgramFromBinary(context, device_id, kernel_binary);
+    // program = CreateProgramFromBinary(context, device_ids[0], kernel_binary);
     program = clCreateProgramWithBinary(context, 1, NULL, NULL, NULL, NULL, &err);
     if (!program)
     {
@@ -331,7 +335,6 @@ int main(int argc, char **argv)
     int wA = WA;
     int wC = WC;
 
-    // FIX : the original version was (void *)&d_C but it works only without the & operator
     err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&d_A);
     err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&d_B);
     err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&d_C);
@@ -350,9 +353,8 @@ int main(int argc, char **argv)
     globalWorkSize[1] = 1024;
 
     // Adding an event to synchronization purpuses
-    // cl_event event;
-
-    err = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, globalWorkSize, localWorkSize, 1, NULL, NULL);
+    cl_event event;
+    err = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, globalWorkSize, localWorkSize, 1, NULL, &event);
 
     if (err != CL_SUCCESS)
     {

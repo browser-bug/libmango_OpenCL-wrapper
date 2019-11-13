@@ -17,6 +17,8 @@ extern "C"
 {
 #endif
 
+    std::array<mango_unit_type_t, 3> availableUnits = {GN, GPGPU, PEAK};
+
     std::vector<mango_arg_t *> bufferArguments;
     std::vector<mango_arg_t *> eventArguments;
     std::vector<cl_mem> hostBuffers;
@@ -33,8 +35,7 @@ extern "C"
     struct _cl_program
     {
         kernelfunction *kernfunc;
-        // FIX maybe it has to be moved
-        mango_kernel_t kernel;
+        mango_kernel_t kernel; // FIX: cambiare con un puntatore a cl_kernel
     };
 
     struct _cl_mem
@@ -62,6 +63,11 @@ extern "C"
         //TODO: spostare taskgraph globale qui dentro
     };
 
+    struct _cl_device_id
+    {
+        mango_unit_type_t id;
+    };
+
     /* HELPER FUNCTIONS */
     void createEventArguments(mango_buffer_t buffer, mango_kernel_t kernel)
     {
@@ -86,13 +92,106 @@ extern "C"
         return CL_SUCCESS;
     }
 
+    // support functions for devices
+    cl_uint getNumDevicesByType(mango_unit_type_t type)
+    {
+        cl_uint counter = 0;
+        for (auto &unit : availableUnits)
+        {
+            if (unit == type)
+                counter++;
+        }
+        // std::cout << "retrieve " << counter << " devices of type " << type << std::endl;
+        return counter;
+    }
+
     cl_int clGetDeviceIDs(cl_platform_id platform,
                           cl_device_type device_type,
                           cl_uint num_entries,
                           cl_device_id *devices,
                           cl_uint *num_devices)
     {
-        printf("GetDeviceIDs is not implemented\n");
+        // printf("GetDeviceIDs is not implemented\n");
+        // platform is ignored
+
+        if (devices)
+            assert(num_entries > 0 && "num_entries must be greater than zero");
+
+        cl_device_id availableDev[num_entries];
+        cl_uint available_dev = 0;
+
+        switch (device_type)
+        {
+        case CL_DEVICE_TYPE_ALL:
+            available_dev = availableUnits.size();
+            if (num_devices)
+                *num_devices = available_dev;
+            if (devices)
+            {
+                assert(num_entries <= available_dev && "num_entries must be <= total devices");
+                for (int i = 0; i < num_entries; i++)
+                {
+                    availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                    availableDev[i]->id = availableUnits.at(i);
+                }
+            }
+            break;
+        case CL_DEVICE_TYPE_CPU:
+            available_dev = getNumDevicesByType(GN);
+            if (num_devices)
+                *num_devices = available_dev;
+            if (devices)
+            {
+                assert(num_entries <= available_dev && "num_entries must be <= total devices");
+                for (int i = 0; i < num_entries; i++)
+                    if (availableUnits.at(i) == GN)
+                    {
+                        availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                        availableDev[i]->id = availableUnits.at(i);
+                    }
+            }
+            break;
+
+        case CL_DEVICE_TYPE_ACCELERATOR:
+            available_dev = getNumDevicesByType(PEAK);
+            if (num_devices)
+                *num_devices = available_dev;
+            if (devices)
+            {
+                assert(num_entries <= available_dev && "num_entries must be <= total devices");
+                for (int i = 0; i < num_entries; i++)
+                    if (availableUnits.at(i) == PEAK)
+                    {
+                        availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                        availableDev[i]->id = availableUnits.at(i);
+                    }
+            }
+            break;
+
+        case CL_DEVICE_TYPE_DEFAULT:
+            available_dev = getNumDevicesByType(GN);
+            if (num_devices)
+                *num_devices = available_dev;
+            if (devices)
+            {
+                assert(num_entries <= available_dev && "num_entries must be <= total devices");
+                for (int i = 0; i < num_entries; i++)
+                    if (availableUnits.at(i) == GN)
+                    {
+                        availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                        availableDev[i]->id = availableUnits.at(i);
+                    }
+            }
+            break;
+
+        default:
+            return CL_INVALID_DEVICE_TYPE;
+        }
+
+        if (num_devices && *num_devices == 0)
+            return CL_DEVICE_NOT_FOUND;
+
+        devices = availableDev;
         return CL_SUCCESS;
     }
 
@@ -105,7 +204,7 @@ extern "C"
     {
         // FIX: the name "test" must be associated to something specific?
         // FIX: usare chiamata di sistema per nome processo prname ??
-        // FIX: user_data utilizzabile come receipe per mango_init ?
+        // FIX: user_data utilizzabile come receipe per mango_init
         if (mango_init("test", "test_manga") == SUCCESS)
         {
             cl_context context = NULL;
@@ -169,7 +268,7 @@ extern "C"
         kernel->id = kernel_id;
         kernel_id++;
         // FIX find a way to make a variadic call to mango_register_kernel
-        // FIX: passare un puntatore a un vettore e modificare mango 
+        // FIX: passare un puntatore a un vettore e modificare mango
         kernel->kernel = mango_register_kernel(kernel->id, program->kernfunc, 2, 1, B1, B2, B3);
 
         tg = mango_task_graph_add_kernel(NULL, &(kernel->kernel));
@@ -339,7 +438,7 @@ extern "C"
 
         std::cout << "Setting args for kernel: " << kernel->kernel << std::endl;
         // TODO:
-        mango_args_t *args = mango_set_args(kernel->kernel, 6, bufferArguments.at(0), bufferArguments.at(1), bufferArguments.at(2), bufferArguments.at(3), bufferArguments.at(4), eventArguments.at(0));
+        mango_args_t *args = mango_set_args(kernel->kernel, 6, bufferArguments.at(0), bufferArguments.at(1), bufferArguments.at(2), bufferArguments.at(3), bufferArguments.at(4), arg_ev);
         printf("Succesfully created args\n");
 
         /* Write host->device buffers */
