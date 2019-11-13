@@ -5,7 +5,7 @@
 #include <OpenCL/cl_platform.h>
 #else
 #include <cl_platform.h>
-#endif	
+#endif  
 
 // Including libmango
 #include "mango.h"
@@ -585,8 +585,8 @@ clGetDeviceIDs(cl_platform_id   /* platform */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainDevice(cl_device_id /* device */) CL_API_SUFFIX__VERSION_1_2;
     
- extern CL_API_ENTRY cl_int CL_API_CALL
- clReleaseDevice(cl_device_id /* device */) CL_API_SUFFIX__VERSION_1_2;
+// extern CL_API_ENTRY cl_int CL_API_CALL
+// clReleaseDevice(cl_device_id /* device */) CL_API_SUFFIX__VERSION_1_2;
     
 // /* Context APIs  */
 extern CL_API_ENTRY cl_context CL_API_CALL
@@ -627,8 +627,8 @@ clCreateCommandQueue(cl_context                     /* context */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainCommandQueue(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
 
- extern CL_API_ENTRY cl_int CL_API_CALL
- clReleaseCommandQueue(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
+// extern CL_API_ENTRY cl_int CL_API_CALL
+// clReleaseCommandQueue(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clGetCommandQueueInfo(cl_command_queue      /* command_queue */,
@@ -685,8 +685,8 @@ clCreateBuffer(cl_context   /* context */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainMemObject(cl_mem /* memobj */) CL_API_SUFFIX__VERSION_1_0;
 
- extern CL_API_ENTRY cl_int CL_API_CALL
- clReleaseMemObject(cl_mem  memobj ) ;
+// extern CL_API_ENTRY cl_int CL_API_CALL
+// clReleaseMemObject(cl_mem /* memobj */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clGetSupportedImageFormats(cl_context           /* context */,
@@ -737,21 +737,22 @@ clCreateBuffer(cl_context   /* context */,
 //                  size_t *           /* param_value_size_ret */) CL_API_SUFFIX__VERSION_1_0;
                             
 // /* Program Object APIs  */
-extern CL_API_ENTRY cl_program CL_API_CALL
-clCreateProgramWithSource(cl_context        /* context */,
-                          cl_uint           /* count */,
-                          const char **     /* strings */,
-                          const size_t *    /* lengths */,
-                          cl_int *          /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
+// extern CL_API_ENTRY cl_program CL_API_CALL
+// clCreateProgramWithSource(cl_context        /* context */,
+//                           cl_uint           /* count */,
+//                           const char **     /* strings */,
+//                           const size_t *    /* lengths */,
+//                           cl_int *          /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
 
- extern CL_API_ENTRY cl_program CL_API_CALL
- clCreateProgramWithBinary(cl_context                     /* context */,
-                           cl_uint                        /* num_devices */,
-                           const cl_device_id *           /* device_list */,
-                           const size_t *                 /* lengths */,
-                           const unsigned char **         /* binaries */,
-                           cl_int *                       /* binary_status */,
-                           cl_int *                       /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
+extern CL_API_ENTRY cl_program CL_API_CALL
+clCreateProgramWithBinary(cl_context                     /* context */,
+                          cl_uint                        /* num_devices */,
+                          const cl_device_id *           /* device_list */,
+                          const size_t *                 /* lengths */,
+                          const unsigned char **         /* binaries */,
+                          cl_int *                       /* binary_status */,
+                          cl_int *                       /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
+
 // extern CL_API_ENTRY cl_program CL_API_CALL
 // clCreateProgramWithBuiltInKernels(cl_context            /* context */,
 //                                   cl_uint               /* num_devices */,
@@ -762,8 +763,8 @@ clCreateProgramWithSource(cl_context        /* context */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainProgram(cl_program /* program */) CL_API_SUFFIX__VERSION_1_0;
 
- extern CL_API_ENTRY cl_int CL_API_CALL
- clReleaseProgram(cl_program /* program */) CL_API_SUFFIX__VERSION_1_0;
+extern CL_API_ENTRY cl_int CL_API_CALL
+clReleaseProgram(cl_program /* program */) CL_API_SUFFIX__VERSION_1_0;
 
 extern CL_API_ENTRY cl_int CL_API_CALL
 clBuildProgram(cl_program           /* program */,
@@ -818,8 +819,7 @@ clBuildProgram(cl_program           /* program */,
 extern CL_API_ENTRY cl_kernel CL_API_CALL
 clCreateKernel(cl_program      /* program */,
                const char *    /* kernel_name */,
-               cl_int *        /* errcode_ret */,
-				...) CL_API_SUFFIX__VERSION_1_0;
+               cl_int *        /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clCreateKernelsInProgram(cl_program     /* program */,
@@ -830,13 +830,8 @@ clCreateKernel(cl_program      /* program */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainKernel(cl_kernel    /* kernel */) CL_API_SUFFIX__VERSION_1_0;
 
-//  THIS FUNCTION IS NECESSARY SINCE IN MANGO WE HAVE AN UPDATE OF EVENTS AFTER EACH BUFFER IS CREATED
-// AND WE ALLOCATE RESORUCE AFTER THE TASKGRAPH HAS BEEN CREATED
- cl_int cl_update_events_allocate_resource(cl_program program);
-
-
- extern CL_API_ENTRY cl_int CL_API_CALL
- clReleaseKernel(cl_kernel   /* kernel */) CL_API_SUFFIX__VERSION_1_0;
+// extern CL_API_ENTRY cl_int CL_API_CALL
+// clReleaseKernel(cl_kernel   /* kernel */) CL_API_SUFFIX__VERSION_1_0;
 
 extern CL_API_ENTRY cl_int CL_API_CALL
 clSetKernelArg(cl_kernel    /* kernel */,
@@ -914,17 +909,17 @@ clSetKernelArg(cl_kernel    /* kernel */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clFinish(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
 
-// /* Enqueued Commands APIs */
- extern CL_API_ENTRY cl_int CL_API_CALL
- clEnqueueReadBuffer(cl_command_queue    /* command_queue */,
-                     cl_mem              /* buffer */,
-                     cl_bool             /* blocking_read */,
-                     size_t              /* offset */,
-                     size_t              /* size */, 
-                     void *              /* ptr */,
-                     cl_uint             /* num_events_in_wait_list */,
-                     const cl_event *    /* event_wait_list */,
-                     cl_event *          /* event */) CL_API_SUFFIX__VERSION_1_0;
+/* Enqueued Commands APIs */
+extern CL_API_ENTRY cl_int CL_API_CALL
+clEnqueueReadBuffer(cl_command_queue    /* command_queue */,
+                    cl_mem              /* buffer */,
+                    cl_bool             /* blocking_read */,
+                    size_t              /* offset */,
+                    size_t              /* size */, 
+                    void *              /* ptr */,
+                    cl_uint             /* num_events_in_wait_list */,
+                    const cl_event *    /* event_wait_list */,
+                    cl_event *          /* event */) CL_API_SUFFIX__VERSION_1_0;
                             
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clEnqueueReadBufferRect(cl_command_queue    /* command_queue */,
@@ -1118,16 +1113,16 @@ clSetKernelArg(cl_kernel    /* kernel */,
 //                            const cl_event *       /* event_wait_list */,
 //                            cl_event *             /* event */) CL_API_SUFFIX__VERSION_1_2;
 
- extern CL_API_ENTRY cl_int CL_API_CALL
- clEnqueueNDRangeKernel(cl_command_queue /* command_queue */,
-                        cl_kernel        /* kernel */,
-                        cl_uint          /* work_dim */,
-                        const size_t *   /* global_work_offset */,
-                        const size_t *   /* global_work_size */,
-                        const size_t *   /* local_work_size */,
-                        cl_uint          /* num_events_in_wait_list */,
-                        const cl_event * /* event_wait_list */,
-                        cl_event *       /* event */) CL_API_SUFFIX__VERSION_1_0;
+extern CL_API_ENTRY cl_int CL_API_CALL
+clEnqueueNDRangeKernel(cl_command_queue /* command_queue */,
+                       cl_kernel        /* kernel */,
+                       cl_uint          /* work_dim */,
+                       const size_t *   /* global_work_offset */,
+                       const size_t *   /* global_work_size */,
+                       const size_t *   /* local_work_size */,
+                       cl_uint          /* num_events_in_wait_list */,
+                       const cl_event * /* event_wait_list */,
+                       cl_event *       /* event */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clEnqueueTask(cl_command_queue  /* command_queue */,
@@ -1138,7 +1133,7 @@ clSetKernelArg(cl_kernel    /* kernel */,
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clEnqueueNativeKernel(cl_command_queue  /* command_queue */,
-// 					  void (CL_CALLBACK * /*user_func*/)(void *), 
+//                    void (CL_CALLBACK * /*user_func*/)(void *), 
 //                       void *            /* args */,
 //                       size_t            /* cb_args */, 
 //                       cl_uint           /* num_mem_objects */,
