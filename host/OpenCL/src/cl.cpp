@@ -17,6 +17,7 @@ extern "C"
 {
 #endif
 
+    // FIX: this array must be populated with a mango function yet to be implemented
     std::array<mango_unit_type_t, 3> availableUnits = {GN, GPGPU, PEAK};
 
     std::vector<mango_arg_t *> bufferArguments;
