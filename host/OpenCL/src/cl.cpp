@@ -19,7 +19,7 @@ extern "C"
 
     // FIX: this array must be populated with a mango function yet to be implemented
     std::array<mango_unit_type_t, 3> availableUnits = {GN, GPGPU, PEAK};
-
+    
     std::vector<mango_arg_t *> bufferArguments;
     std::vector<mango_arg_t *> eventArguments;
     std::vector<cl_mem> hostBuffers;
@@ -225,22 +225,67 @@ extern "C"
         return commands;
     }
 
-    /* FIX: is there a way to pass binaries as the filepath and not as a fread output? */
     cl_program clCreateProgramWithBinary(cl_context context,
                                          cl_uint num_devices,
                                          const cl_device_id *device_list,
-                                         const size_t *lengths,
-                                         const unsigned char **binaries,
+                                         const size_t *lengths, /* not needed */
+                                         const char **binaries,
                                          cl_int *binary_status,
-                                         cl_int *errcode_ret)
+                                         cl_int *errcode_ret) /* optional */
     {
+        // TODO: check that all devices are associated with the correct context
+        assert(device_list && "device_list must be a non-NULL value");
+        assert(binaries && "binaries cannot be a NULL pointer");
+        if(num_devices <= 0 || !device_list){
+            if(errcode_ret)
+                *errcode_ret = CL_INVALID_VALUE;
+            return NULL;
+        }
+
+        // Allocating new program
         cl_program program = NULL;
         program = (cl_program)malloc(sizeof(struct _cl_program));
         program->kernfunc = mango_kernelfunction_init();
 
-        char kernel_binary[] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
+        mango_exit_t err;
+        // char kernel_binary[] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
+        for (int i = 0; i < num_devices; i++)
+        {
+            mango_unit_type_t device_type = device_list[i]->id; // TODO: find a way to extract the device from device_list
+            std::cout << "[CREATE PROG. BINARY] loading new kernel for device_type: " << device_type << std::endl;
+            switch (device_type)
+            {
+            case GN:
+                err = mango_load_kernel(binaries[i], program->kernfunc, GN, BINARY);
+                break;
+            case PEAK:
+                err = mango_load_kernel(binaries[i], program->kernfunc, PEAK, BINARY);
+                break;
+            case GPGPU:
+                err = mango_load_kernel(binaries[i], program->kernfunc, GPGPU, BINARY);
+                break;
 
-        mango_load_kernel(kernel_binary, program->kernfunc, GN, BINARY);
+            default:
+                printf("The architecture is not currently supported\n");
+                free(program);
+                return NULL;
+                break;
+            }
+            if (err != SUCCESS)
+            {
+                if (binary_status)
+                    binary_status[i] = CL_INVALID_BINARY;
+                if (errcode_ret)
+                    *errcode_ret = CL_INVALID_BINARY;
+                free(program);
+                return NULL;
+            }
+            else // SUCCESS
+            {
+                if (binary_status)
+                    binary_status[i] = CL_SUCCESS;
+            }
+        }
 
         // Associate program with context
         context->p = program;
@@ -458,7 +503,6 @@ extern "C"
         mango_wait(kernEvent);
 
         // } // event handler
-
         return CL_SUCCESS;
     }
 

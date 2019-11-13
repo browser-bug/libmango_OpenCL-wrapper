@@ -247,7 +247,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    // Create a compute context 
+    // Create a compute context
     context = clCreateContext(0, 1, &device_ids[0], NULL, NULL, &err);
     if (!context)
     {
@@ -300,7 +300,30 @@ int main(int argc, char **argv)
     /* In case you have the binary file */
     // char kernel_binary[] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
     // program = CreateProgramFromBinary(context, device_ids[0], kernel_binary);
-    program = clCreateProgramWithBinary(context, 1, NULL, NULL, NULL, NULL, &err);
+
+    cl_int errNum = 0;
+    cl_int binaryStatus[dev_cnt];
+    const char *programBinaryPaths[dev_cnt];
+    programBinaryPaths[0] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
+
+    program = clCreateProgramWithBinary(context,
+                                        1,
+                                        device_ids,
+                                        NULL, /* not needed */
+                                        (const char **)programBinaryPaths,
+                                        binaryStatus,
+                                        &errNum);
+    // if (errNum != CL_SUCCESS)
+    // {
+    //     printf("Error loading program binary.");
+    //     return EXIT_FAILURE;
+    // }
+    // if (binaryStatus != CL_SUCCESS)
+    // {
+    //     printf("Invalid binary for device");
+    //     return EXIT_FAILURE;
+    // }
+    // program = clCreateProgramWithBinary(context, 1, NULL, NULL, NULL, NULL, &err);
     if (!program)
     {
         printf("Error: Failed to create compute program!\n");

@@ -749,7 +749,7 @@ clCreateProgramWithBinary(cl_context                     /* context */,
                           cl_uint                        /* num_devices */,
                           const cl_device_id *           /* device_list */,
                           const size_t *                 /* lengths */,
-                          const unsigned char **         /* binaries */,
+                          const char **         /* binaries */,
                           cl_int *                       /* binary_status */,
                           cl_int *                       /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
 
