@@ -8,18 +8,20 @@
 uint32_t kernel_id = 1;
 uint32_t buffer_id = 1;
 #define KID 1
-#define B1 1
-#define B2 2
-#define B3 3
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+
+    std::array<mango_unit_type_t, 3> availableUnits = {GN, GPGPU, PEAK};
+
     std::vector<mango_arg_t *> bufferArguments;
     std::vector<cl_mem> hostBuffers;
     std::vector<cl_mem> eventBuffers;
+    std::vector<uint32_t> buffer_in;
+    std::vector<uint32_t> buffer_out;
+
 
 
     struct _cl_context
@@ -39,16 +41,10 @@ extern "C"
 
         uint32_t kernel_id;
         
-        
-        const unsigned int in_len;
-        uint32_t int* buffer_in;
-        const unsigned int out_len;
-        uint32_t int* buffer_out;
-
-
-        // it can be done with vector because vector isnt available in C and the user's main program is in C.
-        std::vector<uint32_t> buffer_in;
-        std::vector<uint32_t> buffer_out;
+        //void* buffer_in;
+        //void* buffer_out;
+        //std::vector<uint32_t> buffer_in;
+        //std::vector<uint32_t> buffer_out;
     };
 
     struct _cl_mem
@@ -75,6 +71,10 @@ extern "C"
     {
 
       mango_task_graph_t *tg;
+    };
+   struct _cl_device_id
+    {
+        mango_unit_type_t id;
     };
 
     /* HELPER FUNCTIONS */
@@ -104,13 +104,107 @@ extern "C"
         return CL_SUCCESS;
     }
 
+
+    cl_uint getNumDevicesByType(mango_unit_type_t type)
+    {
+        cl_uint counter = 0;
+        for (auto &unit : availableUnits)
+        {
+            if (unit == type)
+                counter++;
+        }
+        // std::cout << "retrieve " << counter << " devices of type " << type << std::endl;
+        return counter;
+    }
+
     cl_int clGetDeviceIDs(cl_platform_id platform,
                           cl_device_type device_type,
                           cl_uint num_entries,
                           cl_device_id *devices,
                           cl_uint *num_devices)
     {
-        printf("GetDeviceIDs is not implemented\n");
+             if (devices)
+            assert(num_entries > 0 && "num_entries must be greater than zero");
+
+        cl_device_id availableDev[num_entries];
+        cl_uint available_dev = 0;
+
+        switch (device_type)
+        {
+        case CL_DEVICE_TYPE_ALL:
+            
+            available_dev = availableUnits.size();
+            if (num_devices)
+                *num_devices = available_dev;
+            if (devices)
+            {
+                assert(num_entries <= available_dev && "num_entries must be <= total devices");
+                for (int i = 0; i < num_entries; i++)
+                {
+                    availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                    availableDev[i]->id = availableUnits.at(i);
+                }
+            }
+            break;
+        case CL_DEVICE_TYPE_CPU:
+            available_dev = getNumDevicesByType(GN);
+            if (num_devices)
+                *num_devices = available_dev;
+            if (devices)
+            {
+                assert(num_entries <= available_dev && "num_entries must be <= total devices");
+                for (int i = 0; i < num_entries; i++)
+                    if (availableUnits.at(i) == GN)
+                    {
+
+                        std::cout<<"SONO DENTRO AVAILABLE UNITS"<<std::endl;
+                        availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                        availableDev[i]->id = availableUnits.at(i);
+
+                    }
+            }
+            break;
+
+        case CL_DEVICE_TYPE_ACCELERATOR:
+            available_dev = getNumDevicesByType(PEAK);
+            if (num_devices)
+                *num_devices = available_dev;
+            if (devices)
+            {
+                assert(num_entries <= available_dev && "num_entries must be <= total devices");
+                for (int i = 0; i < num_entries; i++)
+                    if (availableUnits.at(i) == PEAK)
+                    {
+                        availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                        availableDev[i]->id = availableUnits.at(i);
+                    }
+            }
+            break;
+
+        case CL_DEVICE_TYPE_DEFAULT:
+            available_dev = getNumDevicesByType(GN);
+            if (num_devices)
+                *num_devices = available_dev;
+            if (devices)
+            {
+                assert(num_entries <= available_dev && "num_entries must be <= total devices");
+                for (int i = 0; i < num_entries; i++)
+                    if (availableUnits.at(i) == GN)
+                    {
+                        availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                        availableDev[i]->id = availableUnits.at(i);
+                    }
+            }
+            break;
+
+        default:
+            return CL_INVALID_DEVICE_TYPE;
+        }
+
+        if (num_devices && *num_devices == 0)
+            return CL_DEVICE_NOT_FOUND;
+
+        devices = availableDev;
         return CL_SUCCESS;
     }
 
@@ -124,8 +218,8 @@ extern "C"
         // FIX: the name "test" must be associated to something specific?
         // FIX: usare chiamata di sistema per nome processo prname ??
         // FIX: user_data utilizzabile come receipe per mango_init ?
-        const char* app_name = (char*) user_data;
-        if (mango_init(app_name, "test_manga") == SUCCESS)
+        const char* receipe = (char*) user_data;
+        if (mango_init("test", receipe) == SUCCESS)
         {
             cl_context context = NULL;
             context = (cl_context)malloc(sizeof(struct _cl_context));
@@ -139,7 +233,8 @@ extern "C"
                                           cl_int *errcode_ret)
     {
         printf("CreateCommandQueue is not implemented\n");
-        cl_command_queue commands;
+
+        cl_command_queue commands = NULL;
         commands = (cl_command_queue)malloc(sizeof(struct _cl_command_queue));
         commands->tg = NULL;
         context->commands = commands;
@@ -147,29 +242,97 @@ extern "C"
     }
 
     /* FIX: is there a way to pass binaries as the filepath and not as a fread output? */
-    cl_program clCreateProgramWithBinary(cl_context context,
+        cl_program clCreateProgramWithBinary(cl_context context,
                                          cl_uint num_devices,
                                          const cl_device_id *device_list,
-                                         const size_t *lengths,
+                                         const size_t *lengths, /* not needed */
                                          const unsigned char **binaries,
                                          cl_int *binary_status,
-                                         cl_int *errcode_ret)
+                                         cl_int *errcode_ret) /* optional */
     {
+        // TODO: check that all devices are associated with the correct context
+        assert(device_list && "device_list must be a non-NULL value");
+        assert(binaries && "binaries cannot be a NULL pointer");
+        if(num_devices <= 0 || !device_list){
+            if(errcode_ret)
+                *errcode_ret = CL_INVALID_VALUE;
+            return NULL;
+        }
+
+        if(device_list == NULL ) std::cout<<"DEVICE LIST IS NULL!!\n";
+        printf("CIAOOO\n");
+        // Allocating new program
         cl_program program = NULL;
         program = (cl_program)malloc(sizeof(struct _cl_program));
         program->kernfunc = mango_kernelfunction_init();
 
-        char kernel_binary[] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
+        mango_exit_t err;
+        // char kernel_binary[] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
 
-        mango_load_kernel(kernel_binary, program->kernfunc, GN, BINARY);
+        for (int i = 0; i < num_devices; i++)
+        {
+
+            std::cout << "CIAOOO 4\n";
+            mango_unit_type_t device_type = device_list[i]->id; // TODO: find a way to extract the device from device_list
+                        std::cout << "CIAOOO 6\n";
+
+            std::cout << "[CREATE PROG. BINARY] loading new kernel for device_type: " << device_type << std::endl;
+            switch (device_type)
+            {
+            case GN:
+                printf("CIAOOO5\n");
+                err = mango_load_kernel((const char *)binaries[i], program->kernfunc, GN, BINARY);
+                break;
+            case PEAK:
+                err = mango_load_kernel((const char *)binaries[i], program->kernfunc, PEAK, BINARY);
+                break;
+            case GPGPU:
+                err = mango_load_kernel((const char *)binaries[i], program->kernfunc, GPGPU, BINARY);
+                break;
+
+            default:
+                printf("The architecture is not currently supported\n");
+                free(program);
+                return NULL;
+                break;
+            }
+            if (err != SUCCESS)
+            {
+                if (binary_status)
+                    binary_status[i] = CL_INVALID_BINARY;
+                if (errcode_ret)
+                    *errcode_ret = CL_INVALID_BINARY;
+                free(program);
+                return NULL;
+            }
+            else // SUCCESS
+            {
+                if (binary_status)
+                    binary_status[i] = CL_SUCCESS;
+            }
+        }
 
 
-
+        program->kernel_id=0;
 
         // Associate program with context
         context->p = program;
         program->commands = context->commands;
         return program;
+    }
+
+    cl_int add_buffer_id_in(cl_program program, cl_uint _id){
+      uint32_t in_id = (uint32_t) _id;
+
+      buffer_in.push_back(in_id);
+
+    }
+
+    cl_int add_buffer_id_out(cl_program program, cl_uint _id){
+
+      uint32_t out_id = (uint32_t) _id;
+      buffer_out.push_back(out_id);
+
     }
 
     cl_int clBuildProgram(cl_program program,
@@ -191,14 +354,17 @@ extern "C"
         kernel = (cl_kernel)malloc(sizeof(struct _cl_kernel));
 
         // FIX: mettere il kernel_id dentro program?
+        program->kernel_id++;
+
+
         kernel->id = program->kernel_id;
-        kernel_id++;
+
         // FIX find a way to make a variadic call to mango_register_kernel
         // FIX: passare un puntatore a un vettore e modificare mango 
-        kernel->kernel = mango_register_kernel(kernel->id, program->kernfunc, 2, 1, B1, B2, B3);
+        //kernel->kernel = mango_register_kernel(kernel->id, program->kernfunc, 2, 1, B1, B2, B3);
 
 
-        //kernel->kernel = mango_register_kernel_with_buffers(kernel->id, program->kernfunc, program->buffer_in, program->buffer_out);
+        kernel->kernel = mango_register_kernel_with_buffers(kernel->id, program->kernfunc,&buffer_in,&buffer_out);
 
 
         program->commands->tg = mango_task_graph_add_kernel(NULL, &(kernel->kernel));
