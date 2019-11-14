@@ -10,6 +10,8 @@
 // Including libmango
 #include "mango.h"
 
+#include<unistd.h>
+
 
 #ifdef __cplusplus
 extern "C" {

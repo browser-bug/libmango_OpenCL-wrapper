@@ -19,7 +19,7 @@ extern "C"
 
     // FIX: this array must be populated with a mango function yet to be implemented
     std::array<mango_unit_type_t, 3> availableUnits = {GN, GPGPU, PEAK};
-    
+
     std::vector<mango_arg_t *> bufferArguments;
     std::vector<mango_arg_t *> eventArguments;
     std::vector<cl_mem> hostBuffers;
@@ -143,7 +143,7 @@ extern "C"
                 *num_devices = available_dev;
             if (devices)
             {
-                assert(num_entries <= available_dev && "num_entries must be <= total devices");
+                assert(num_entries <= available_dev && "num_entries must be <= CPU devices");
                 for (int i = 0; i < num_entries; i++)
                     if (availableUnits.at(i) == GN)
                     {
@@ -159,7 +159,7 @@ extern "C"
                 *num_devices = available_dev;
             if (devices)
             {
-                assert(num_entries <= available_dev && "num_entries must be <= total devices");
+                assert(num_entries <= available_dev && "num_entries must be <= ACCELERATOR devices");
                 for (int i = 0; i < num_entries; i++)
                     if (availableUnits.at(i) == PEAK)
                     {
@@ -175,7 +175,7 @@ extern "C"
                 *num_devices = available_dev;
             if (devices)
             {
-                assert(num_entries <= available_dev && "num_entries must be <= total devices");
+                assert(num_entries <= available_dev && "num_entries must be <= CPU devices");
                 for (int i = 0; i < num_entries; i++)
                     if (availableUnits.at(i) == GN)
                     {
@@ -196,6 +196,30 @@ extern "C"
         return CL_SUCCESS;
     }
 
+    // support functions for creating a context
+    const char *get_process_name_by_pid(const int pid)
+    {
+        char *name = (char *)calloc(1024, sizeof(char));
+        if (name)
+        {
+            sprintf(name, "/proc/%d/cmdline", pid);
+            FILE *f = fopen(name, "r");
+            if (f)
+            {
+                size_t size;
+                size = fread(name, sizeof(char), 1024, f);
+                if (size > 0)
+                {
+                    if ('\n' == name[size - 1])
+                        name[size - 1] = '\0';
+                }
+                name += 2; // removing first two characters (es. './')
+                fclose(f);
+            }
+        }
+        return name;
+    }
+
     cl_context clCreateContext(const cl_context_properties *properties,
                                cl_uint num_devices,
                                const cl_device_id *devices,
@@ -206,7 +230,14 @@ extern "C"
         // FIX: the name "test" must be associated to something specific?
         // FIX: usare chiamata di sistema per nome processo prname ??
         // FIX: user_data utilizzabile come receipe per mango_init
-        if (mango_init("test", "test_manga") == SUCCESS)
+        const int pid = getpid();
+        const char *process_name = get_process_name_by_pid(pid);
+        assert(process_name && "error in retrieving process_name, try again");
+
+        // get from user_date the receipe
+        const char *receipe = (char *)user_data;
+
+        if (mango_init(process_name, receipe) == SUCCESS)
         {
             cl_context context = NULL;
             context = (cl_context)malloc(sizeof(struct _cl_context));
@@ -236,8 +267,9 @@ extern "C"
         // TODO: check that all devices are associated with the correct context
         assert(device_list && "device_list must be a non-NULL value");
         assert(binaries && "binaries cannot be a NULL pointer");
-        if(num_devices <= 0 || !device_list){
-            if(errcode_ret)
+        if (num_devices <= 0 || !device_list)
+        {
+            if (errcode_ret)
                 *errcode_ret = CL_INVALID_VALUE;
             return NULL;
         }

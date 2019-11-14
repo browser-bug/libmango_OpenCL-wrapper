@@ -248,7 +248,8 @@ int main(int argc, char **argv)
     }
 
     // Create a compute context
-    context = clCreateContext(0, 1, &device_ids[0], NULL, NULL, &err);
+    const char *mango_receipe = "test_manga";
+    context = clCreateContext(0, 1, &device_ids[0], NULL, mango_receipe, &err);
     if (!context)
     {
         printf("Error: Failed to create a compute context!\n");

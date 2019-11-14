@@ -75,6 +75,23 @@ extern "C"
 		return kernel_id;
 	}
 
+	mango_kernel_t mango_register_kernel_with_buffers(uint32_t kernel_id, kernelfunction *kernel, void *_in, void *_out)
+	{
+
+		assert(kernel != NULL && "Kernel function must be a valid pointer!");
+		assert(kernel_id > 0 && "Kernel id must be positive");
+
+		mango::KernelFunction *t = (mango::KernelFunction *)kernel;
+
+		assert(t->is_loaded() && "You must load the kernel file before register it.");
+
+		std::vector<uint32_t> *in = (std::vector<uint32_t> *)_in;
+		std::vector<uint32_t> *out = (std::vector<uint32_t> *)_out;
+		cxt->register_kernel(kernel_id, t, *in, *out);
+
+		return kernel_id;
+	}
+
 	mango_buffer_t mango_register_memory(uint32_t buffer_id, size_t size, mango_buffer_type_t mode,
 										 unsigned int nkernels_in, unsigned int nkernels_out, ...)
 	{
