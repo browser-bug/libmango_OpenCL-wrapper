@@ -25,6 +25,35 @@ extern "C"
     std::vector<cl_mem> hostBuffers;
     std::vector<cl_mem> eventBuffers;
 
+    std::vector<uint32_t> buffer_in;
+    std::vector<uint32_t> buffer_out;
+
+    cl_int clSetInputBufferIDs(cl_program program, unsigned int nbuffers_in, ...)
+    {
+        buffer_in.clear();
+        va_list list;
+        va_start(list, nbuffers_in);
+        for (unsigned int i = 0; i < nbuffers_in; i++)
+        {
+            uint32_t in_id = (uint32_t)va_arg(list, cl_uint);
+            buffer_in.push_back(in_id);
+        }
+        va_end(list);
+    }
+
+    cl_int clSetOutputBufferIDs(cl_program program, unsigned int nbuffers_out, ...)
+    {
+        buffer_out.clear();
+        va_list list;
+        va_start(list, nbuffers_out);
+        for (unsigned int i = 0; i < nbuffers_out; i++)
+        {
+            uint32_t out_id = (uint32_t)va_arg(list, cl_uint);
+            buffer_out.push_back(out_id);
+        }
+        va_end(list);
+    }
+
     /* Global TaskGraph */
     mango_task_graph_t *tg = NULL;
 
@@ -227,9 +256,7 @@ extern "C"
                                void *user_data,
                                cl_int *errcode_ret)
     {
-        // FIX: the name "test" must be associated to something specific?
-        // FIX: usare chiamata di sistema per nome processo prname ??
-        // FIX: user_data utilizzabile come receipe per mango_init
+        // FIX: user_data utilizzabile come receipe per mango_init (quali sono le possibili receipe?)
         const int pid = getpid();
         const char *process_name = get_process_name_by_pid(pid);
         assert(process_name && "error in retrieving process_name, try again");
@@ -345,9 +372,12 @@ extern "C"
         // FIX: mettere il kernel_id dentro program?
         kernel->id = kernel_id;
         kernel_id++;
-        // FIX find a way to make a variadic call to mango_register_kernel
+
+        assert(!(buffer_in.empty() && buffer_out.empty()) && "input and output buffers must be set first");
         // FIX: passare un puntatore a un vettore e modificare mango
-        kernel->kernel = mango_register_kernel(kernel->id, program->kernfunc, 2, 1, B1, B2, B3);
+        // kernel->kernel = mango_register_kernel(kernel->id, program->kernfunc, 2, 1, B1, B2, B3);
+        // FIX : si blocca in attesa di un control loop termination. Chiedi a steve perché ha messo i puntatori nel mango_register_kernel_with_buffers
+        kernel->kernel = mango_register_kernel_with_buffers(kernel->id, program->kernfunc, &buffer_in, &buffer_out);
 
         tg = mango_task_graph_add_kernel(NULL, &(kernel->kernel));
         std::cout << "[TASK_GRAPH] added new kernel to tg (address) : " << tg << std::endl;

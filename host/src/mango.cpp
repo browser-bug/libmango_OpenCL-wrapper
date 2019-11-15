@@ -85,7 +85,7 @@ extern "C"
 
 		assert(t->is_loaded() && "You must load the kernel file before register it.");
 
-		std::vector<uint32_t> *in = (std::vector<uint32_t> *)_in;
+		std::vector<uint32_t> *in = (std::vector<uint32_t> *)_in; // usare copy constructor std::vector<uint32_t> in(_in) ?
 		std::vector<uint32_t> *out = (std::vector<uint32_t> *)_out;
 		cxt->register_kernel(kernel_id, t, *in, *out);
 

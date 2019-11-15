@@ -314,15 +314,20 @@ int main(int argc, char **argv)
                                         (const char **)programBinaryPaths,
                                         binaryStatus,
                                         &errNum);
-    // if (errNum != CL_SUCCESS)
+    if (errNum != CL_SUCCESS)
+    {
+        printf("Error loading program binary.");
+        return EXIT_FAILURE;
+    }
+    // FIX: why is binaryStatus[i] == 32765 ??
+    // for (int i = 0; i < dev_cnt; i++)
     // {
-    //     printf("Error loading program binary.");
-    //     return EXIT_FAILURE;
-    // }
-    // if (binaryStatus != CL_SUCCESS)
-    // {
-    //     printf("Invalid binary for device");
-    //     return EXIT_FAILURE;
+    //     if (binaryStatus[i] != CL_SUCCESS)
+    //     {
+    //         printf("Error with binary status %d\n", binaryStatus[i]);
+    //         printf("Invalid binary for device at position %d\n", i);
+    //         return EXIT_FAILURE;
+    //     }
     // }
     // program = clCreateProgramWithBinary(context, 1, NULL, NULL, NULL, NULL, &err);
     if (!program)
@@ -332,6 +337,8 @@ int main(int argc, char **argv)
     }
 
     // Create the compute kernel in the program we wish to run
+    clSetInputBufferIDs(program, 2, 1,2);
+    clSetOutputBufferIDs(program, 1, 1);
     kernel = clCreateKernel(program, "matrixMul", &err);
     if (!kernel || err != CL_SUCCESS)
     {
