@@ -338,7 +338,7 @@ int main(int argc, char **argv)
 
     // Create the compute kernel in the program we wish to run
     clSetInputBufferIDs(program, 2, 1,2);
-    clSetOutputBufferIDs(program, 1, 1);
+    clSetOutputBufferIDs(program, 1, 3);
     kernel = clCreateKernel(program, "matrixMul", &err);
     if (!kernel || err != CL_SUCCESS)
     {

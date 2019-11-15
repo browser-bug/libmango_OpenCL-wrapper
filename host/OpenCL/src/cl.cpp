@@ -373,10 +373,8 @@ extern "C"
         kernel->id = kernel_id;
         kernel_id++;
 
-        assert(!(buffer_in.empty() && buffer_out.empty()) && "input and output buffers must be set first");
-        // FIX: passare un puntatore a un vettore e modificare mango
         // kernel->kernel = mango_register_kernel(kernel->id, program->kernfunc, 2, 1, B1, B2, B3);
-        // FIX : si blocca in attesa di un control loop termination. Chiedi a steve perché ha messo i puntatori nel mango_register_kernel_with_buffers
+        assert(!(buffer_in.empty() && buffer_out.empty()) && "input and output buffers must be set first");
         kernel->kernel = mango_register_kernel_with_buffers(kernel->id, program->kernfunc, &buffer_in, &buffer_out);
 
         tg = mango_task_graph_add_kernel(NULL, &(kernel->kernel));
