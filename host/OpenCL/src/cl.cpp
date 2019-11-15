@@ -146,8 +146,8 @@ extern "C"
 
         if (devices)
             assert(num_entries > 0 && "num_entries must be greater than zero");
-
-        cl_device_id availableDev[num_entries];
+            
+        // cl_device_id availableDev[num_entries]; // TO BE REMOVED ???
         cl_uint available_dev = 0;
 
         switch (device_type)
@@ -161,8 +161,8 @@ extern "C"
                 assert(num_entries <= available_dev && "num_entries must be <= total devices");
                 for (int i = 0; i < num_entries; i++)
                 {
-                    availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
-                    availableDev[i]->id = availableUnits.at(i);
+                    devices[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                    devices[i]->id = availableUnits.at(i);
                 }
             }
             break;
@@ -176,8 +176,8 @@ extern "C"
                 for (int i = 0; i < num_entries; i++)
                     if (availableUnits.at(i) == GN)
                     {
-                        availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
-                        availableDev[i]->id = availableUnits.at(i);
+                        devices[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                        devices[i]->id = availableUnits.at(i);
                     }
             }
             break;
@@ -192,8 +192,8 @@ extern "C"
                 for (int i = 0; i < num_entries; i++)
                     if (availableUnits.at(i) == PEAK)
                     {
-                        availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
-                        availableDev[i]->id = availableUnits.at(i);
+                        devices[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                        devices[i]->id = availableUnits.at(i);
                     }
             }
             break;
@@ -208,8 +208,8 @@ extern "C"
                 for (int i = 0; i < num_entries; i++)
                     if (availableUnits.at(i) == GN)
                     {
-                        availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
-                        availableDev[i]->id = availableUnits.at(i);
+                        devices[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                        devices[i]->id = availableUnits.at(i);
                     }
             }
             break;
@@ -221,7 +221,6 @@ extern "C"
         if (num_devices && *num_devices == 0)
             return CL_DEVICE_NOT_FOUND;
 
-        devices = availableDev;
         return CL_SUCCESS;
     }
 
