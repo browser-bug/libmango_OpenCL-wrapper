@@ -6,4 +6,4 @@ install_manifest.txt
 *.a
 *.o
 *.so
-.vscode/*
+.vscode

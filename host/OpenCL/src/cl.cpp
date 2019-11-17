@@ -59,7 +59,13 @@ extern "C"
 
     struct _cl_context
     {
-        cl_program p;
+        cl_device_id *devices;
+        cl_uint device_num;
+        cl_command_queue *queues; /* all command queues currently associated with this context */
+        cl_uint queue_num;
+        cl_mem *mem_objects; /* all memory objects currently associated with this context */
+        cl_uint mem_object_num;
+        cl_program p; /* all programs associated with this context, for now: just one */
     };
 
     struct _cl_program
@@ -95,7 +101,7 @@ extern "C"
 
     struct _cl_device_id
     {
-        mango_unit_type_t id;
+        mango_unit_type_t device_type;
     };
 
     /* HELPER FUNCTIONS */
@@ -146,7 +152,7 @@ extern "C"
 
         if (devices)
             assert(num_entries > 0 && "num_entries must be greater than zero");
-            
+
         // cl_device_id availableDev[num_entries]; // TO BE REMOVED ???
         cl_uint available_dev = 0;
 
@@ -162,11 +168,12 @@ extern "C"
                 for (int i = 0; i < num_entries; i++)
                 {
                     devices[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
-                    devices[i]->id = availableUnits.at(i);
+                    devices[i]->device_type = availableUnits.at(i);
                 }
             }
             break;
         case CL_DEVICE_TYPE_CPU:
+        type_default:
             available_dev = getNumDevicesByType(GN);
             if (num_devices)
                 *num_devices = available_dev;
@@ -177,7 +184,7 @@ extern "C"
                     if (availableUnits.at(i) == GN)
                     {
                         devices[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
-                        devices[i]->id = availableUnits.at(i);
+                        devices[i]->device_type = availableUnits.at(i);
                     }
             }
             break;
@@ -193,25 +200,13 @@ extern "C"
                     if (availableUnits.at(i) == PEAK)
                     {
                         devices[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
-                        devices[i]->id = availableUnits.at(i);
+                        devices[i]->device_type = availableUnits.at(i);
                     }
             }
             break;
 
         case CL_DEVICE_TYPE_DEFAULT:
-            available_dev = getNumDevicesByType(GN);
-            if (num_devices)
-                *num_devices = available_dev;
-            if (devices)
-            {
-                assert(num_entries <= available_dev && "num_entries must be <= CPU devices");
-                for (int i = 0; i < num_entries; i++)
-                    if (availableUnits.at(i) == GN)
-                    {
-                        devices[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
-                        devices[i]->id = availableUnits.at(i);
-                    }
-            }
+            goto type_default;
             break;
 
         default:
@@ -309,7 +304,7 @@ extern "C"
         // char kernel_binary[] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
         for (int i = 0; i < num_devices; i++)
         {
-            mango_unit_type_t device_type = device_list[i]->id; // TODO: find a way to extract the device from device_list
+            mango_unit_type_t device_type = device_list[i]->device_type; // TODO: find a way to extract the device from device_list
             std::cout << "[CREATE PROG. BINARY] loading new kernel for device_type: " << device_type << std::endl;
             switch (device_type)
             {
@@ -551,7 +546,7 @@ extern "C"
         {
             if (b->type == CL_MEM_READ_ONLY)
             {
-                mango_write(b->host_buffer, b->buffer, DIRECT, 0);
+                mango_write(b->host_buffer, b->buffer, DIRECT, 0); // TODO:  magari spostarlo in clCreateBuffer
             }
         }
 
