@@ -1,6 +1,7 @@
 # List of source files of OpenCL library
 set(OPENCL_SOURCES	
-            cl.cpp
+			cl.cpp
+			utils.c
 			)
             
 # Build for convenience both static and dynamic library

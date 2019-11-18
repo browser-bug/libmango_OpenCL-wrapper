@@ -7,9 +7,12 @@
 #include <cl_platform.h>
 #endif	
 
-// Including libmango
+/* Including libmango headers */
 #include "mango.h"
 
+#include "utils.h"
+
+/* To get process IDs etc. */ 
 #include<unistd.h>
 
 
@@ -818,16 +821,16 @@ clBuildProgram(cl_program           /* program */,
 //                       size_t *              /* param_value_size_ret */) CL_API_SUFFIX__VERSION_1_0;
                             
 /* Kernel Object APIs */
-extern CL_API_ENTRY cl_kernel CL_API_CALL
-clCreateKernel(cl_program      /* program */,
-               const char *    /* kernel_name */,
-               cl_int *        /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
+// extern CL_API_ENTRY cl_kernel CL_API_CALL
+// clCreateKernel(cl_program      /* program */,
+//                const char *    /* kernel_name */,
+//                cl_int *        /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
 
-// extern CL_API_ENTRY cl_int CL_API_CALL
-// clCreateKernelsInProgram(cl_program     /* program */,
-//                          cl_uint        /* num_kernels */,
-//                          cl_kernel *    /* kernels */,
-//                          cl_uint *      /* num_kernels_ret */) CL_API_SUFFIX__VERSION_1_0;
+extern CL_API_ENTRY cl_int CL_API_CALL
+clCreateKernelsInProgram(cl_program     /* program */,
+                         cl_uint        /* num_kernels */,
+                         cl_kernel *    /* kernels */,
+                         cl_uint *      /* num_kernels_ret */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainKernel(cl_kernel    /* kernel */) CL_API_SUFFIX__VERSION_1_0;
