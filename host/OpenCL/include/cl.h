@@ -666,7 +666,7 @@ clCreateCommandQueue(cl_context                     /* context */,
 /* Memory Object APIs */
 // Temporarly modified to work with cl_program and not with cl_context
 extern CL_API_ENTRY cl_mem CL_API_CALL
-clCreateBuffer(cl_context   /* context */,
+clCreateBuffer(cl_kernel    /* kernel */,
                cl_mem_flags /* flags */,
                size_t       /* size */,
                void *       /* host_ptr */,

@@ -36,7 +36,7 @@ extern "C"
     struct _cl_context
     {
         cl_command_queue queue; /* the command queue corresponds to the TaskGraph in MANGO */
-        cl_program p; /* the program associated with this context */
+        cl_program p;           /* the program associated with this context */
         const cl_device_id *devices;
         cl_uint device_num;
         cl_mem *mem_objects; /* all memory objects currently associated with this context */
@@ -46,10 +46,12 @@ extern "C"
     typedef struct
     {
         kernelfunction *function;
-        uint32_t buffers_in[MAX_KERNEL_BUFFERS];
-        // int num_buffers_in;
-        uint32_t buffers_out[MAX_KERNEL_BUFFERS];
-        // int num_buffers_out;
+        uint32_t *buffers_in;
+        int num_buffers_in;
+        int in_buffer_register_id;
+        uint32_t *buffers_out;
+        int num_buffers_out;
+        int out_buffer_register_id;
     } mango_kernel_function;
 
     struct _cl_program
@@ -68,8 +70,11 @@ extern "C"
     struct _cl_kernel
     {
         uint32_t id;
+        mango_kernel_function kernel_function;
         mango_kernel_t kernel;
-        std::vector<mango::Arg *> args; // FIX : we can't use
+
+        mango_arg_t **args;
+        int args_num;
     };
 
     struct _cl_mem
@@ -104,6 +109,9 @@ extern "C"
     {
         assert(kernel_function_index >= 0 && kernel_function_index < program->num_kernel_functions && "the kernel function index is not valid");
         assert(nbuffers_in < MAX_KERNEL_BUFFERS && "exceeded the maximum number of kernel buffers available");
+        program->kernel_functions[kernel_function_index].buffers_in = (uint32_t *)malloc(nbuffers_in * sizeof(uint32_t));
+
+        program->kernel_functions[kernel_function_index].num_buffers_in = nbuffers_in;
         va_list list;
         va_start(list, nbuffers_in);
         for (unsigned int i = 0; i < nbuffers_in; i++)
@@ -119,6 +127,9 @@ extern "C"
     {
         assert(kernel_function_index >= 0 && kernel_function_index < program->num_kernel_functions && "the kernel function index is not valid");
         assert(nbuffers_out < MAX_KERNEL_BUFFERS && "exceeded the maximum number of kernel buffers available");
+        program->kernel_functions[kernel_function_index].buffers_out = (uint32_t *)malloc(nbuffers_out * sizeof(uint32_t));
+
+        program->kernel_functions[kernel_function_index].num_buffers_out = nbuffers_out;
         va_list list;
         va_start(list, nbuffers_out);
         for (unsigned int i = 0; i < nbuffers_out; i++)
@@ -141,8 +152,6 @@ extern "C"
         arg_ev = mango_arg(kernel, &(buf_event->ev), sizeof(uint64_t), EVENT);
         eventArguments.push_back(arg_ev);
     }
-
-
 
     /* API IMPLEMENTATION */
 
@@ -323,7 +332,7 @@ extern "C"
                 *errcode_ret CL_INVALID_DEVICE;
             goto err;
         }
-        // TODO: assign device with corresponding queue? 
+        // TODO: assign device with corresponding queue?
 
         queue->ctx = context;
         queue->device = device;
@@ -452,8 +461,14 @@ extern "C"
                 kernel_id++;
 
                 // FIX : maybe move this copy part in the mango_register_kernel_with_buffers()
-                std::vector<uint32_t> buf_in(std::begin(program->kernel_functions[i].buffers_in), std::end(program->kernel_functions[i].buffers_in));
-                std::vector<uint32_t> buf_out(std::begin(program->kernel_functions[i].buffers_out), std::end(program->kernel_functions[i].buffers_out));
+                std::vector<uint32_t> buf_in(program->kernel_functions[i].buffers_in, program->kernel_functions[i].buffers_in + program->kernel_functions[i].num_buffers_in);
+                std::vector<uint32_t> buf_out(program->kernel_functions[i].buffers_out, program->kernel_functions[i].buffers_out + program->kernel_functions[i].num_buffers_out);
+
+                kernels[i]->kernel_function = program->kernel_functions[i];
+                kernels[i]->args = NULL;
+                kernels[i]->args_num = 0;
+                kernels[i]->kernel_function.in_buffer_register_id = 0;
+                kernels[i]->kernel_function.out_buffer_register_id = 0;
 
                 // TODO : convert the two buffer arrays into vectors and modify mango_register_kernel_with_buffers to COPY
                 kernels[i]->kernel = mango_register_kernel_with_buffers(kernels[i]->id,
@@ -468,21 +483,13 @@ extern "C"
         return CL_SUCCESS;
     }
 
-
     // this must take a kernel as input instead of the context
-    cl_mem clCreateBuffer(cl_context context,
+    cl_mem clCreateBuffer(cl_kernel kernel,
                           cl_mem_flags flags,
                           size_t size,
                           void *host_ptr,
                           cl_int *errcode_ret)
     {
-        if (!context)
-        {
-            if (!errcode_ret)
-                *errcode_ret = CL_INVALID_CONTEXT;
-            std::cout << "[clCreateBuffer] invalid context" << std::endl;
-            return NULL;
-        }
         if (size == 0 || size > CL_DEVICE_MAX_MEM_ALLOC_SIZE)
         {
             if (!errcode_ret)
@@ -505,27 +512,34 @@ extern "C"
         cl_mem memory = NULL;
         memory = (cl_mem)malloc(sizeof(struct _cl_mem));
 
-        memory->id = buffer_id;
-        buffer_id++;
-
         memory->host_ptr = host_ptr;
 
         // FIX this need to be generic
         // TODO: aggiungere magari un messaggio che informa che mango ingora i flag openCL
         if ((flags & CL_MEM_READ_WRITE) == CL_MEM_READ_WRITE)
         {
-            // FIX: need to change behaviour in case of CL_MEM_READ_WRITE flag
-            memory->buffer = mango_register_memory(memory->id, size, BUFFER, 1, 1, context->p->kernel, context->p->kernel);
-            memory->type = CL_MEM_READ_WRITE;
+            // TODO : to be implemented
+            // memory->buffer = mango_register_memory(memory->id, size, BUFFER, 1, 1, context->p->kernel, context->p->kernel);
+            // memory->type = CL_MEM_READ_WRITE;
         }
         else if ((flags & CL_MEM_WRITE_ONLY) == CL_MEM_WRITE_ONLY)
         {
-            memory->buffer = mango_register_memory(memory->id, size, BUFFER, 1, 0, context->p->kernel);
+            assert(kernel->kernel_function.num_buffers_out > 0 && kernel->kernel_function.out_buffer_register_id < kernel->kernel_function.num_buffers_out && "incompatible buffer ID with kernel function definition");
+
+            memory->id = kernel->kernel_function.buffers_out[kernel->kernel_function.out_buffer_register_id];
+            kernel->kernel_function.out_buffer_register_id++;
+
+            memory->buffer = mango_register_memory(memory->id, size, BUFFER, 1, 0, kernel->kernel);
             memory->type = CL_MEM_WRITE_ONLY;
         }
         else if ((flags & CL_MEM_READ_ONLY) == CL_MEM_READ_ONLY)
         {
-            memory->buffer = mango_register_memory(memory->id, size, BUFFER, 0, 1, context->p->kernel);
+            assert(kernel->kernel_function.num_buffers_in > 0 && kernel->kernel_function.in_buffer_register_id < kernel->kernel_function.num_buffers_in && "incompatible buffer ID with kernel function definition");
+
+            memory->id = kernel->kernel_function.buffers_in[kernel->kernel_function.in_buffer_register_id];
+            kernel->kernel_function.in_buffer_register_id++;
+
+            memory->buffer = mango_register_memory(memory->id, size, BUFFER, 0, 1, kernel->kernel);
             memory->type = CL_MEM_READ_ONLY;
         }
         else
@@ -584,6 +598,12 @@ extern "C"
         std::cout << "Creating new mango_arg for mango_buffer with address: " << arg_value << " and value: " << (*(uint32_t *)value) << std::endl;
         mango_arg_t *arg = mango_arg(kernel->kernel, value, arg_size, arg_type);
 
+        if (kernel->args != NULL)
+            kernel->args = (mango_arg_t **)realloc(kernel->args, sizeof(mango_arg_t *) * (kernel->args_num + 1)); // FIX : maybe reallocation can be smarter, *2 just when necessary instead of +1 everytime
+        else                                                                                                      // initialize kernel args
+            kernel->args = (mango_arg_t **)calloc(1, sizeof(mango_arg_t *));
+        kernel->args[kernel->args_num++] = arg;
+
         // std::cout << "created arg at address: " << arg << std::endl;
         bufferArguments.push_back(arg);
         // std::cout << "Added new argument: " << (mango_arg_t *)arguments.back() << " [VEC_SIZE] = " << arguments.size() << std::endl;
@@ -591,6 +611,7 @@ extern "C"
         return CL_SUCCESS;
     }
 
+    // TODO : change with clEnqueueTask
     cl_int clEnqueueNDRangeKernel(cl_command_queue command_queue,
                                   cl_kernel kernel,
                                   cl_uint work_dim,
@@ -626,8 +647,8 @@ extern "C"
         // TODO convert the vector data into the variadic parameter of mango_set_args
 
         std::cout << "Setting args for kernel: " << kernel->kernel << std::endl;
-        // TODO:
-        mango_args_t *args = mango_set_args(kernel->kernel, 6, bufferArguments.at(0), bufferArguments.at(1), bufferArguments.at(2), bufferArguments.at(3), bufferArguments.at(4), arg_ev);
+        
+        mango_args_t *args = mango_set_args(kernel->kernel, 6, kernel->args[0], kernel->args[1], kernel->args[2], kernel->args[3], kernel->args[4], arg_ev);
         printf("Succesfully created args\n");
 
         /* Write host->device buffers */

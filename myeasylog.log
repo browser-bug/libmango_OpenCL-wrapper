@@ -14,3 +14,23 @@
 2019-10-29 23:53:20,248 INFO [default] Default configuration
 2019-10-29 23:53:20,248 INFO [default] num clusters 1
 2019-10-29 23:53:20,248 INFO [default] memory: cluster 0, size 4294967296
+2019-11-19 16:49:10,002 INFO [default] gnemu_init_logger: configuration file: /opt/mango/etc/libgn.conf
+2019-11-19 16:49:10,017 INFO [default] Default configuration
+2019-11-19 16:49:10,017 INFO [default] num clusters 1
+2019-11-19 16:49:10,017 INFO [default] memory: cluster 0, size 4294967296
+2019-11-19 16:49:34,383 INFO [default] gnemu_init_logger: configuration file: /opt/mango/etc/libgn.conf
+2019-11-19 16:49:34,383 INFO [default] Default configuration
+2019-11-19 16:49:34,383 INFO [default] num clusters 1
+2019-11-19 16:49:34,383 INFO [default] memory: cluster 0, size 4294967296
+2019-11-19 16:50:42,202 INFO [default] gnemu_init_logger: configuration file: /opt/mango/etc/libgn.conf
+2019-11-19 16:50:42,202 INFO [default] Default configuration
+2019-11-19 16:50:42,202 INFO [default] num clusters 1
+2019-11-19 16:50:42,202 INFO [default] memory: cluster 0, size 4294967296
+2019-11-19 17:00:27,865 INFO [default] gnemu_init_logger: configuration file: /opt/mango/etc/libgn.conf
+2019-11-19 17:00:27,865 INFO [default] Default configuration
+2019-11-19 17:00:27,865 INFO [default] num clusters 1
+2019-11-19 17:00:27,865 INFO [default] memory: cluster 0, size 4294967296
+2019-11-19 17:00:47,223 INFO [default] gnemu_init_logger: configuration file: /opt/mango/etc/libgn.conf
+2019-11-19 17:00:47,224 INFO [default] Default configuration
+2019-11-19 17:00:47,224 INFO [default] num clusters 1
+2019-11-19 17:00:47,224 INFO [default] memory: cluster 0, size 4294967296
