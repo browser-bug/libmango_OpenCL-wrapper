@@ -240,7 +240,7 @@ int main(int argc, char **argv)
     printf("Found %d devices for current platform\n", dev_cnt);
 
     cl_device_id device_ids[dev_cnt];
-    err = clGetDeviceIDs(platform_ids[0], CL_DEVICE_TYPE_CPU, 1, device_ids, NULL);
+    err = clGetDeviceIDs(platform_ids[0], CL_DEVICE_TYPE_CPU, 2, device_ids, NULL);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to create a device group!\n");
@@ -257,7 +257,7 @@ int main(int argc, char **argv)
     }
 
     // Create a command commands
-    commands = clCreateCommandQueue(context, device_ids, NULL, &err);
+    commands = clCreateCommandQueue(context, device_ids[0], NULL, &err);
     if (!commands)
     {
         printf("Error: Failed to create a command queue!\n");
@@ -268,7 +268,7 @@ int main(int argc, char **argv)
     cl_int binaryStatus[dev_cnt];
     const char *programBinaryPaths[dev_cnt];
     programBinaryPaths[0] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
-    // programBinaryPaths[1] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
+    programBinaryPaths[1] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev"; // potentially a second binary
 
     program = clCreateProgramWithBinary(context,
                                         1,
@@ -302,7 +302,7 @@ int main(int argc, char **argv)
     clSetOutputBufferIDs(program, 0, 1, 3);
     // clSetInputBufferIDs(program, 1, 2, 4, 5);
     // clSetOutputBufferIDs(program, 1, 1, 6);
-    
+
     // TODO : redefine first kernel structure inside cl_program and change the following functions to take kernels[0]
     cl_kernel kernels[dev_cnt];
     err = clCreateKernelsInProgram(program, 1, kernels, NULL);
@@ -429,9 +429,9 @@ int main(int argc, char **argv)
     // FIX: deregister kernel
     //    clReleaseKernel(kernel);
     // FIX:  mango_resource_deallocation(tg); mango_task_graph_destroy_all(tg);
-    //    clReleaseCommandQueue(commands);
+    clReleaseCommandQueue(commands);
     // FIX: mettere mango_release()
-    //    clReleaseContext(context);
+    clReleaseContext(context);
 
     return 0;
 }

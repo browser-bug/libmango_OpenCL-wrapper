@@ -612,8 +612,8 @@ clCreateContext(const cl_context_properties * /* properties */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainContext(cl_context /* context */) CL_API_SUFFIX__VERSION_1_0;
 
-// extern CL_API_ENTRY cl_int CL_API_CALL
-// clReleaseContext(cl_context /* context */) CL_API_SUFFIX__VERSION_1_0;
+extern CL_API_ENTRY cl_int CL_API_CALL
+clReleaseContext(cl_context /* context */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clGetContextInfo(cl_context         /* context */, 
@@ -632,8 +632,8 @@ clCreateCommandQueue(cl_context                     /* context */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainCommandQueue(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
 
-// extern CL_API_ENTRY cl_int CL_API_CALL
-// clReleaseCommandQueue(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
+extern CL_API_ENTRY cl_int CL_API_CALL
+clReleaseCommandQueue(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clGetCommandQueueInfo(cl_command_queue      /* command_queue */,

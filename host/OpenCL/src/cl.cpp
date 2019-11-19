@@ -52,6 +52,8 @@ extern "C"
         uint32_t *buffers_out;
         int num_buffers_out;
         int out_buffer_register_id;
+
+        cl_device_id device; /* device associated with this kernel function */
     } mango_kernel_function;
 
     struct _cl_program
@@ -72,6 +74,7 @@ extern "C"
         uint32_t id;
         mango_kernel_function kernel_function;
         mango_kernel_t kernel;
+        cl_device_id device; /* device associated with this kernel */
 
         mango_arg_t **args;
         int args_num;
@@ -101,6 +104,7 @@ extern "C"
     struct _cl_device_id
     {
         mango_unit_type_t device_type;
+        cl_command_queue queue;
     };
 
     /* HELPER FUNCTIONS */
@@ -332,7 +336,8 @@ extern "C"
                 *errcode_ret CL_INVALID_DEVICE;
             goto err;
         }
-        // TODO: assign device with corresponding queue?
+        // associate device with its corresponding queue
+        device->queue = queue;
 
         queue->ctx = context;
         queue->device = device;
@@ -380,6 +385,8 @@ extern "C"
             std::cout << "[CREATE PROG. BINARY] initializing new kernel for device_type: " << device_type << std::endl;
             program->kernel_functions[i].function = mango_kernelfunction_init();
             program->num_kernel_functions++;
+
+            program->kernel_functions[i].device = device_list[i];
 
             switch (device_type)
             {
@@ -469,14 +476,26 @@ extern "C"
                 kernels[i]->args_num = 0;
                 kernels[i]->kernel_function.in_buffer_register_id = 0;
                 kernels[i]->kernel_function.out_buffer_register_id = 0;
+                kernels[i]->device = program->kernel_functions[i].device;
 
                 // TODO : convert the two buffer arrays into vectors and modify mango_register_kernel_with_buffers to COPY
                 kernels[i]->kernel = mango_register_kernel_with_buffers(kernels[i]->id,
                                                                         program->kernel_functions[i].function,
                                                                         &buf_in,
                                                                         &buf_out);
-                tg = tg ? mango_task_graph_add_kernel(tg, &(kernels[i]->kernel)) : mango_task_graph_add_kernel(NULL, &(kernels[i]->kernel));
-                std::cout << "[TASK_GRAPH] added new kernel to tg (address) : " << tg << std::endl;
+
+                std::cout << "[CreateKernelsInProgram] Tentativo NR 1 " << kernels[i]->device <<std::endl;
+                std::cout << "[CreateKernelsInProgram] Tentativo NR 2 " << kernels[i]->device->queue << std::endl;
+                std::cout << "[CreateKernelsInProgram] Tentativo NR 3 " << kernels[i]->device->queue->tgx << std::endl;
+
+                // Get the task graph associated with the kernel (via its device)
+                kernels[i]->device->queue->tgx = kernels[i]->device->queue->tgx
+                                                     ? mango_task_graph_add_kernel(kernels[i]->device->queue->tgx, &(kernels[i]->kernel))
+                                                     : mango_task_graph_add_kernel(NULL, &(kernels[i]->kernel));
+
+                std::cout << "[CreateKernelsInProgram] Initializing kernel with id: " << i << std::endl;
+
+                std::cout << "[TASK_GRAPH] added new kernel to tg (address) : " << kernels[i]->device->queue->tgx << std::endl;
             }
             program->kernels = kernels;
         }
@@ -550,7 +569,9 @@ extern "C"
             return NULL;
         }
 
-        tg = tg ? mango_task_graph_add_buffer(tg, &(memory->buffer)) : mango_task_graph_add_buffer(NULL, &(memory->buffer));
+        kernel->device->queue->tgx = kernel->device->queue->tgx
+                                         ? mango_task_graph_add_buffer(kernel->device->queue->tgx, &(memory->buffer))
+                                         : mango_task_graph_add_buffer(NULL, &(memory->buffer));
 
         if (((flags & CL_MEM_USE_HOST_PTR) == CL_MEM_USE_HOST_PTR) || ((flags & CL_MEM_COPY_HOST_PTR) == CL_MEM_COPY_HOST_PTR))
         {
@@ -626,7 +647,7 @@ extern "C"
         // if (event != NULL)
         // {
         // FIX: not his function, must be found a more elegant way.
-        tg = mango_task_graph_add_event(tg, NULL);
+        command_queue->tgx = mango_task_graph_add_event(command_queue->tgx, NULL);
 
         mango_arg_t *arg_ev = NULL;
         (*event) = (cl_event)malloc(sizeof(struct _cl_event));
@@ -640,14 +661,14 @@ extern "C"
         // }
 
         printf("[BUFFER] Allocating new resources\n");
-        mango_resource_allocation(tg);
+        mango_resource_allocation(command_queue->tgx);
         printf("[BUFFER] Allocation completed\n");
 
         /* Putting togheter the arguments */
-        // TODO convert the vector data into the variadic parameter of mango_set_args
 
         std::cout << "Setting args for kernel: " << kernel->kernel << std::endl;
-        
+
+        // TODO : add mango_set_args alternative function without variadic parameters
         mango_args_t *args = mango_set_args(kernel->kernel, 6, kernel->args[0], kernel->args[1], kernel->args[2], kernel->args[3], kernel->args[4], arg_ev);
         printf("Succesfully created args\n");
 
@@ -688,8 +709,17 @@ extern "C"
 
     cl_int clReleaseProgram(cl_program program)
     {
-        mango_resource_deallocation(tg);
-        mango_task_graph_destroy_all(tg);
+        printf("ReleaseProgram is not implemented\n");
+    }
+
+    cl_int clReleaseCommandQueue(cl_command_queue command_queue)
+    {
+        mango_resource_deallocation(command_queue->tgx);
+        mango_task_graph_destroy_all(command_queue->tgx);
+    }
+
+    cl_int clReleaseContext(cl_context context)
+    {
         mango_release();
     }
 
