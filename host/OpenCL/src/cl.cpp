@@ -35,13 +35,12 @@ extern "C"
 
     struct _cl_context
     {
-        cl_device_id *devices;
+        cl_command_queue queue; /* the command queue corresponds to the TaskGraph in MANGO */
+        cl_program p; /* the program associated with this context */
+        const cl_device_id *devices;
         cl_uint device_num;
-        cl_command_queue *queues; /* all command queues currently associated with this context */
-        cl_uint queue_num;
         cl_mem *mem_objects; /* all memory objects currently associated with this context */
         cl_uint mem_object_num;
-        cl_program p; /* all programs associated with this context, for now: just one */
     };
 
     typedef struct
@@ -77,7 +76,7 @@ extern "C"
     {
         uint32_t id;
         mango_buffer_t buffer;
-        void *host_buffer;
+        void *host_ptr;
         int type;
     };
 
@@ -142,6 +141,8 @@ extern "C"
         arg_ev = mango_arg(kernel, &(buf_event->ev), sizeof(uint64_t), EVENT);
         eventArguments.push_back(arg_ev);
     }
+
+
 
     /* API IMPLEMENTATION */
 
@@ -288,6 +289,8 @@ extern "C"
         if (mango_init(process_name, receipe) == SUCCESS)
         {
             context = (cl_context)malloc(sizeof(struct _cl_context));
+            context->devices = devices;
+            context->device_num = num_devices;
             return context;
         }
         else
@@ -312,7 +315,7 @@ extern "C"
                 *errcode_ret CL_INVALID_CONTEXT;
             goto err;
         }
-        queue->ctx = context;
+        context->queue = queue;
 
         if (!device)
         {
@@ -320,8 +323,10 @@ extern "C"
                 *errcode_ret CL_INVALID_DEVICE;
             goto err;
         }
-        queue->device = device;
+        // TODO: assign device with corresponding queue? 
 
+        queue->ctx = context;
+        queue->device = device;
         /* initialize task graph */
         queue->tgx = NULL;
         return queue;
@@ -420,7 +425,8 @@ extern "C"
         return CL_SUCCESS;
     }
 
-    // TODO : redefine first kernel data structure inside cl_program
+    // TODO : clCreateKernel probably must take as input not the cl_program but a mango::kernelfunction (vedi MangoDocumentation for OpenCL example)
+
     cl_int clCreateKernelsInProgram(cl_program program,
                                     cl_uint num_kernels,
                                     cl_kernel *kernels,
@@ -462,6 +468,8 @@ extern "C"
         return CL_SUCCESS;
     }
 
+
+    // this must take a kernel as input instead of the context
     cl_mem clCreateBuffer(cl_context context,
                           cl_mem_flags flags,
                           size_t size,
@@ -500,7 +508,7 @@ extern "C"
         memory->id = buffer_id;
         buffer_id++;
 
-        memory->host_buffer = host_ptr;
+        memory->host_ptr = host_ptr;
 
         // FIX this need to be generic
         // TODO: aggiungere magari un messaggio che informa che mango ingora i flag openCL
@@ -535,7 +543,7 @@ extern "C"
             hostBuffers.push_back(memory);
         }
         // FIX: find a more elegant way to do it. How can we know that the buffer will be protected by an event?
-        if (!memory->host_buffer)
+        if (!memory->host_ptr)
         {
             std::cout << "[BUFFER] pushing back for future event creating buffer ID: " << memory->id << std::endl;
             eventBuffers.push_back(memory);
@@ -627,7 +635,7 @@ extern "C"
         {
             if (b->type == CL_MEM_READ_ONLY)
             {
-                mango_write(b->host_buffer, b->buffer, DIRECT, 0); // TODO:  magari spostarlo in clCreateBuffer
+                mango_write(b->host_ptr, b->buffer, DIRECT, 0); // TODO:  magari spostarlo in clCreateBuffer
             }
         }
 
