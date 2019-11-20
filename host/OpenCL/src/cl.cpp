@@ -86,11 +86,15 @@ extern "C"
         mango_buffer_t buffer;
         void *host_ptr;
         int type;
+
+        cl_context ctx;
     };
 
     struct _cl_event
     {
         mango_event_t ev;
+
+        cl_context ctx;
     };
 
     struct _cl_command_queue
@@ -484,7 +488,7 @@ extern "C"
                                                                         &buf_in,
                                                                         &buf_out);
 
-                std::cout << "[CreateKernelsInProgram] Tentativo NR 1 " << kernels[i]->device <<std::endl;
+                std::cout << "[CreateKernelsInProgram] Tentativo NR 1 " << kernels[i]->device << std::endl;
                 std::cout << "[CreateKernelsInProgram] Tentativo NR 2 " << kernels[i]->device->queue << std::endl;
                 std::cout << "[CreateKernelsInProgram] Tentativo NR 3 " << kernels[i]->device->queue->tgx << std::endl;
 
@@ -550,6 +554,8 @@ extern "C"
 
             memory->buffer = mango_register_memory(memory->id, size, BUFFER, 1, 0, kernel->kernel);
             memory->type = CL_MEM_WRITE_ONLY;
+
+            memory->ctx = kernel->device->queue->ctx;
         }
         else if ((flags & CL_MEM_READ_ONLY) == CL_MEM_READ_ONLY)
         {
@@ -560,6 +566,8 @@ extern "C"
 
             memory->buffer = mango_register_memory(memory->id, size, BUFFER, 0, 1, kernel->kernel);
             memory->type = CL_MEM_READ_ONLY;
+
+            memory->ctx = kernel->device->queue->ctx;
         }
         else
         {
@@ -664,6 +672,14 @@ extern "C"
         mango_resource_allocation(command_queue->tgx);
         printf("[BUFFER] Allocation completed\n");
 
+        for (auto &b : hostBuffers)
+        {
+            if (b->type == CL_MEM_READ_ONLY)
+            {
+                mango_write(b->host_ptr, b->buffer, DIRECT, 0); // TODO:  magari spostarlo in clCreateBuffer
+            }
+        }
+
         /* Putting togheter the arguments */
 
         std::cout << "Setting args for kernel: " << kernel->kernel << std::endl;
@@ -673,13 +689,6 @@ extern "C"
         printf("Succesfully created args\n");
 
         /* Write host->device buffers */
-        for (auto &b : hostBuffers)
-        {
-            if (b->type == CL_MEM_READ_ONLY)
-            {
-                mango_write(b->host_ptr, b->buffer, DIRECT, 0); // TODO:  magari spostarlo in clCreateBuffer
-            }
-        }
 
         /* spawn kernel */
         mango_event_t kernEvent = mango_start_kernel(kernel->kernel, args, NULL);
@@ -688,6 +697,56 @@ extern "C"
         mango_wait(kernEvent);
 
         // } // event handler
+        return CL_SUCCESS;
+    }
+
+    cl_int clEnqueueWriteBuffer(cl_command_queue command_queue,
+                                cl_mem buffer,
+                                cl_bool blocking_write, /* not needed */
+                                size_t offset,          /* not used for now */
+                                size_t size,            /* not used for now */
+                                const void *ptr,
+                                cl_uint num_events_in_wait_list,
+                                const cl_event *event_wait_list,
+                                cl_event *event)
+    {
+        if (!command_queue)
+            return CL_INVALID_COMMAND_QUEUE;
+        if (!buffer)
+            return CL_INVALID_MEM_OBJECT;
+        if (!ptr)
+            return CL_INVALID_VALUE;
+        if (command_queue->ctx == NULL || buffer->ctx == NULL || command_queue->ctx != buffer->ctx)
+            return CL_INVALID_CONTEXT;
+
+        if (event_wait_list)
+        {
+            if (num_events_in_wait_list > 0)
+            {
+                for (int i = 0; i < num_events_in_wait_list; i++)
+                {
+                    if (event_wait_list[i]->ctx == NULL || command_queue->ctx != event_wait_list[i]->ctx)
+                        return CL_INVALID_CONTEXT;
+                    mango_wait(event_wait_list[i]->ev);
+                }
+            }
+            else
+            {
+                return CL_INVALID_EVENT_WAIT_LIST;
+            }
+        }
+        else
+        {
+            if (num_events_in_wait_list > 0)
+                return CL_INVALID_EVENT_WAIT_LIST;
+        }
+
+        printf("Enqueuing write buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
+        if (!event)
+            (*event)->ev = mango_write(ptr, buffer->buffer, DIRECT, 0);
+        else
+            mango_write(ptr, buffer->buffer, DIRECT, 0);
+
         return CL_SUCCESS;
     }
 
@@ -701,8 +760,42 @@ extern "C"
                                const cl_event *event_wait_list,
                                cl_event *event)
     {
-        mango_wait((*event)->ev);
-        mango_read(ptr, buffer->buffer, DIRECT, 0);
+        if (!command_queue)
+            return CL_INVALID_COMMAND_QUEUE;
+        if (!buffer)
+            return CL_INVALID_MEM_OBJECT;
+        if (!ptr)
+            return CL_INVALID_VALUE;
+        if (command_queue->ctx == NULL || buffer->ctx == NULL || command_queue->ctx != buffer->ctx)
+            return CL_INVALID_CONTEXT;
+
+        if (event_wait_list)
+        {
+            if (num_events_in_wait_list > 0)
+            {
+                for (int i = 0; i < num_events_in_wait_list; i++)
+                {
+                    if (event_wait_list[i]->ctx == NULL || command_queue->ctx != event_wait_list[i]->ctx)
+                        return CL_INVALID_CONTEXT;
+                    mango_wait(event_wait_list[i]->ev);
+                }
+            }
+            else
+            {
+                return CL_INVALID_EVENT_WAIT_LIST;
+            }
+        }
+        else
+        {
+            if (num_events_in_wait_list > 0)
+                return CL_INVALID_EVENT_WAIT_LIST;
+        }
+
+        printf("Enqueuing write buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
+        if (!event)
+            (*event)->ev = mango_read(ptr, buffer->buffer, DIRECT, 0);
+        else
+            mango_read(ptr, buffer->buffer, DIRECT, 0);
 
         return CL_SUCCESS;
     }
