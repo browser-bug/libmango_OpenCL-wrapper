@@ -791,7 +791,7 @@ extern "C"
                 return CL_INVALID_EVENT_WAIT_LIST;
         }
 
-        printf("Enqueuing write buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
+        printf("Enqueuing read buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
         if (!event)
             (*event)->ev = mango_read(ptr, buffer->buffer, DIRECT, 0);
         else
