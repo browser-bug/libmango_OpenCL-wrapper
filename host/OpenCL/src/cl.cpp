@@ -5,80 +5,166 @@
 #endif
 
 // Support definitions to be eliminated
+uint32_t kernel_id = 1;
 uint32_t buffer_id = 1;
+#define KID 1
+#define B1 1
+#define B2 2
+#define B3 3
+
+#define MAX_KERNEL_BUFFERS 15
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-
     // FIX: this array must be populated with a mango function yet to be implemented
-    std::array<mango_unit_type_t, 3> availableUnits = {GN, GPGPU, PEAK};
+    std::array<mango_unit_type_t, 4> availableUnits = {GN, GN, GPGPU, PEAK};
 
     std::vector<mango_arg_t *> bufferArguments;
-
     std::vector<mango_arg_t *> eventArguments;
     std::vector<cl_mem> hostBuffers;
     std::vector<cl_mem> eventBuffers;
-    std::vector<uint32_t> buffer_in;
-    std::vector<uint32_t> buffer_out;
-
-
 
     struct _cl_context
     {
-        cl_program p;
-        cl_command_queue commands;
+        cl_command_queue queue; /* the command queue corresponds to the TaskGraph in MANGO */
+        cl_program p;           /* the program associated with this context */
+        const cl_device_id *devices;
+        cl_uint device_num;
+        cl_mem *mem_objects; /* all memory objects currently associated with this context */
+        cl_uint mem_object_num;
     };
+
+    typedef struct
+    {
+        kernelfunction *function;
+        uint32_t *buffers_in;
+        int num_buffers_in;
+        int in_buffer_register_id;
+        uint32_t *buffers_out;
+        int num_buffers_out;
+        int out_buffer_register_id;
+
+        cl_device_id device; /* device associated with this kernel function */
+    } mango_kernel_function;
 
     struct _cl_program
     {
+        cl_context ctx; /* parent context */
+        mango_kernel_function *kernel_functions;
+        cl_int num_kernel_functions;
+        cl_kernel *kernels; // FIX: cambiare con un puntatore a cl_kernel
 
-        kernelfunction *kernfunc;
+        // cl_kernel *ker; /* all kernels included in the  */
+        // alternative to *ker ?
+        // list_head kernels;
+        // cl_int num_kernels;
+    };
 
-        cl_command_queue commands;
-        // FIX maybe it has to be moved
+    struct _cl_kernel
+    {
+        uint32_t id;
+        mango_kernel_function kernel_function;
         mango_kernel_t kernel;
+        cl_device_id device; /* device associated with this kernel */
 
-        uint32_t kernel_id;
-        
-        //void* buffer_in;
-        //void* buffer_out;
-        //std::vector<uint32_t> buffer_in;
-        //std::vector<uint32_t> buffer_out;
+        mango_arg_t **args;
+        int args_num;
     };
 
     struct _cl_mem
     {
         uint32_t id;
         mango_buffer_t buffer;
-        void *host_buffer;
+        void *host_ptr;
         int type;
-    };
 
-    struct _cl_kernel
-    {
-        uint32_t id;
-        mango_kernel_t kernel;
+        cl_context ctx;
     };
 
     struct _cl_event
     {
         mango_event_t ev;
-    };
 
-    struct _cl_device_id
-    {
-        mango_unit_type_t id;
+        cl_context ctx;
     };
 
     struct _cl_command_queue
     {
-
-      mango_task_graph_t *tg;
+        //TODO: spostare taskgraph globale qui dentro
+        mango_task_graph_t *tgx; /* task_graph associated with this command_queue */
+        cl_context ctx;          /* parent context */
+        cl_device_id device;     /* its device */
     };
 
-  /* HELPER FUNCTIONS */
+    struct _cl_device_id
+    {
+        mango_unit_type_t device_type;
+        cl_command_queue queue;
+    };
+
+    /* HELPER FUNCTIONS */
+    // FIX : is there a better way to specify which kernel_function we want to set than using an index?
+    cl_int clSetInputBufferIDs(cl_program program, unsigned int kernel_function_index, unsigned int nbuffers_in, ...)
+    {
+        assert(kernel_function_index >= 0 && kernel_function_index < program->num_kernel_functions && "the kernel function index is not valid");
+        assert(nbuffers_in < MAX_KERNEL_BUFFERS && "exceeded the maximum number of kernel buffers available");
+        program->kernel_functions[kernel_function_index].buffers_in = (uint32_t *)malloc(nbuffers_in * sizeof(uint32_t));
+
+        program->kernel_functions[kernel_function_index].num_buffers_in = nbuffers_in;
+        va_list list;
+        va_start(list, nbuffers_in);
+        for (unsigned int i = 0; i < nbuffers_in; i++)
+        {
+            uint32_t in_id = (uint32_t)va_arg(list, cl_uint);
+            program->kernel_functions[kernel_function_index].buffers_in[i] = in_id;
+        }
+        va_end(list);
+    }
+
+    // FIX : is there a better way to specify which kernel_function we want to set than using an index?
+    cl_int clSetOutputBufferIDs(cl_program program, unsigned int kernel_function_index, unsigned int nbuffers_out, ...)
+    {
+        assert(kernel_function_index >= 0 && kernel_function_index < program->num_kernel_functions && "the kernel function index is not valid");
+        assert(nbuffers_out < MAX_KERNEL_BUFFERS && "exceeded the maximum number of kernel buffers available");
+        program->kernel_functions[kernel_function_index].buffers_out = (uint32_t *)malloc(nbuffers_out * sizeof(uint32_t));
+
+        program->kernel_functions[kernel_function_index].num_buffers_out = nbuffers_out;
+        va_list list;
+        va_start(list, nbuffers_out);
+        for (unsigned int i = 0; i < nbuffers_out; i++)
+        {
+            uint32_t out_id = (uint32_t)va_arg(list, cl_uint);
+            program->kernel_functions[kernel_function_index].buffers_out[i] = out_id;
+        }
+        va_end(list);
+    }
+
+    void createEventArguments(mango_buffer_t buffer, mango_kernel_t kernel)
+    {
+        mango_arg_t *arg_ev = NULL;
+        cl_event buf_event = NULL;
+
+        buf_event = (cl_event)malloc(sizeof(struct _cl_event));
+        buf_event->ev = mango_get_buffer_event(buffer);
+
+        std::cout << "[KERNEL " << kernel << "] Creating a new event for buffer ID: " << buffer << std::endl;
+        arg_ev = mango_arg(kernel, &(buf_event->ev), sizeof(uint64_t), EVENT);
+        eventArguments.push_back(arg_ev);
+    }
+
+    /* API IMPLEMENTATION */
+
+    cl_int clGetPlatformIDs(cl_uint num_entries,
+                            cl_platform_id *platforms,
+                            cl_uint *num_platforms)
+    {
+        printf("GetPlatformIDs is not implemented\n");
+        return CL_SUCCESS;
+    }
+
     // support functions for devices
     cl_uint getNumDevicesByType(mango_unit_type_t type)
     {
@@ -92,52 +178,19 @@ extern "C"
         return counter;
     }
 
-      // support functions for creating a context
-      const char *get_process_name_by_pid(const int pid)
-      {
-          char *name = (char *)calloc(1024, sizeof(char));
-          if (name)
-          {
-              sprintf(name, "/proc/%d/cmdline", pid);
-              FILE *f = fopen(name, "r");
-              if (f)
-              {
-                  size_t size;
-                  size = fread(name, sizeof(char), 1024, f);
-                  if (size > 0)
-                  {
-                      if ('\n' == name[size - 1])
-                          name[size - 1] = '\0';
-                  }
-                  name += 2; // removing first two characters (es. './')
-                  fclose(f);
-              }
-          }
-          return name;
-      }
-
-
-  /* API IMPLEMENTATION */
-
-    cl_int clGetPlatformIDs(cl_uint num_entries,
-                            cl_platform_id *platforms,
-                            cl_uint *num_platforms)
-    {
-        printf("GetPlatformIDs is not implemented\n");
-        return CL_SUCCESS;
-    }
-
     cl_int clGetDeviceIDs(cl_platform_id platform,
                           cl_device_type device_type,
                           cl_uint num_entries,
                           cl_device_id *devices,
                           cl_uint *num_devices)
     {
-        
+        // printf("GetDeviceIDs is not implemented\n");
+        // platform is ignored
+
         if (devices)
             assert(num_entries > 0 && "num_entries must be greater than zero");
 
-        cl_device_id availableDev[num_entries];
+        // cl_device_id availableDev[num_entries]; // TO BE REMOVED ???
         cl_uint available_dev = 0;
 
         switch (device_type)
@@ -151,13 +204,13 @@ extern "C"
                 assert(num_entries <= available_dev && "num_entries must be <= total devices");
                 for (int i = 0; i < num_entries; i++)
                 {
-                    availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
-                    availableDev[i]->id = availableUnits.at(i);
-
+                    devices[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                    devices[i]->device_type = availableUnits.at(i);
                 }
             }
             break;
         case CL_DEVICE_TYPE_CPU:
+        type_default:
             available_dev = getNumDevicesByType(GN);
             if (num_devices)
                 *num_devices = available_dev;
@@ -167,11 +220,8 @@ extern "C"
                 for (int i = 0; i < num_entries; i++)
                     if (availableUnits.at(i) == GN)
                     {
-                        availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
-                        availableDev[i]->id = availableUnits.at(i);
-                
-                        //std::cout<<"SETTING ID OF FIRST DEVICE AT: "<<availableDev[i]->id<<std::endl;
-
+                        devices[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                        devices[i]->device_type = availableUnits.at(i);
                     }
             }
             break;
@@ -182,30 +232,18 @@ extern "C"
                 *num_devices = available_dev;
             if (devices)
             {
-                assert(num_entries <= available_dev && "num_entries must be <= total devices");
+                assert(num_entries <= available_dev && "num_entries must be <= ACCELERATOR devices");
                 for (int i = 0; i < num_entries; i++)
                     if (availableUnits.at(i) == PEAK)
                     {
-                        availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
-                        availableDev[i]->id = availableUnits.at(i);
+                        devices[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
+                        devices[i]->device_type = availableUnits.at(i);
                     }
             }
             break;
 
         case CL_DEVICE_TYPE_DEFAULT:
-            available_dev = getNumDevicesByType(GN);
-            if (num_devices)
-                *num_devices = available_dev;
-            if (devices)
-            {
-                assert(num_entries <= available_dev && "num_entries must be <= total devices");
-                for (int i = 0; i < num_entries; i++)
-                    if (availableUnits.at(i) == GN)
-                    {
-                        availableDev[i] = (cl_device_id)malloc(sizeof(struct _cl_device_id));
-                        availableDev[i]->id = availableUnits.at(i);
-                    }
-            }
+            goto type_default;
             break;
 
         default:
@@ -215,22 +253,32 @@ extern "C"
         if (num_devices && *num_devices == 0)
             return CL_DEVICE_NOT_FOUND;
 
-        devices = availableDev;
-        
-        /* CHECKING ADDRESS OF DEVICE[0] */
-        /*  
-        if(devices==NULL) printf("[CD]IN BUILD PROGRAM WITH BINARY, DEVICE LIST is NULL!!!\n");
-         else printf("[CD]DEVICE LIST is not NULL IN BUILD PROGRAM%p\n",devices);
-          printf("[CD]DEVICE LIST is not NULL IN BUILD PROGRAM%p\n",availableDev);
-         
-        if(devices[0]==NULL) printf("[CD]IN BUILD PROGRAM WITH BINARY, DEVICELIST0 is NULL!!!\n");
-          else printf("[CD]DEVICE LIST0 is not NULL IN BUILD PROGRAM%p\n",devices[0]);
-        std::cout<<"SETTING ID OF FIRST DEVICE2 AT: "<<availableDev[0]->id<<std::endl;
-        */
         return CL_SUCCESS;
     }
 
- 
+    // support functions for creating a context
+    const char *get_process_name_by_pid(const int pid)
+    {
+        char *name = (char *)calloc(1024, sizeof(char));
+        if (name)
+        {
+            sprintf(name, "/proc/%d/cmdline", pid);
+            FILE *f = fopen(name, "r");
+            if (f)
+            {
+                size_t size;
+                size = fread(name, sizeof(char), 1024, f);
+                if (size > 0)
+                {
+                    if ('\n' == name[size - 1])
+                        name[size - 1] = '\0';
+                }
+                name += 2; // removing first two characters (es. './')
+                fclose(f);
+            }
+        }
+        return name;
+    }
 
     cl_context clCreateContext(const cl_context_properties *properties,
                                cl_uint num_devices,
@@ -239,54 +287,83 @@ extern "C"
                                void *user_data,
                                cl_int *errcode_ret)
     {
-        // FIX: the name "test" must be associated to something specific?
-        // FIX: usare chiamata di sistema per nome processo prname ??
-        // FIX: user_data utilizzabile come receipe per mango_init
+        // FIX: user_data utilizzabile come receipe per mango_init (quali sono le possibili receipe?)
         const int pid = getpid();
         const char *process_name = get_process_name_by_pid(pid);
         assert(process_name && "error in retrieving process_name, try again");
 
-        // get from user_date the receipe
+        // get from user_data the receipe
+        assert(user_data && "user_data must specify a mango_receipe");
         const char *receipe = (char *)user_data;
 
+        cl_context context = NULL;
         if (mango_init(process_name, receipe) == SUCCESS)
         {
-            cl_context context = NULL;
             context = (cl_context)malloc(sizeof(struct _cl_context));
+            context->devices = devices;
+            context->device_num = num_devices;
+            return context;
+        }
+        else
+        {
+            if (!errcode_ret)
+                *errcode_ret = CL_INVALID_VALUE;
             return context;
         }
     }
-
-
 
     cl_command_queue clCreateCommandQueue(cl_context context,
                                           cl_device_id device,
                                           cl_command_queue_properties properties,
                                           cl_int *errcode_ret)
     {
-        printf("CreateCommandQueue is not implemented\n");
-        cl_command_queue commands;
-        commands = (cl_command_queue)malloc(sizeof(struct _cl_command_queue));
-        commands->tg = NULL;
-        context->commands = commands;
-        return commands;
+        cl_command_queue queue = NULL;
+        queue = (cl_command_queue)malloc(sizeof(struct _cl_command_queue));
+
+        if (!context)
+        {
+            if (!errcode_ret)
+                *errcode_ret CL_INVALID_CONTEXT;
+            goto err;
+        }
+        context->queue = queue;
+
+        if (!device)
+        {
+            if (!errcode_ret)
+                *errcode_ret CL_INVALID_DEVICE;
+            goto err;
+        }
+        // associate device with its corresponding queue
+        device->queue = queue;
+
+        queue->ctx = context;
+        queue->device = device;
+        /* initialize task graph */
+        queue->tgx = NULL;
+        return queue;
+
+    err:
+        free(queue);
+        queue = NULL;
+        return queue;
     }
 
-
-    /* FIX: is there a way to pass binaries as the filepath and not as a fread output? */
     cl_program clCreateProgramWithBinary(cl_context context,
                                          cl_uint num_devices,
                                          const cl_device_id *device_list,
-                                         const size_t *lengths,
-                                         const  char **binaries,
+                                         const size_t *lengths, /* not needed */
+                                         const char **binaries,
                                          cl_int *binary_status,
-                                         cl_int *errcode_ret)
+                                         cl_int *errcode_ret) /* optional */
     {
         // TODO: check that all devices are associated with the correct context
+        assert(context && "context must be a valid pointer");
         assert(device_list && "device_list must be a non-NULL value");
         assert(binaries && "binaries cannot be a NULL pointer");
-        if(num_devices <= 0 || !device_list){
-            if(errcode_ret)
+        if (num_devices <= 0 || !device_list)
+        {
+            if (errcode_ret)
                 *errcode_ret = CL_INVALID_VALUE;
             return NULL;
         }
@@ -294,47 +371,37 @@ extern "C"
         // Allocating new program
         cl_program program = NULL;
         program = (cl_program)malloc(sizeof(struct _cl_program));
-        program->kernfunc = mango_kernelfunction_init();
+        program->kernel_functions = (mango_kernel_function *)calloc(num_devices, sizeof(mango_kernel_function)); // FIX : not quite sure of the correctness of this
+        program->num_kernel_functions = 0;
+        // program->kernfunc = mango_kernelfunction_init();
 
         mango_exit_t err;
         // char kernel_binary[] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
         for (int i = 0; i < num_devices; i++)
         {
+            mango_unit_type_t device_type = device_list[i]->device_type;
+            std::cout << "[CREATE PROG. BINARY] initializing new kernel for device_type: " << device_type << std::endl;
+            program->kernel_functions[i].function = mango_kernelfunction_init();
+            program->num_kernel_functions++;
 
-
-          /* CHECKING ADDRESS OF DEVICE[0] */
-          /*  
-            
-            std::cout<<"I JUST ENTERED IN THE FOR LOOP FOR NUM_DEVICES!!\n"<<std::endl;
-         
-            if(device_list==NULL) printf("IN BUILD PROGRAM WITH BINARY, DEVICE LIST is NULL!!!\n");
-            else printf("DEVICE LIST is not NULL IN BUILD PROGRAM%p\n",device_list);
-         
-            if(device_list[0]==NULL) std::cout<<"IN BUILD PROGRAM WITH BINARY, DEVICELIST0 is NULL!!!\n";
-            else printf("DEVICE LIST0 is not NULL IN BUILD PROGRAM%p\n",device_list[0]);
-            
-            std::cout<<"ciao"<<std::endl;
-          //  std::cout<<device_list[i]->id<<std::endl;
-            std::cout<<"ciao"<<std::endl;
-            mango_unit_type_t device_type = GN; // TODO: find a way to extract the device from device_list
-            std::cout << "[CREATE PROG. BINARY] loading new kernel for device_type: " << device_type << std::endl;
-          */
-            mango_unit_type_t device_type = GN; // TODO: find a way to extract the device from device_list
+            program->kernel_functions[i].device = device_list[i];
 
             switch (device_type)
             {
             case GN:
-                err = mango_load_kernel(binaries[i], program->kernfunc, GN, BINARY);
+                std::cout << "[CREATE PROG. BINARY] loading kernel at position: " << program->kernel_functions[i].function << std::endl;
+                err = mango_load_kernel(binaries[i], program->kernel_functions[i].function, GN, BINARY);
                 break;
             case PEAK:
-                err = mango_load_kernel(binaries[i], program->kernfunc, PEAK, BINARY);
+                err = mango_load_kernel(binaries[i], program->kernel_functions[i].function, PEAK, BINARY);
                 break;
             case GPGPU:
-                err = mango_load_kernel(binaries[i], program->kernfunc, GPGPU, BINARY);
+                err = mango_load_kernel(binaries[i], program->kernel_functions[i].function, GPGPU, BINARY);
                 break;
 
             default:
                 printf("The architecture is not currently supported\n");
+                free(program->kernel_functions);
                 free(program);
                 return NULL;
                 break;
@@ -345,6 +412,7 @@ extern "C"
                     binary_status[i] = CL_INVALID_BINARY;
                 if (errcode_ret)
                     *errcode_ret = CL_INVALID_BINARY;
+                free(program->kernel_functions);
                 free(program);
                 return NULL;
             }
@@ -355,31 +423,10 @@ extern "C"
             }
         }
 
-        // FIX: program should have an array of cl_kernel (penso)
-        program->kernel_id=0;
-
         // Associate program with context
         context->p = program;
-        program->commands = context->commands;
         return program;
     }
-
-
-    // FIX: buffers are supposed to be created for a kernel function, so we should use a kernel id or cl_kernel as reference to add new buffers
-    cl_int add_buffer_id_in(cl_program program, cl_uint _id)
-    {
-      uint32_t in_id = (uint32_t) _id;
-      buffer_in.push_back(in_id);
-    }
-
-
-    // FIX: buffers are supposed to be created for a kernel function, so we should use a kernel id or cl_kernel as reference to add new buffers
-    cl_int add_buffer_id_out(cl_program program, cl_uint _id)
-    {
-      uint32_t out_id = (uint32_t) _id;
-      buffer_out.push_back(out_id);
-    }
-
 
     cl_int clBuildProgram(cl_program program,
                           cl_uint num_devices,
@@ -392,43 +439,70 @@ extern "C"
         return CL_SUCCESS;
     }
 
-    cl_kernel clCreateKernel(cl_program program,
-                             const char *kernel_name,
-                             cl_int *errcode_ret)
+    // TODO : clCreateKernel probably must take as input not the cl_program but a mango::kernelfunction (vedi MangoDocumentation for OpenCL example)
+
+    cl_int clCreateKernelsInProgram(cl_program program,
+                                    cl_uint num_kernels,
+                                    cl_kernel *kernels,
+                                    cl_uint *num_kernels_ret)
     {
-        cl_kernel kernel = NULL;
-        kernel = (cl_kernel)malloc(sizeof(struct _cl_kernel));
+        if (!program)
+            return CL_INVALID_PROGRAM;
+        if (program->kernels != NULL && program->num_kernel_functions <= 0)
+            return CL_INVALID_PROGRAM_EXECUTABLE;
+        if (kernels && num_kernels < program->num_kernel_functions)
+            return CL_INVALID_VALUE;
 
-        // FIX: add a new kernel to program->kernel_array
-        program->kernel_id++;
+        if (num_kernels_ret)
+            *num_kernels_ret = program->num_kernel_functions;
 
-        kernel->id = program->kernel_id;
+        if (kernels)
+        {
+            for (int i = 0; i < program->num_kernel_functions; i++)
+            {
+                assert(program->kernel_functions[i].buffers_in && program->kernel_functions[i].buffers_out && "input and output buffers must be set first");
+                kernels[i] = (cl_kernel)malloc(sizeof(struct _cl_kernel));
+                kernels[i]->id = kernel_id;
+                kernel_id++;
 
+                // FIX : maybe move this copy part in the mango_register_kernel_with_buffers()
+                std::vector<uint32_t> buf_in(program->kernel_functions[i].buffers_in, program->kernel_functions[i].buffers_in + program->kernel_functions[i].num_buffers_in);
+                std::vector<uint32_t> buf_out(program->kernel_functions[i].buffers_out, program->kernel_functions[i].buffers_out + program->kernel_functions[i].num_buffers_out);
 
-        kernel->kernel = mango_register_kernel_with_buffers(kernel->id, program->kernfunc,&buffer_in,&buffer_out);
+                kernels[i]->kernel_function = program->kernel_functions[i];
+                kernels[i]->args = NULL;
+                kernels[i]->args_num = 0;
+                kernels[i]->kernel_function.in_buffer_register_id = 0;
+                kernels[i]->kernel_function.out_buffer_register_id = 0;
+                kernels[i]->device = program->kernel_functions[i].device;
 
+                // TODO : convert the two buffer arrays into vectors and modify mango_register_kernel_with_buffers to COPY
+                kernels[i]->kernel = mango_register_kernel_with_buffers(kernels[i]->id,
+                                                                        program->kernel_functions[i].function,
+                                                                        &buf_in,
+                                                                        &buf_out);
 
-        program->commands->tg = mango_task_graph_add_kernel(NULL, &(kernel->kernel));
-        std::cout << "[TASK_GRAPH] added new kernel to tg (address) : " << program->commands->tg << std::endl;
-        program->kernel = kernel->kernel;
+                // Get the task graph associated with the kernel (via its device)
+                kernels[i]->device->queue->tgx = kernels[i]->device->queue->tgx
+                                                     ? mango_task_graph_add_kernel(kernels[i]->device->queue->tgx, &(kernels[i]->kernel))
+                                                     : mango_task_graph_add_kernel(NULL, &(kernels[i]->kernel));
 
-        *errcode_ret = CL_SUCCESS;
-        return kernel;
+                std::cout << "[CreateKernelsInProgram] Initializing kernel with id: " << i << std::endl;
+
+                std::cout << "[TASK_GRAPH] added new kernel to tg (address) : " << kernels[i]->device->queue->tgx << std::endl;
+            }
+            program->kernels = kernels;
+        }
+        return CL_SUCCESS;
     }
 
-    cl_mem clCreateBuffer(cl_context context,
+    // this must take a kernel as input instead of the context
+    cl_mem clCreateBuffer(cl_kernel kernel,
                           cl_mem_flags flags,
                           size_t size,
                           void *host_ptr,
                           cl_int *errcode_ret)
     {
-        if (!context)
-        {
-            if (!errcode_ret)
-                *errcode_ret = CL_INVALID_CONTEXT;
-            std::cout << "[clCreateBuffer] invalid context" << std::endl;
-            return NULL;
-        }
         if (size == 0 || size > CL_DEVICE_MAX_MEM_ALLOC_SIZE)
         {
             if (!errcode_ret)
@@ -451,28 +525,39 @@ extern "C"
         cl_mem memory = NULL;
         memory = (cl_mem)malloc(sizeof(struct _cl_mem));
 
-        memory->id = buffer_id;
-        buffer_id++;
+        memory->host_ptr = host_ptr;
 
-        memory->host_buffer = host_ptr;
-
-        // FIX: this need to be generic
+        // FIX this need to be generic
         // TODO: aggiungere magari un messaggio che informa che mango ingora i flag openCL
         if ((flags & CL_MEM_READ_WRITE) == CL_MEM_READ_WRITE)
         {
-            // FIX: need to change behaviour in case of CL_MEM_READ_WRITE flag
-            memory->buffer = mango_register_memory(memory->id, size, BUFFER, 1, 1, context->p->kernel, context->p->kernel);
-            memory->type = CL_MEM_READ_WRITE;
+            // TODO : to be implemented
+            // memory->buffer = mango_register_memory(memory->id, size, BUFFER, 1, 1, context->p->kernel, context->p->kernel);
+            // memory->type = CL_MEM_READ_WRITE;
         }
         else if ((flags & CL_MEM_WRITE_ONLY) == CL_MEM_WRITE_ONLY)
         {
-            memory->buffer = mango_register_memory(memory->id, size, BUFFER, 1, 0, context->p->kernel);
+            assert(kernel->kernel_function.num_buffers_out > 0 && kernel->kernel_function.out_buffer_register_id < kernel->kernel_function.num_buffers_out && "incompatible buffer ID with kernel function definition");
+
+            memory->id = kernel->kernel_function.buffers_out[kernel->kernel_function.out_buffer_register_id];
+            kernel->kernel_function.out_buffer_register_id++;
+
+            memory->buffer = mango_register_memory(memory->id, size, BUFFER, 1, 0, kernel->kernel);
             memory->type = CL_MEM_WRITE_ONLY;
+
+            memory->ctx = kernel->device->queue->ctx;
         }
         else if ((flags & CL_MEM_READ_ONLY) == CL_MEM_READ_ONLY)
         {
-            memory->buffer = mango_register_memory(memory->id, size, BUFFER, 0, 1, context->p->kernel);
+            assert(kernel->kernel_function.num_buffers_in > 0 && kernel->kernel_function.in_buffer_register_id < kernel->kernel_function.num_buffers_in && "incompatible buffer ID with kernel function definition");
+
+            memory->id = kernel->kernel_function.buffers_in[kernel->kernel_function.in_buffer_register_id];
+            kernel->kernel_function.in_buffer_register_id++;
+
+            memory->buffer = mango_register_memory(memory->id, size, BUFFER, 0, 1, kernel->kernel);
             memory->type = CL_MEM_READ_ONLY;
+
+            memory->ctx = kernel->device->queue->ctx;
         }
         else
         {
@@ -482,14 +567,16 @@ extern "C"
             return NULL;
         }
 
-        context->commands->tg = mango_task_graph_add_buffer(context->commands->tg, &(memory->buffer));
+        kernel->device->queue->tgx = kernel->device->queue->tgx
+                                         ? mango_task_graph_add_buffer(kernel->device->queue->tgx, &(memory->buffer))
+                                         : mango_task_graph_add_buffer(NULL, &(memory->buffer));
 
         if (((flags & CL_MEM_USE_HOST_PTR) == CL_MEM_USE_HOST_PTR) || ((flags & CL_MEM_COPY_HOST_PTR) == CL_MEM_COPY_HOST_PTR))
         {
             hostBuffers.push_back(memory);
         }
         // FIX: find a more elegant way to do it. How can we know that the buffer will be protected by an event?
-        if (!memory->host_buffer)
+        if (!memory->host_ptr)
         {
             std::cout << "[BUFFER] pushing back for future event creating buffer ID: " << memory->id << std::endl;
             eventBuffers.push_back(memory);
@@ -497,7 +584,6 @@ extern "C"
 
         return memory;
     }
-
 
     cl_int clSetKernelArg(cl_kernel kernel,
                           cl_uint arg_index,
@@ -526,15 +612,39 @@ extern "C"
             return CL_BUILD_ERROR;
         }
 
-        // FIX: arg_value must be the address of a mango_buffer_t
+        // std::vector<mango::Arg *> args;
+        // FIX arg_value must be the address of a mango_buffer_t
         std::cout << "Creating new mango_arg for mango_buffer with address: " << arg_value << " and value: " << (*(uint32_t *)value) << std::endl;
         mango_arg_t *arg = mango_arg(kernel->kernel, value, arg_size, arg_type);
 
-         bufferArguments.push_back(arg);
-       
+        if (kernel->args != NULL)
+            kernel->args = (mango_arg_t **)realloc(kernel->args, sizeof(mango_arg_t *) * (kernel->args_num + 1)); // FIX : maybe reallocation can be smarter, *2 just when necessary instead of +1 everytime
+        else                                                                                                      // initialize kernel args
+            kernel->args = (mango_arg_t **)calloc(1, sizeof(mango_arg_t *));
+        kernel->args[kernel->args_num++] = arg;
+
+        // std::cout << "created arg at address: " << arg << std::endl;
+        bufferArguments.push_back(arg);
+        // std::cout << "Added new argument: " << (mango_arg_t *)arguments.back() << " [VEC_SIZE] = " << arguments.size() << std::endl;
+
         return CL_SUCCESS;
     }
 
+    cl_int mangoAllocateResources(cl_command_queue command_queue)
+    {
+        printf("[mangoAllocateResources] Allocating new resources\n");
+        command_queue->tgx = mango_task_graph_add_event(command_queue->tgx, NULL); // FIX : this can't stay here
+        mango_exit_t err = mango_resource_allocation(command_queue->tgx);
+        if (err == SUCCESS)
+        {
+            printf("[mangoAllocateResources] Allocation completed\n");
+            return CL_SUCCESS;
+        }
+        else
+            return CL_OUT_OF_RESOURCES;
+    }
+
+    // TODO : change with clEnqueueTask
     cl_int clEnqueueNDRangeKernel(cl_command_queue command_queue,
                                   cl_kernel kernel,
                                   cl_uint work_dim,
@@ -545,19 +655,18 @@ extern "C"
                                   const cl_event *event_wait_list,
                                   cl_event *event)
     {
+
         /* Check for events */
         // if (event != NULL)
         // {
         // FIX: not his function, must be found a more elegant way.
-        command_queue->tg = mango_task_graph_add_event(command_queue->tg, NULL);
+        // command_queue->tgx = mango_task_graph_add_event(command_queue->tgx, NULL);
 
         mango_arg_t *arg_ev = NULL;
-
-        // penso da togliere
-        (*event) = (cl_event)malloc(sizeof(struct _cl_event));
-
-        (*event)->ev = mango_get_buffer_event(eventBuffers.at(0)->buffer);
-        arg_ev = mango_arg(kernel->kernel, &((*event)->ev), sizeof(uint64_t), EVENT);
+        cl_event argEvent = (cl_event)malloc(sizeof(struct _cl_event));
+        argEvent->ev = mango_get_buffer_event(eventBuffers.at(0)->buffer);
+        std::cout << "[EnqueueNDRangeKernel] creating event for mango_buffer : " << argEvent->ev << std::endl;
+        arg_ev = mango_arg(kernel->kernel, &(argEvent->ev), sizeof(uint64_t), EVENT);
 
         // /* Create event args for event protected buffers */
         // for (auto &eb : eventBuffers)
@@ -565,103 +674,241 @@ extern "C"
         //     createEventArguments(eb->buffer, kernel->kernel);
         // }
 
-        printf("[BUFFER] Allocating new resources\n");
-        mango_resource_allocation(command_queue->tg);
-        printf("[BUFFER] Allocation completed\n");
+        /* Write host->device buffers */
+        // for (auto &b : hostBuffers)
+        // {
+        //     if (b->type == CL_MEM_READ_ONLY)
+        //     {
+        //         mango_write(b->host_ptr, b->buffer, DIRECT, 0); // TODO:  magari spostarlo in clCreateBuffer
+        //     }
+        // }
+
+        // printf("[BUFFER] Allocating new resources\n");
+        // mango_resource_allocation(command_queue->tgx);
+        // printf("[BUFFER] Allocation completed\n");
 
         /* Putting togheter the arguments */
-        // TODO convert the vector data into the variadic parameter of mango_set_args
 
         std::cout << "Setting args for kernel: " << kernel->kernel << std::endl;
-        // TODO:
-        mango_args_t *args = mango_set_args(kernel->kernel, 6, bufferArguments.at(0), bufferArguments.at(1), bufferArguments.at(2), bufferArguments.at(3), bufferArguments.at(4),arg_ev);
+
+        // TODO : add mango_set_args alternative function without variadic parameters
+        //mango_args_t *args = mango_set_args(kernel->kernel, 6, kernel->args[0], kernel->args[1], kernel->args[2], kernel->args[3], kernel->args[4], arg_ev);
+
+
+        std::vector<mango::Arg *> args2((mango::Arg **)kernel->args, (mango::Arg **)(kernel->args + kernel->args_num));
+        args2.push_back((mango::Arg *)arg_ev);
+        mango_args_t *args = mango_set_args_from_vector(kernel->kernel, &args2);
+
+    /*
+        std::vector<mango::Arg *> arguments;
+        for(int c_a = 0; c_a < 5;c_a++)
+        arguments.push_back((mango::Arg *)kernel->args[c_a]);
+        arguments.push_back((mango::Arg *)arg_ev);
+        mango_args_t *args = mango_set_args_from_vector(kernel->kernel, &arguments);
+          
+    */
         printf("Succesfully created args\n");
 
-        /* Write host->device buffers */
-        for (auto &b : hostBuffers)
+        if (event)
         {
-            if (b->type == CL_MEM_READ_ONLY)
-            {
-                mango_write(b->host_buffer, b->buffer, DIRECT, 0);
-            }
+            (*event) = (cl_event)malloc(sizeof(struct _cl_event));
+            (*event)->ev = mango_start_kernel(kernel->kernel, args, NULL);
+            std::cout << "[EnqueueNDRangeKernel] creating event : " << (*event)->ev << std::endl;
+            (*event)->ctx = command_queue->ctx;
         }
+        else
+            mango_start_kernel(kernel->kernel, args, NULL);
 
-        /* spawn kernel */
-        mango_event_t kernEvent = mango_start_kernel(kernel->kernel, args, NULL);
+        // mango_event_t kernEvent = mango_start_kernel(kernel->kernel, args, NULL);
 
-        /* wait for kernel completion */
-        mango_wait(kernEvent);
+        // mango_wait(kernEvent);
 
         // } // event handler
+        return CL_SUCCESS;
+    }
+
+    cl_int clEnqueueWriteBuffer(cl_command_queue command_queue,
+                                cl_mem buffer,
+                                cl_bool blocking_write, /* not needed */
+                                size_t offset,          /* not used for now */
+                                size_t size,            /* not used for now */
+                                const void *ptr,
+                                cl_uint num_events_in_wait_list,
+                                const cl_event *event_wait_list,
+                                cl_event *event)
+    {
+        if (!command_queue)
+            return CL_INVALID_COMMAND_QUEUE;
+        if (!buffer)
+            return CL_INVALID_MEM_OBJECT;
+        if (!ptr)
+            return CL_INVALID_VALUE;
+        if (command_queue->ctx == NULL || buffer->ctx == NULL || command_queue->ctx != buffer->ctx)
+            return CL_INVALID_CONTEXT;
+
+        if (event_wait_list)
+        {
+            if (num_events_in_wait_list > 0)
+            {
+                for (int i = 0; i < num_events_in_wait_list; i++)
+                {
+                    if (event_wait_list[i]->ctx == NULL || command_queue->ctx != event_wait_list[i]->ctx)
+                        return CL_INVALID_CONTEXT;
+                    std::cout << "[EnqueueWriteBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
+                    mango_wait(event_wait_list[i]->ev);
+                    std::cout << "[EnqueueWriteBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
+                }
+            }
+            else
+            {
+                return CL_INVALID_EVENT_WAIT_LIST;
+            }
+        }
+        else
+        {
+            if (num_events_in_wait_list > 0)
+                return CL_INVALID_EVENT_WAIT_LIST;
+        }
+
+        printf("Enqueuing write buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
+        if (event)
+        {
+
+            (*event) = (cl_event)malloc(sizeof(struct _cl_event));
+            (*event)->ev = mango_write(ptr, buffer->buffer, DIRECT, 0);
+            std::cout << "[EnqueueWriteBuffer] creating event : " << (*event)->ev << std::endl;
+            (*event)->ctx = command_queue->ctx;
+
+            /* garbage */
+            // cl_event writeEvent = NULL;
+            // writeEvent = (cl_event)malloc(sizeof(struct _cl_event));
+            // printf("Assegno nuovo evento di write buffer con indirizzo %p\n", writeEvent);
+            // writeEvent->ev = mango_write(ptr, buffer->buffer, DIRECT, 0); // FIX : probably mango_write asynchronous behaviour is causing the segmentation fault when assigning his event to (*event)->ev
+            // printf("TEST2\n");
+            // writeEvent->ctx = command_queue->ctx;
+            // printf("TEST3\n");
+            // *event = writeEvent;
+        }
+        else
+            mango_write(ptr, buffer->buffer, DIRECT, 0);
 
         return CL_SUCCESS;
     }
 
     cl_int clEnqueueReadBuffer(cl_command_queue command_queue,
-                               cl_mem buffer, /* kernel buffer to be read */
-                               cl_bool blocking_read,
-                               size_t offset,
-                               size_t size,
-                               void *ptr, /* host buffer */
+                               cl_mem buffer,
+                               cl_bool blocking_write, /* not needed */
+                               size_t offset,          /* not used for now */
+                               size_t size,            /* not used for now */
+                               void *ptr,
                                cl_uint num_events_in_wait_list,
                                const cl_event *event_wait_list,
                                cl_event *event)
     {
-        mango_wait((*event)->ev);
-        mango_read(ptr, buffer->buffer, DIRECT, 0);
+        if (!command_queue)
+            return CL_INVALID_COMMAND_QUEUE;
+        if (!buffer)
+            return CL_INVALID_MEM_OBJECT;
+        if (!ptr)
+            return CL_INVALID_VALUE;
+        if (command_queue->ctx == NULL || buffer->ctx == NULL || command_queue->ctx != buffer->ctx)
+            return CL_INVALID_CONTEXT;
+
+        if (event_wait_list)
+        {
+            if (num_events_in_wait_list > 0)
+            {
+                for (int i = 0; i < num_events_in_wait_list; i++)
+                {
+                    if (event_wait_list[i]->ctx == NULL || command_queue->ctx != event_wait_list[i]->ctx)
+                        return CL_INVALID_CONTEXT;
+                    std::cout << "[EnqueueReadBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
+                    mango_wait(event_wait_list[i]->ev);
+                    std::cout << "[EnqueueReadBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
+                }
+            }
+            else
+            {
+                return CL_INVALID_EVENT_WAIT_LIST;
+            }
+        }
+        else
+        {
+            if (num_events_in_wait_list > 0)
+                return CL_INVALID_EVENT_WAIT_LIST;
+        }
+
+        printf("Enqueuing read buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
+        if (event)
+        {
+            (*event) = (cl_event)malloc(sizeof(struct _cl_event));
+            (*event)->ev = mango_read(ptr, buffer->buffer, DIRECT, 0);
+            std::cout << "[EnqueueReadBuffer] creating event : " << (*event)->ev << std::endl;
+            (*event)->ctx = command_queue->ctx;
+        }
+        else
+            mango_read(ptr, buffer->buffer, DIRECT, 0);
 
         return CL_SUCCESS;
     }
 
-
-  /* RELEASE FUNCTIONS */
-    cl_int  clReleaseMemObject(cl_mem  memobj ) 
+    cl_int clWaitForEvents(cl_uint num_events,
+                           const cl_event *event_list)
     {
-      if(memobj != NULL)
-        free(memobj);
-      return CL_SUCCESS;
+        if (num_events <= 0 || event_list == NULL)
+            return CL_INVALID_VALUE;
+
+        for (int i = 0; i < num_events; i++)
+        {
+            if (!event_list[i])
+                return CL_INVALID_EVENT;
+            std::cout << "[WaitForEvents] waiting for event : " << event_list[i]->ev << std::endl;
+            mango_wait(event_list[i]->ev);
+            std::cout << "[WaitForEvents] finished waiting for event : " << event_list[i]->ev << std::endl;
+        }
+
+        return CL_SUCCESS;
     }
 
-
-    cl_int  clReleaseProgram(cl_program  program )
+    cl_int clReleaseProgram(cl_program program)
     {
-      if(program != NULL)
-        free(program);
-      return CL_SUCCESS;
+        if (program == NULL)
+            return CL_INVALID_PROGRAM;
+
+        printf("ReleaseProgram is not implemented\n");
+        return CL_SUCCESS;
     }
 
-
-    cl_int  clReleaseKernel(cl_kernel    kernel )
+    cl_int clReleaseMemObject(cl_mem memobj)
     {
-      if(kernel != NULL)
-        free(kernel);
-      return CL_SUCCESS;
+        if (memobj == NULL)
+            return CL_INVALID_MEM_OBJECT;
+
+        printf("deallocating buffer %d\n", memobj->id);
+        mango_deregister_memory(memobj->buffer);
+        return CL_SUCCESS;
     }
 
-
-    cl_int  clReleaseCommandQueue(cl_command_queue  command_queue )
+    cl_int clReleaseKernel(cl_kernel kernel)
     {
-      if(command_queue != NULL){
-        mango_resource_deallocation(command_queue->tg);
-        mango_task_graph_destroy_all(command_queue->tg);
-        free(command_queue);
-      }
-      return CL_SUCCESS;
+        if (kernel == NULL)
+            return CL_INVALID_KERNEL;
+
+        // mango_deregister_kernel(kernel->kernel); // TODO : implement it in mango.cpp
+        printf("ReleaseKernel is not implemented\n");
+        return CL_SUCCESS;
     }
 
-
-    cl_int  clReleaseContext(cl_context context ) 
+    cl_int clReleaseCommandQueue(cl_command_queue command_queue)
     {
-
-      if(mango_release() != SUCCESS){
-        printf("PROBLEM WHILE RELEASING MANGO!\n");
-      }
-      if(context != NULL)
-        free(context);
-      return CL_SUCCESS;
+        mango_resource_deallocation(command_queue->tgx);
+        mango_task_graph_destroy_all(command_queue->tgx);
     }
 
-
+    cl_int clReleaseContext(cl_context context)
+    {
+        mango_release();
+    }
 
 #ifdef __cplusplus
 }
