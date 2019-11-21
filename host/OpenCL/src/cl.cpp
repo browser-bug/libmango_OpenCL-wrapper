@@ -488,10 +488,6 @@ extern "C"
                                                                         &buf_in,
                                                                         &buf_out);
 
-                std::cout << "[CreateKernelsInProgram] Tentativo NR 1 " << kernels[i]->device << std::endl;
-                std::cout << "[CreateKernelsInProgram] Tentativo NR 2 " << kernels[i]->device->queue << std::endl;
-                std::cout << "[CreateKernelsInProgram] Tentativo NR 3 " << kernels[i]->device->queue->tgx << std::endl;
-
                 // Get the task graph associated with the kernel (via its device)
                 kernels[i]->device->queue->tgx = kernels[i]->device->queue->tgx
                                                      ? mango_task_graph_add_kernel(kernels[i]->device->queue->tgx, &(kernels[i]->kernel))
@@ -640,6 +636,20 @@ extern "C"
         return CL_SUCCESS;
     }
 
+    cl_int mangoAllocateResources(cl_command_queue command_queue)
+    {
+        printf("[mangoAllocateResources] Allocating new resources\n");
+        command_queue->tgx = mango_task_graph_add_event(command_queue->tgx, NULL); // FIX : this can't stay here
+        mango_exit_t err = mango_resource_allocation(command_queue->tgx);
+        if (err == SUCCESS)
+        {
+            printf("[mangoAllocateResources] Allocation completed\n");
+            return CL_SUCCESS;
+        }
+        else
+            return CL_OUT_OF_RESOURCES;
+    }
+
     // TODO : change with clEnqueueTask
     cl_int clEnqueueNDRangeKernel(cl_command_queue command_queue,
                                   cl_kernel kernel,
@@ -651,16 +661,18 @@ extern "C"
                                   const cl_event *event_wait_list,
                                   cl_event *event)
     {
+
         /* Check for events */
         // if (event != NULL)
         // {
         // FIX: not his function, must be found a more elegant way.
-        command_queue->tgx = mango_task_graph_add_event(command_queue->tgx, NULL);
+        // command_queue->tgx = mango_task_graph_add_event(command_queue->tgx, NULL);
 
         mango_arg_t *arg_ev = NULL;
-        (*event) = (cl_event)malloc(sizeof(struct _cl_event));
-        (*event)->ev = mango_get_buffer_event(eventBuffers.at(0)->buffer);
-        arg_ev = mango_arg(kernel->kernel, &((*event)->ev), sizeof(uint64_t), EVENT);
+        cl_event argEvent = (cl_event)malloc(sizeof(struct _cl_event));
+        argEvent->ev = mango_get_buffer_event(eventBuffers.at(0)->buffer);
+        std::cout << "[EnqueueNDRangeKernel] creating event for mango_buffer : " << argEvent->ev << std::endl;
+        arg_ev = mango_arg(kernel->kernel, &(argEvent->ev), sizeof(uint64_t), EVENT);
 
         // /* Create event args for event protected buffers */
         // for (auto &eb : eventBuffers)
@@ -668,17 +680,18 @@ extern "C"
         //     createEventArguments(eb->buffer, kernel->kernel);
         // }
 
-        printf("[BUFFER] Allocating new resources\n");
-        mango_resource_allocation(command_queue->tgx);
-        printf("[BUFFER] Allocation completed\n");
+        /* Write host->device buffers */
+        // for (auto &b : hostBuffers)
+        // {
+        //     if (b->type == CL_MEM_READ_ONLY)
+        //     {
+        //         mango_write(b->host_ptr, b->buffer, DIRECT, 0); // TODO:  magari spostarlo in clCreateBuffer
+        //     }
+        // }
 
-        for (auto &b : hostBuffers)
-        {
-            if (b->type == CL_MEM_READ_ONLY)
-            {
-                mango_write(b->host_ptr, b->buffer, DIRECT, 0); // TODO:  magari spostarlo in clCreateBuffer
-            }
-        }
+        // printf("[BUFFER] Allocating new resources\n");
+        // mango_resource_allocation(command_queue->tgx);
+        // printf("[BUFFER] Allocation completed\n");
 
         /* Putting togheter the arguments */
 
@@ -688,13 +701,19 @@ extern "C"
         mango_args_t *args = mango_set_args(kernel->kernel, 6, kernel->args[0], kernel->args[1], kernel->args[2], kernel->args[3], kernel->args[4], arg_ev);
         printf("Succesfully created args\n");
 
-        /* Write host->device buffers */
+        if (event)
+        {
+            (*event) = (cl_event)malloc(sizeof(struct _cl_event));
+            (*event)->ev = mango_start_kernel(kernel->kernel, args, NULL);
+            std::cout << "[EnqueueNDRangeKernel] creating event : " << (*event)->ev << std::endl;
+            (*event)->ctx = command_queue->ctx;
+        }
+        else
+            mango_start_kernel(kernel->kernel, args, NULL);
 
-        /* spawn kernel */
-        mango_event_t kernEvent = mango_start_kernel(kernel->kernel, args, NULL);
+        // mango_event_t kernEvent = mango_start_kernel(kernel->kernel, args, NULL);
 
-        /* wait for kernel completion */
-        mango_wait(kernEvent);
+        // mango_wait(kernEvent);
 
         // } // event handler
         return CL_SUCCESS;
@@ -727,7 +746,9 @@ extern "C"
                 {
                     if (event_wait_list[i]->ctx == NULL || command_queue->ctx != event_wait_list[i]->ctx)
                         return CL_INVALID_CONTEXT;
+                    std::cout << "[EnqueueWriteBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
                     mango_wait(event_wait_list[i]->ev);
+                    std::cout << "[EnqueueWriteBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
                 }
             }
             else
@@ -742,8 +763,24 @@ extern "C"
         }
 
         printf("Enqueuing write buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
-        if (!event)
+        if (event)
+        {
+
+            (*event) = (cl_event)malloc(sizeof(struct _cl_event));
             (*event)->ev = mango_write(ptr, buffer->buffer, DIRECT, 0);
+            std::cout << "[EnqueueWriteBuffer] creating event : " << (*event)->ev << std::endl;
+            (*event)->ctx = command_queue->ctx;
+
+            /* garbage */
+            // cl_event writeEvent = NULL;
+            // writeEvent = (cl_event)malloc(sizeof(struct _cl_event));
+            // printf("Assegno nuovo evento di write buffer con indirizzo %p\n", writeEvent);
+            // writeEvent->ev = mango_write(ptr, buffer->buffer, DIRECT, 0); // FIX : probably mango_write asynchronous behaviour is causing the segmentation fault when assigning his event to (*event)->ev
+            // printf("TEST2\n");
+            // writeEvent->ctx = command_queue->ctx;
+            // printf("TEST3\n");
+            // *event = writeEvent;
+        }
         else
             mango_write(ptr, buffer->buffer, DIRECT, 0);
 
@@ -751,11 +788,11 @@ extern "C"
     }
 
     cl_int clEnqueueReadBuffer(cl_command_queue command_queue,
-                               cl_mem buffer, /* kernel buffer to be read */
-                               cl_bool blocking_read,
-                               size_t offset,
-                               size_t size,
-                               void *ptr, /* host buffer */
+                               cl_mem buffer,
+                               cl_bool blocking_write, /* not needed */
+                               size_t offset,          /* not used for now */
+                               size_t size,            /* not used for now */
+                               void *ptr,
                                cl_uint num_events_in_wait_list,
                                const cl_event *event_wait_list,
                                cl_event *event)
@@ -777,7 +814,9 @@ extern "C"
                 {
                     if (event_wait_list[i]->ctx == NULL || command_queue->ctx != event_wait_list[i]->ctx)
                         return CL_INVALID_CONTEXT;
+                    std::cout << "[EnqueueReadBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
                     mango_wait(event_wait_list[i]->ev);
+                    std::cout << "[EnqueueReadBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
                 }
             }
             else
@@ -792,17 +831,64 @@ extern "C"
         }
 
         printf("Enqueuing read buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
-        if (!event)
+        if (event)
+        {
+            (*event) = (cl_event)malloc(sizeof(struct _cl_event));
             (*event)->ev = mango_read(ptr, buffer->buffer, DIRECT, 0);
+            std::cout << "[EnqueueReadBuffer] creating event : " << (*event)->ev << std::endl;
+            (*event)->ctx = command_queue->ctx;
+        }
         else
             mango_read(ptr, buffer->buffer, DIRECT, 0);
 
         return CL_SUCCESS;
     }
 
+    cl_int clWaitForEvents(cl_uint num_events,
+                           const cl_event *event_list)
+    {
+        if (num_events <= 0 || event_list == NULL)
+            return CL_INVALID_VALUE;
+
+        for (int i = 0; i < num_events; i++)
+        {
+            if (!event_list[i])
+                return CL_INVALID_EVENT;
+            std::cout << "[WaitForEvents] waiting for event : " << event_list[i]->ev << std::endl;
+            mango_wait(event_list[i]->ev);
+            std::cout << "[WaitForEvents] finished waiting for event : " << event_list[i]->ev << std::endl;
+        }
+
+        return CL_SUCCESS;
+    }
+
     cl_int clReleaseProgram(cl_program program)
     {
+        if (program == NULL)
+            return CL_INVALID_PROGRAM;
+
         printf("ReleaseProgram is not implemented\n");
+        return CL_SUCCESS;
+    }
+
+    cl_int clReleaseMemObject(cl_mem memobj)
+    {
+        if (memobj == NULL)
+            return CL_INVALID_MEM_OBJECT;
+
+        printf("deallocating buffer %d\n", memobj->id);
+        mango_deregister_memory(memobj->buffer);
+        return CL_SUCCESS;
+    }
+
+    cl_int clReleaseKernel(cl_kernel kernel)
+    {
+        if (kernel == NULL)
+            return CL_INVALID_KERNEL;
+
+        // mango_deregister_kernel(kernel->kernel); // TODO : implement it in mango.cpp
+        printf("ReleaseKernel is not implemented\n");
+        return CL_SUCCESS;
     }
 
     cl_int clReleaseCommandQueue(cl_command_queue command_queue)

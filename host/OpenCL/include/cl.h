@@ -690,8 +690,8 @@ clCreateBuffer(cl_kernel    /* kernel */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainMemObject(cl_mem /* memobj */) CL_API_SUFFIX__VERSION_1_0;
 
-// extern CL_API_ENTRY cl_int CL_API_CALL
-// clReleaseMemObject(cl_mem /* memobj */) CL_API_SUFFIX__VERSION_1_0;
+extern CL_API_ENTRY cl_int CL_API_CALL
+clReleaseMemObject(cl_mem /* memobj */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clGetSupportedImageFormats(cl_context           /* context */,
@@ -835,8 +835,8 @@ clCreateKernelsInProgram(cl_program     /* program */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainKernel(cl_kernel    /* kernel */) CL_API_SUFFIX__VERSION_1_0;
 
-// extern CL_API_ENTRY cl_int CL_API_CALL
-// clReleaseKernel(cl_kernel   /* kernel */) CL_API_SUFFIX__VERSION_1_0;
+extern CL_API_ENTRY cl_int CL_API_CALL
+clReleaseKernel(cl_kernel   /* kernel */) CL_API_SUFFIX__VERSION_1_0;
 
 extern CL_API_ENTRY cl_int CL_API_CALL
 clSetKernelArg(cl_kernel    /* kernel */,
@@ -867,10 +867,10 @@ clSetKernelArg(cl_kernel    /* kernel */,
 //                          void *                     /* param_value */,
 //                          size_t *                   /* param_value_size_ret */) CL_API_SUFFIX__VERSION_1_0;
 
-// /* Event Object APIs */
-// extern CL_API_ENTRY cl_int CL_API_CALL
-// clWaitForEvents(cl_uint             /* num_events */,
-//                 const cl_event *    /* event_list */) CL_API_SUFFIX__VERSION_1_0;
+/* Event Object APIs */
+extern CL_API_ENTRY cl_int CL_API_CALL
+clWaitForEvents(cl_uint             /* num_events */,
+                const cl_event *    /* event_list */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clGetEventInfo(cl_event         /* event */,
