@@ -350,6 +350,24 @@ extern "C"
 		return (mango_args_t *)new mango::KernelArguments(arguments, k);
 	}
 
+	mango_args_t *mango_set_args_from_vector(mango_kernel_t kernel, void* _arguments)
+	{
+
+		assert(_arguments!= NULL && "argc must be non-negative");
+
+
+		std::vector<mango::Arg *> *arguments;
+		arguments = (std::vector<mango::Arg *> *)_arguments;
+		
+		auto k = cxt->get_kernel(kernel);
+
+		std::cout << "[DEBUG] Correctly retrieved the kernel : " << kernel << std::endl;
+
+		assert(k && "Kernel not found.");
+
+		return (mango_args_t *)new mango::KernelArguments(*arguments, k);
+	}
+
 	mango_event_t mango_start_kernel(mango_kernel_t kernel, mango_args_t *args, mango_event_t event)
 	{
 		auto k = cxt->get_kernel(kernel);
