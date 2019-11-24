@@ -10,6 +10,8 @@
 // Including libmango
 #include "mango.h"
 
+#include<unistd.h>
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -607,8 +609,8 @@ clCreateContext(const cl_context_properties * /* properties */,
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clRetainContext(cl_context /* context */) CL_API_SUFFIX__VERSION_1_0;
 
- extern CL_API_ENTRY cl_int CL_API_CALL
- clReleaseContext(cl_context /* context */) CL_API_SUFFIX__VERSION_1_0;
+// extern CL_API_ENTRY cl_int CL_API_CALL
+// clReleaseContext(cl_context /* context */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clGetContextInfo(cl_context         /* context */, 
@@ -661,7 +663,7 @@ clCreateCommandQueue(cl_context                     /* context */,
 /* Memory Object APIs */
 // Temporarly modified to work with cl_program and not with cl_context
 extern CL_API_ENTRY cl_mem CL_API_CALL
-clCreateBuffer(cl_context   /* context */,
+clCreateBuffer(cl_kernel   /* kernel */,
                cl_mem_flags /* flags */,
                size_t       /* size */,
                void *       /* host_ptr */,
@@ -749,7 +751,7 @@ clCreateProgramWithBinary(cl_context                     /* context */,
                           cl_uint                        /* num_devices */,
                           const cl_device_id *           /* device_list */,
                           const size_t *                 /* lengths */,
-                          const unsigned char **         /* binaries */,
+                          const char **         /* binaries */,
                           cl_int *                       /* binary_status */,
                           cl_int *                       /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
 
@@ -819,7 +821,9 @@ clBuildProgram(cl_program           /* program */,
 extern CL_API_ENTRY cl_kernel CL_API_CALL
 clCreateKernel(cl_program      /* program */,
                const char *    /* kernel_name */,
-               cl_int *        /* errcode_ret */) CL_API_SUFFIX__VERSION_1_0;
+               cl_int *        /* errcode_ret */,
+               cl_int          /* kernel_id */,
+               cl_device_id    /* device */) CL_API_SUFFIX__VERSION_1_0;
 
 // extern CL_API_ENTRY cl_int CL_API_CALL
 // clCreateKernelsInProgram(cl_program     /* program */,
@@ -1214,4 +1218,5 @@ clEnqueueNDRangeKernel(cl_command_queue /* command_queue */,
 #endif
 
 #endif  /* __OPENCL_CL_H */
+
 
