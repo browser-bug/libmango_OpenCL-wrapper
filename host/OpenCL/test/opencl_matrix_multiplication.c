@@ -16,9 +16,9 @@
 #include "cl.h"
 
 ////////////////////////////////////////////////////////////////////////////////
-#define WA 8
-#define HA 8
-#define WB 8
+#define WA 10
+#define HA 10
+#define WB 10
 
 #define HB WA
 #define WC WB
@@ -31,7 +31,7 @@ void randomMemInit(int *data, int size)
     int i;
 
     for (i = 0; i < size; ++i)
-        data[i] = 2;
+        data[i] = 3;
 }
 
 long LoadOpenCLKernel(char const *path, char **buf)
@@ -299,8 +299,8 @@ int main(int argc, char **argv)
 
 
     // Set the buffer IDS for the kernel we wish to run first
-    clSetInputBufferIDs(program, 1, 2, 1, 2);
-    clSetOutputBufferIDs(program, 1, 1, 3);
+    clSetInputBufferIDs(program, 0, 2, 1, 2);
+    clSetOutputBufferIDs(program, 0, 1, 3);
     // clSetInputBufferIDs(program, 1, 2, 4, 5);
     // clSetOutputBufferIDs(program, 1, 1, 6);
 
@@ -431,16 +431,16 @@ int main(int argc, char **argv)
     // }
     // else
     // {
-    //     printf("Matrix multiplication correctly performed\n");
-    //     /* Printing result matrix */
-    //     // printf("\n\nMatrix C\n");
-    //     // for (int i = 0; i < size_A; i++)
-    //     // {
-    //     //     printf("%d ", h_D[i]);
-    //     //     if (((i + 1) % WC) == 0)
-    //     //         printf("\n");
-    //     // }
-    //     // printf("\n");
+         printf("Matrix multiplication correctly performed\n");
+         /* Printing result matrix */
+     printf("\n\nMatrix C\n");
+     for (int i = 0; i < size_A; i++)
+   {
+       printf("%d ", h_C[i]);
+       if (((i + 1) % WC) == 0)
+           printf("\n");
+   }
+   printf("\n");
     // }
 
     //Shutdown and cleanup

@@ -454,7 +454,7 @@ extern "C"
         
         mango_exit_t err;
 
-        err = mango_load_kernel(kernel_name, kernel->kernel_function.function, GN, BINARY);
+        err = mango_load_kernel(kernel_name, kernel->kernel_function.function, device->device_type, BINARY);
 
 
         // FIX : maybe move this copy part in the mango_register_kernel_with_buffers()
@@ -493,14 +493,14 @@ extern "C"
                           void *host_ptr,
                           cl_int *errcode_ret)
     {
-        if (size == 0 || size > CL_DEVICE_MAX_MEM_ALLOC_SIZE)
+     /*   if (size == 0 || size > CL_DEVICE_MAX_MEM_ALLOC_SIZE)
         {
             if (!errcode_ret)
                 *errcode_ret = CL_INVALID_BUFFER_SIZE;
             std::cout << "[clCreateBuffer] invalid buffer size" << std::endl;
             return NULL;
         }
-            std::cout<<"CREATING BUFFER ID:"<<buffer_id<<std::endl;
+       */     std::cout<<"CREATING BUFFER ID:"<<buffer_id<<std::endl;
 
         // TODO: CL_INVALID_HOST_PTR if host_ptr is NULL and CL_MEM_USE_HOST_PTR or CL_MEM_COPY_HOST_PTR are set in flags or
         //       if host_ptr is not NULL but CL_MEM_COPY_HOST_PTR or CL_MEM_USE_HOST_PTR are not set in flags.
@@ -701,19 +701,13 @@ extern "C"
 
         if (event)
         {
+            printf("CIAOOOOOO\n");
             (*event) = (cl_event)malloc(sizeof(struct _cl_event));
             (*event)->ev = mango_start_kernel(kernel->kernel, args, NULL);
             std::cout << "[EnqueueNDRangeKernel] creating event : " << (*event)->ev << std::endl;
             (*event)->ctx = command_queue->ctx;
         }
-        else
-            mango_start_kernel(kernel->kernel, args, NULL);
-
-        // mango_event_t kernEvent = mango_start_kernel(kernel->kernel, args, NULL);
-
-        // mango_wait(kernEvent);
-
-        // } // event handler
+       
         return CL_SUCCESS;
     }
 
@@ -842,23 +836,7 @@ extern "C"
         return CL_SUCCESS;
     }
 
-    cl_int clWaitForEvents(cl_uint num_events,
-                           const cl_event *event_list)
-    {
-        if (num_events <= 0 || event_list == NULL)
-            return CL_INVALID_VALUE;
-
-        for (int i = 0; i < num_events; i++)
-        {
-            if (!event_list[i])
-                return CL_INVALID_EVENT;
-            std::cout << "[WaitForEvents] waiting for event : " << event_list[i]->ev << std::endl;
-            mango_wait(event_list[i]->ev);
-            std::cout << "[WaitForEvents] finished waiting for event : " << event_list[i]->ev << std::endl;
-        }
-
-        return CL_SUCCESS;
-    }
+ 
 
     cl_int clReleaseProgram(cl_program program)
     {
