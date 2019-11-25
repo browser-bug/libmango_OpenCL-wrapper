@@ -184,7 +184,7 @@ int main(int argc, char **argv)
     cl_mem d_C;
 
     // set seed for rand()
-    // srand(2014);
+    srand(2014);
 
     //Allocate host memory for matrices A and B
     unsigned int size_A = WA * HA;
@@ -305,18 +305,19 @@ int main(int argc, char **argv)
 
     // TODO : redefine first kernel structure inside cl_program and change the following functions to take kernels[0]
     cl_kernel kernels[dev_cnt];
-    err = clCreateKernelsInProgram(program, 1, kernels, NULL);
-    if (!kernels || err != CL_SUCCESS)
-    {
-        printf("Error: Failed to create compute kernel!\n");
-        exit(1);
-    }
+    // err = clCreateKernelsInProgram(program, 1, kernels, NULL);
+    // if (!kernels || err != CL_SUCCESS)
+    // {
+    //     printf("Error: Failed to create compute kernel!\n");
+    //     exit(1);
+    // }
+    kernels[0] = clCreateKernel(program, programBinaryPaths[0], NULL, 1);
 
     // Create the input and output arrays in device memory for our calculation
-    d_A = clCreateBuffer(kernels[0], CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_A, h_A, &err);
-    d_B = clCreateBuffer(kernels[0], CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_B, h_B, &err);
+    d_A = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_A, h_A, &err, kernels[0]);
+    d_B = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_B, h_B, &err, kernels[0]);
 
-    d_C = clCreateBuffer(kernels[0], CL_MEM_WRITE_ONLY, mem_size_A, NULL, &err);
+    d_C = clCreateBuffer(context, CL_MEM_WRITE_ONLY, mem_size_A, NULL, &err, kernels[0]);
 
     if (!d_A || !d_B || !d_C)
     {
@@ -326,16 +327,17 @@ int main(int argc, char **argv)
 
     printf("Running matrix multiplication for matrices A (%dx%d) and B (%dx%d) ...\n", WA, HA, WB, HB);
     //Launch OpenCL kernel
-    size_t localWorkSize[2], globalWorkSize[2];
+    size_t localWorkSize[2], globalWorkSize[2];  
 
     int wA = WA;
-    int wC = WC;
+    int wC = WC;   
 
     err = clSetKernelArg(kernels[0], 0, sizeof(cl_mem), (void *)&d_A);
     err |= clSetKernelArg(kernels[0], 1, sizeof(cl_mem), (void *)&d_B);
     err |= clSetKernelArg(kernels[0], 2, sizeof(cl_mem), (void *)&d_C);
     err |= clSetKernelArg(kernels[0], 3, sizeof(int), (void *)&wA);
     err |= clSetKernelArg(kernels[0], 4, sizeof(int), (void *)&wC);
+    // TODO : aggiungere la possibilità di settare anche un argomento di tipo evento
 
     if (err != CL_SUCCESS)
     {
@@ -344,18 +346,18 @@ int main(int argc, char **argv)
     }
 
     // User needs to explicitly allocate resources for the task graph
-    mangoAllocateResources(commands);
+    clKernelAndBufferAllocation(commands);
     
     // Writing buffers to device memory
     cl_event writeEvent;
     // printf("Passo evento di write buffer con indirizzo %p\n", &writeEvent);
-    err = clEnqueueWriteBuffer(commands, d_A, NULL, NULL, NULL, h_A, NULL, NULL, &writeEvent);
+    err = clEnqueueWriteBuffer(commands, d_A, NULL, NULL, NULL, h_A, NULL, NULL, NULL);
      if (err != CL_SUCCESS)
     {
         printf("Error: Failed to write buffer! %d\n", err);
         exit(1);
     }
-    err = clEnqueueWriteBuffer(commands, d_B, NULL, NULL, NULL, h_B, 0, NULL, NULL); // FIX : waiting on writeEvent gets stuck
+    err = clEnqueueWriteBuffer(commands, d_B, NULL, NULL, NULL, h_B, NULL, NULL, NULL); // FIX : waiting on writeEvent gets stuck
      if (err != CL_SUCCESS)
     {
         printf("Error: Failed to write buffer! %d\n", err);
@@ -380,30 +382,30 @@ int main(int argc, char **argv)
 
     //Retrieve result from device
     cl_event readEvent;
-    err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, 1, &kernelEvent, &readEvent);
+    err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, NULL, NULL, &readEvent);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to read output array! %d\n", err);
         exit(1);
     }
 
-    // err = clWaitForEvents(1, &readEvent);
-    // if (err != CL_SUCCESS)
-    // {
-    //     printf("Error: Failed to wait for events! %d\n", err);
-    //     exit(1);
-    // }
+    err = clWaitForEvents(1, &kernelEvent);
+    if (err != CL_SUCCESS)
+    {
+        printf("Error: Failed to wait for events! %d\n", err);
+        exit(1);
+    }
 
-    // // Print the result
-    // printf("\n\nMatrix C (Results)\n");
-    // int i;
-    // for (i = 0; i < size_C; i++)
-    // {
-    //     printf("%f ", h_C[i]);
-    //     if (((i + 1) % WC) == 0)
-    //         printf("\n");
-    // }
-    // printf("\n");
+    // Print the result
+    printf("\n\nMatrix C (Results)\n");
+    int i;
+    for (i = 0; i < size_C; i++)
+    {
+        printf("%d ", h_C[i]);
+        if (((i + 1) % WC) == 0)
+            printf("\n");
+    }
+    printf("\n");
 
     printf("Matrix multiplication completed...\n");
 
@@ -452,7 +454,7 @@ int main(int argc, char **argv)
     clReleaseMemObject(d_B);
 
     // deregister kernel
-    clReleaseKernel(kernel);
+    clReleaseKernel(kernels[0]);
     // mango_resource_deallocation(tg); mango_task_graph_destroy_all(tg);
     clReleaseCommandQueue(commands);
     // mango_release()
