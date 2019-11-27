@@ -314,10 +314,10 @@ int main(int argc, char **argv)
     kernels[0] = clCreateKernel(program, programBinaryPaths[0], NULL, 1);
 
     // Create the input and output arrays in device memory for our calculation
-    d_A = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_A, h_A, &err, kernels[0]);
-    d_B = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_B, h_B, &err, kernels[0]);
+    d_A = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_A, h_A, &err, NULL, &kernels[0]);
+    d_B = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_B, h_B, &err, NULL, &kernels[0]);
 
-    d_C = clCreateBuffer(context, CL_MEM_WRITE_ONLY, mem_size_A, NULL, &err, kernels[0]);
+    d_C = clCreateBuffer(context, CL_MEM_WRITE_ONLY, mem_size_A, NULL, &err, &kernels[0], NULL);
 
     if (!d_A || !d_B || !d_C)
     {
@@ -332,11 +332,13 @@ int main(int argc, char **argv)
     int wA = WA;
     int wC = WC;   
 
-    err = clSetKernelArg(kernels[0], 0, sizeof(cl_mem), (void *)&d_A);
-    err |= clSetKernelArg(kernels[0], 1, sizeof(cl_mem), (void *)&d_B);
-    err |= clSetKernelArg(kernels[0], 2, sizeof(cl_mem), (void *)&d_C);
-    err |= clSetKernelArg(kernels[0], 3, sizeof(int), (void *)&wA);
-    err |= clSetKernelArg(kernels[0], 4, sizeof(int), (void *)&wC);
+    err = clSetKernelArg(kernels[0], 0, sizeof(cl_mem), (void *)&d_A, CL_BUFFER_ARG);
+    err |= clSetKernelArg(kernels[0], 1, sizeof(cl_mem), (void *)&d_B, CL_BUFFER_ARG);
+    err |= clSetKernelArg(kernels[0], 2, sizeof(cl_mem), (void *)&d_C, CL_BUFFER_ARG);
+    err |= clSetKernelArg(kernels[0], 3, sizeof(int), (void *)&wA, CL_SCALAR_ARG);
+    err |= clSetKernelArg(kernels[0], 4, sizeof(int), (void *)&wC, CL_SCALAR_ARG);
+    cl_event bufferEvent;
+    err |= clSetKernelArg(kernels[0], 2, sizeof(cl_event), (void *)&bufferEvent, CL_EVENT_ARG);
     // TODO : aggiungere la possibilità di settare anche un argomento di tipo evento
 
     if (err != CL_SUCCESS)
@@ -382,7 +384,7 @@ int main(int argc, char **argv)
 
     //Retrieve result from device
     cl_event readEvent;
-    err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, NULL, NULL, &readEvent);
+    err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, 1, &bufferEvent, &readEvent);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to read output array! %d\n", err);
