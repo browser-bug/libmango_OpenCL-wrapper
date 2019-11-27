@@ -389,9 +389,18 @@ mango_kernel_t mango_register_kernel_with_buffers(uint32_t kernel_id, kernelfunc
  * \returns The packaged arguments for the loaded kernel
  * \note Can be called multiple times to change the arguments
  */
-	mango_args_t *mango_set_args(mango_kernel_t kernel, int argc, ...);
+mango_args_t *mango_set_args(mango_kernel_t kernel, int argc, ...);
 
-	/*! \brief Run a kernel
+/*! \brief Set up the arguments for a kernel
+ * \param kernel The kernel for which the parameters are set
+ * \param _arguments A pointer to a std::vector<mango::Arg *> that,
+ * contains the arguments for the kernel
+ * \returns The packaged arguments for the loaded kernel
+ * \note Can be called multiple times to change the arguments
+ */
+mango_args_t *mango_set_args_from_vector(mango_kernel_t kernel, void* _arguments);
+
+/*! \brief Run a kernel
  * \param kernel The registered kernel to run
  * \param args The structure representing the arguments
  * \param even The event which the kernel should notify upon completion; if NULL,
