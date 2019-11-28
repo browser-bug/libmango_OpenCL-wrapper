@@ -681,7 +681,9 @@ extern "C"
                    size_t /* size */,
                    void * /* host_ptr */,
                    cl_int * /* errcode_ret */,
+                   cl_int /* num_kernels_in */,
                    cl_kernel * /* kernels_in */,
+                   cl_int /* num_kernels_out */,
                    cl_kernel * /* kernels_out */) CL_API_SUFFIX__VERSION_1_0;
 
     // extern CL_API_ENTRY cl_mem CL_API_CALL

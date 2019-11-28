@@ -4,13 +4,6 @@
 #include <stdio.h>
 #endif
 
-// Support definitions to be eliminated
-uint32_t kernel_id = 1;
-uint32_t buffer_id = 1;
-#define KID 1
-#define B1 1
-#define B2 2
-#define B3 3
 
 #define MAX_KERNEL_BUFFERS 15
 
@@ -88,8 +81,8 @@ extern "C"
     {
         mango_task_graph_t *tgx; /* task_graph associated with this command_queue */
 
-        cl_device_id device;     /* its device */
-        cl_context ctx;          /* parent context */
+        cl_device_id device; /* its device */
+        cl_context ctx;      /* parent context */
     };
 
     struct _cl_device_id
@@ -523,18 +516,33 @@ extern "C"
         return CL_SUCCESS;
     } */
 
+    // support function for clCreateBuffer
+    void extractKernelIDs(std::vector<mango_kernel_t>* _kernels, cl_kernel *kernels, cl_int num_kernels)
+    {
+        _kernels->clear();
+        for (int i = 0; i < num_kernels; i++)
+            _kernels->push_back(kernels[i]->kernel);
+    }
+
     cl_mem clCreateBuffer(cl_context context, // FIX : non cambiare i parametri ma aggiungi in coda un array di kernels da passare a mango_register_buffer
                           cl_mem_flags flags,
                           size_t size,
                           void *host_ptr,
                           cl_int *errcode_ret,
+                          cl_int num_kernels_in,
                           cl_kernel *kernels_in,
+                          cl_int num_kernels_out,
                           cl_kernel *kernels_out)
     {
         cl_mem memory = NULL;
         memory = (cl_mem)malloc(sizeof(struct _cl_mem));
 
         memory->host_ptr = host_ptr;
+
+        std::vector<mango_kernel_t> _kernels_in;
+        std::vector<mango_kernel_t> _kernels_out;
+        extractKernelIDs(&_kernels_in, kernels_in, num_kernels_in);
+        extractKernelIDs(&_kernels_out, kernels_out, num_kernels_out);
 
         std::cout << "[clCreateBuffer] ignoring user flags" << std::endl;
         if ((flags & CL_MEM_READ_WRITE) == CL_MEM_READ_WRITE)
@@ -554,7 +562,7 @@ extern "C"
             memory->type = CL_MEM_WRITE_ONLY;
             memory->ctx = kernels_in[0]->device->queue->ctx;
 
-            memory->buffer = mango_register_memory(memory->id, size, BUFFER, 1, 0, kernels_in[0]->kernel);
+            memory->buffer = mango_register_memory_with_kernels(memory->id, size, BUFFER, &_kernels_in, NULL);
         }
         else if ((flags & CL_MEM_READ_ONLY) == CL_MEM_READ_ONLY)
         {
@@ -566,7 +574,7 @@ extern "C"
             memory->type = CL_MEM_READ_ONLY;
             memory->ctx = kernels_out[0]->device->queue->ctx;
 
-            memory->buffer = mango_register_memory(memory->id, size, BUFFER, 0, 1, kernels_out[0]->kernel);
+            memory->buffer = mango_register_memory_with_kernels(memory->id, size, BUFFER, NULL, &_kernels_out);
         }
         else
         {

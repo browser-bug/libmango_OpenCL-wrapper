@@ -31,7 +31,7 @@ void randomMemInit(int *data, int size)
     int i;
 
     for (i = 0; i < size; ++i)
-        data[i] = rand() % (int)RAND_MAX;
+        data[i] = rand() % 100;//(int)RAND_MAX;
 }
 
 long LoadOpenCLKernel(char const *path, char **buf)
@@ -305,19 +305,33 @@ int main(int argc, char **argv)
 
     // TODO : redefine first kernel structure inside cl_program and change the following functions to take kernels[0]
     cl_kernel kernels[dev_cnt];
+
     // err = clCreateKernelsInProgram(program, 1, kernels, NULL);
     // if (!kernels || err != CL_SUCCESS)
     // {
     //     printf("Error: Failed to create compute kernel!\n");
     //     exit(1);
     // }
+
     kernels[0] = clCreateKernel(program, programBinaryPaths[0], NULL, 1);
 
     // Create the input and output arrays in device memory for our calculation
-    d_A = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_A, h_A, &err, NULL, &kernels[0]);
-    d_B = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_B, h_B, &err, NULL, &kernels[0]);
+    d_A = clCreateBuffer(context,
+                         CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                         mem_size_A, h_A, &err,
+                         0, NULL,
+                         1, kernels);
+    d_B = clCreateBuffer(context,
+                         CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                         mem_size_B, h_B, &err,
+                         0, NULL,
+                         1, kernels);
 
-    d_C = clCreateBuffer(context, CL_MEM_WRITE_ONLY, mem_size_A, NULL, &err, &kernels[0], NULL);
+    d_C = clCreateBuffer(context,
+                         CL_MEM_WRITE_ONLY,
+                         mem_size_A, NULL, &err, 
+                         1, kernels,
+                         0, NULL);
 
     if (!d_A || !d_B || !d_C)
     {
@@ -327,10 +341,10 @@ int main(int argc, char **argv)
 
     printf("Running matrix multiplication for matrices A (%dx%d) and B (%dx%d) ...\n", WA, HA, WB, HB);
     //Launch OpenCL kernel
-    size_t localWorkSize[2], globalWorkSize[2];  
+    size_t localWorkSize[2], globalWorkSize[2];
 
     int wA = WA;
-    int wC = WC;   
+    int wC = WC;
 
     err = clSetKernelArg(kernels[0], 0, sizeof(cl_mem), (void *)&d_A, CL_BUFFER_ARG);
     err |= clSetKernelArg(kernels[0], 1, sizeof(cl_mem), (void *)&d_B, CL_BUFFER_ARG);
@@ -339,7 +353,6 @@ int main(int argc, char **argv)
     err |= clSetKernelArg(kernels[0], 4, sizeof(int), (void *)&wC, CL_SCALAR_ARG);
     cl_event bufferEvent;
     err |= clSetKernelArg(kernels[0], 2, sizeof(cl_event), (void *)&bufferEvent, CL_EVENT_ARG);
-    // TODO : aggiungere la possibilità di settare anche un argomento di tipo evento
 
     if (err != CL_SUCCESS)
     {
@@ -349,23 +362,22 @@ int main(int argc, char **argv)
 
     // User needs to explicitly allocate resources for the task graph
     clKernelAndBufferAllocation(commands);
-    
+
     // Writing buffers to device memory
     cl_event writeEvent;
     // printf("Passo evento di write buffer con indirizzo %p\n", &writeEvent);
     err = clEnqueueWriteBuffer(commands, d_A, NULL, NULL, NULL, h_A, NULL, NULL, NULL);
-     if (err != CL_SUCCESS)
+    if (err != CL_SUCCESS)
     {
         printf("Error: Failed to write buffer! %d\n", err);
         exit(1);
     }
     err = clEnqueueWriteBuffer(commands, d_B, NULL, NULL, NULL, h_B, NULL, NULL, NULL); // FIX : waiting on writeEvent gets stuck
-     if (err != CL_SUCCESS)
+    if (err != CL_SUCCESS)
     {
         printf("Error: Failed to write buffer! %d\n", err);
         exit(1);
     }
-
 
     localWorkSize[0] = 16;
     localWorkSize[1] = 16;
@@ -398,49 +410,38 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    // Print the result
-    printf("\n\nMatrix C (Results)\n");
-    int i;
-    for (i = 0; i < size_C; i++)
-    {
-        printf("%d ", h_C[i]);
-        if (((i + 1) % WC) == 0)
-            printf("\n");
-    }
-    printf("\n");
-
     printf("Matrix multiplication completed...\n");
 
-    // //Check the result correctness
-    // kernel_function(h_A, h_B, h_D, WC, HC);
+    //Check the result correctness
+    kernel_function(h_A, h_B, h_D, WC, HC);
 
-    // int out = 0;
-    // for (int i = 0; i < WC; i++)
-    //     for (int j = 0; j < HC; j++)
-    //         if (h_D[i * HC + j] != h_C[i * HC + j])
-    //         {
-    //             printf("Incorrect value at %d, %d: %d vs %d\n", i, j, h_D[i * HC + j], h_C[i * HC + j]);
-    //             out++;
-    //         }
+    int out = 0;
+    for (int i = 0; i < WC; i++)
+        for (int j = 0; j < HC; j++)
+            if (h_D[i * HC + j] != h_C[i * HC + j])
+            {
+                printf("Incorrect value at %d, %d: %d vs %d\n", i, j, h_D[i * HC + j], h_C[i * HC + j]);
+                out++;
+            }
 
-    // if (out)
-    // {
-    //     printf("Detected %d errors in the computation\n", out);
-    //     exit(out);
-    // }
-    // else
-    // {
-    //     printf("Matrix multiplication correctly performed\n");
-    //     /* Printing result matrix */
-    //     // printf("\n\nMatrix C\n");
-    //     // for (int i = 0; i < size_A; i++)
-    //     // {
-    //     //     printf("%d ", h_D[i]);
-    //     //     if (((i + 1) % WC) == 0)
-    //     //         printf("\n");
-    //     // }
-    //     // printf("\n");
-    // }
+    if (out)
+    {
+        printf("Detected %d errors in the computation\n", out);
+        exit(out);
+    }
+    else
+    {
+        printf("Matrix multiplication correctly performed\n");
+        /* Printing result matrix */
+        // printf("\n\nMatrix C\n");
+        // for (int i = 0; i < size_A; i++)
+        // {
+        //     printf("%d ", h_D[i]);
+        //     if (((i + 1) % WC) == 0)
+        //         printf("\n");
+        // }
+        // printf("\n");
+    }
 
     //Shutdown and cleanup
     free(h_A);
