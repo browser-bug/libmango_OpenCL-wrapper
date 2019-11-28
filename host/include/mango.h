@@ -127,8 +127,8 @@ extern "C"
  */
 	mango_kernel_t mango_register_kernel(uint32_t kernel_id, kernelfunction *kernel,
 										 unsigned int nbuffers_in, unsigned int nbuffers_out, ...);
-	 
-/*! \brief Register a kernel with BarbequeRTRM
+
+	/*! \brief Register a kernel with BarbequeRTRM
  * \param kernel_id A unique identifier of the kernel, used to match it to the
  * recipe specification
  * \param kernel The kernel to run, possibly in multiple version compiled for
@@ -143,8 +143,7 @@ extern "C"
  * \deprecated  ut The list of unit types in order of preference
  * (STOP-terminated), if NULL rely on BarbequeRTRM recipes.
  */
-mango_kernel_t mango_register_kernel_with_buffers(uint32_t kernel_id, kernelfunction *kernel, void *_in, void *_out);
-
+	mango_kernel_t mango_register_kernel_with_buffers(uint32_t kernel_id, kernelfunction *kernel, void *_in, void *_out);
 
 	/*! \brief De-register the kernel with BarbequeRTRM
  * \param kernel The kernel to remove
@@ -171,6 +170,22 @@ mango_kernel_t mango_register_kernel_with_buffers(uint32_t kernel_id, kernelfunc
  * \note The bandwidth parameter has been moved to the RTlib
  */
 	mango_buffer_t mango_register_memory(uint32_t buffer_id, size_t size, mango_buffer_type_t mode, unsigned int nkernels_in, unsigned int nkernels_out, ...);
+
+	/*! \brief Register a memory region to use as a buffer for communication
+ * \param buffer_id Id of the buffer
+ * \param size Size of the buffer
+ * \param mode Type of buffer
+ * \param in Vector of kernels that will write the buffer, and should all be of type mango_kernel_t
+ * \param out Vector of kernels that will read the buffer, and should all be of type mango_kernel-t
+ * \return A data structure containing the physical address and the size of the
+ * registered memory region
+ *
+ * \note In case of "FIFO" types, an appropriate background process should be
+ * in charge of setting up the communication. In this case, a single mango_write
+ * or mango_read will setup the streamed communication
+ * \note The bandwidth parameter has been moved to the RTlib
+ */
+	mango_buffer_t mango_register_memory_with_kernels(uint32_t buffer_id, size_t size, mango_buffer_type_t mode, void *_in, void *_out);
 
 	/*! \brief Deallocate registered memory
  * \param mem The memory buffer to deallocate
@@ -389,18 +404,18 @@ mango_kernel_t mango_register_kernel_with_buffers(uint32_t kernel_id, kernelfunc
  * \returns The packaged arguments for the loaded kernel
  * \note Can be called multiple times to change the arguments
  */
-mango_args_t *mango_set_args(mango_kernel_t kernel, int argc, ...);
+	mango_args_t *mango_set_args(mango_kernel_t kernel, int argc, ...);
 
-/*! \brief Set up the arguments for a kernel
+	/*! \brief Set up the arguments for a kernel
  * \param kernel The kernel for which the parameters are set
  * \param _arguments A pointer to a std::vector<mango::Arg *> that,
  * contains the arguments for the kernel
  * \returns The packaged arguments for the loaded kernel
  * \note Can be called multiple times to change the arguments
  */
-mango_args_t *mango_set_args_from_vector(mango_kernel_t kernel, void* _arguments);
+	mango_args_t *mango_set_args_from_vector(mango_kernel_t kernel, void *_arguments);
 
-/*! \brief Run a kernel
+	/*! \brief Run a kernel
  * \param kernel The registered kernel to run
  * \param args The structure representing the arguments
  * \param even The event which the kernel should notify upon completion; if NULL,

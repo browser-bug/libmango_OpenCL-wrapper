@@ -124,6 +124,35 @@ extern "C"
 		return buffer_id;
 	}
 
+	mango_buffer_t mango_register_memory_with_kernels(uint32_t buffer_id, size_t size, mango_buffer_type_t mode, void *_in, void *_out)
+	{
+		assert(buffer_id > 0 && "Buffer id must be positive");
+		assert(size > 0 && "Size must be positive");
+
+		std::vector<uint32_t> in;
+		std::vector<uint32_t> out;
+
+		if (_in != NULL)
+			in.swap(*(std::vector<mango_kernel_t> *)_in);
+
+		if (_out != NULL)
+			out.swap(*(std::vector<mango_kernel_t> *)_out);
+
+		//
+
+		if (mode == FIFO)
+		{
+			std::shared_ptr<mango::FIFOBuffer> buff = std::make_shared<mango::FIFOBuffer>(buffer_id, size, in, out);
+			cxt->register_buffer(buff, buffer_id);
+		}
+		else
+		{
+			std::shared_ptr<mango::Buffer> buff = std::make_shared<mango::Buffer>(buffer_id, size, in, out);
+			cxt->register_buffer(buff, buffer_id);
+		}
+		return buffer_id;
+	}
+
 	mango_event_t mango_register_event(unsigned int nkernels_in, unsigned int nkernels_out, ...)
 	{
 
