@@ -684,7 +684,8 @@ extern "C"
                    cl_int /* num_kernels_in */,
                    cl_kernel * /* kernels_in */,
                    cl_int /* num_kernels_out */,
-                   cl_kernel * /* kernels_out */) CL_API_SUFFIX__VERSION_1_0;
+                   cl_kernel * /* kernels_out */,
+                   cl_int /* buffer_id */) CL_API_SUFFIX__VERSION_1_0;
 
     // extern CL_API_ENTRY cl_mem CL_API_CALL
     // clCreateSubBuffer(cl_mem                   /* buffer */,
@@ -734,7 +735,7 @@ extern "C"
     //                                     void (CL_CALLBACK * /*pfn_notify*/)( cl_mem /* memobj */, void* /*user_data*/),
     //                                     void * /*user_data */ )             CL_API_SUFFIX__VERSION_1_1;
 
-    // /* Sampler APIs */
+    /* Sampler APIs */
     // extern CL_API_ENTRY cl_sampler CL_API_CALL
     // clCreateSampler(cl_context          /* context */,
     //                 cl_bool             /* normalized_coords */,
@@ -894,9 +895,9 @@ extern "C"
     //                void *           /* param_value */,
     //                size_t *         /* param_value_size_ret */) CL_API_SUFFIX__VERSION_1_0;
 
-    // extern CL_API_ENTRY cl_event CL_API_CALL
-    // clCreateUserEvent(cl_context    /* context */,
-    //                   cl_int *      /* errcode_ret */) CL_API_SUFFIX__VERSION_1_1;
+    extern CL_API_ENTRY cl_event CL_API_CALL
+    clCreateUserEvent(cl_context    /* context */,
+                      cl_int *      /* errcode_ret */) CL_API_SUFFIX__VERSION_1_1;
 
     // extern CL_API_ENTRY cl_int CL_API_CALL
     // clRetainEvent(cl_event /* event */) CL_API_SUFFIX__VERSION_1_0;

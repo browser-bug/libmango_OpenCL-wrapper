@@ -30,11 +30,9 @@ extern "C"
         kernelfunction *function;
         uint32_t *buffers_in;
         int num_buffers_in;
-        int in_buffer_register_id;
 
         uint32_t *buffers_out;
         int num_buffers_out;
-        int out_buffer_register_id;
 
         const char *binary;
         cl_device_id device; /* device associated with this kernel function */
@@ -44,6 +42,7 @@ extern "C"
     {
         cl_context ctx; /* parent context */
         mango_kernel_function *kernel_functions;
+        std::vector<int> vector;
         cl_int num_kernel_functions;
 
         // cl_kernel *kernels; // FIX: not needed?
@@ -391,6 +390,8 @@ extern "C"
             {
                 if (binary_status)
                     binary_status[i] = CL_SUCCESS;
+                if (errcode_ret)
+                    *errcode_ret = CL_SUCCESS;
             }
         }
 
@@ -442,8 +443,6 @@ extern "C"
 
         kernel->args = NULL;
         kernel->args_num = 0;
-        kernel->kernel_function.in_buffer_register_id = 0;
-        kernel->kernel_function.out_buffer_register_id = 0;
 
         // FIX : maybe move this copy part in the mango_register_kernel_with_buffers()
         std::vector<uint32_t> buf_in(kernel->kernel_function.buffers_in, kernel->kernel_function.buffers_in + kernel->kernel_function.num_buffers_in);
@@ -532,12 +531,16 @@ extern "C"
                           cl_int num_kernels_in,
                           cl_kernel *kernels_in,
                           cl_int num_kernels_out,
-                          cl_kernel *kernels_out)
+                          cl_kernel *kernels_out,
+                          cl_int buffer_id)
     {
         cl_mem memory = NULL;
         memory = (cl_mem)malloc(sizeof(struct _cl_mem));
 
         memory->host_ptr = host_ptr;
+        memory->ctx = context;
+        memory->id = buffer_id;
+
 
         std::vector<mango_kernel_t> _kernels_in;
         std::vector<mango_kernel_t> _kernels_out;
@@ -555,25 +558,15 @@ extern "C"
         else if ((flags & CL_MEM_WRITE_ONLY) == CL_MEM_WRITE_ONLY)
         {
             assert(kernels_in && "specify input kernels");
-            assert(kernels_in[0]->kernel_function.num_buffers_out > 0 && kernels_in[0]->kernel_function.out_buffer_register_id < kernels_in[0]->kernel_function.num_buffers_out && "incompatible buffer ID with kernel function definition");
-
-            memory->id = kernels_in[0]->kernel_function.buffers_out[kernels_in[0]->kernel_function.out_buffer_register_id];
-            kernels_in[0]->kernel_function.out_buffer_register_id++;
+            
             memory->type = CL_MEM_WRITE_ONLY;
-            memory->ctx = kernels_in[0]->device->queue->ctx;
-
             memory->buffer = mango_register_memory_with_kernels(memory->id, size, BUFFER, &_kernels_in, NULL);
         }
         else if ((flags & CL_MEM_READ_ONLY) == CL_MEM_READ_ONLY)
         {
             assert(kernels_out && "specify output kernels");
-            assert(kernels_out[0]->kernel_function.num_buffers_in > 0 && kernels_out[0]->kernel_function.in_buffer_register_id < kernels_out[0]->kernel_function.num_buffers_in && "incompatible buffer ID with kernel function definition");
 
-            memory->id = kernels_out[0]->kernel_function.buffers_in[kernels_out[0]->kernel_function.in_buffer_register_id];
-            kernels_out[0]->kernel_function.in_buffer_register_id++;
             memory->type = CL_MEM_READ_ONLY;
-            memory->ctx = kernels_out[0]->device->queue->ctx;
-
             memory->buffer = mango_register_memory_with_kernels(memory->id, size, BUFFER, NULL, &_kernels_out);
         }
         else

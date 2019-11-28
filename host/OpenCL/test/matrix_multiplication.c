@@ -320,18 +320,21 @@ int main(int argc, char **argv)
                          CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                          mem_size_A, h_A, &err,
                          0, NULL,
-                         1, kernels);
+                         1, kernels,
+                         1);
     d_B = clCreateBuffer(context,
                          CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                          mem_size_B, h_B, &err,
                          0, NULL,
-                         1, kernels);
+                         1, kernels,
+                         2);
 
     d_C = clCreateBuffer(context,
                          CL_MEM_WRITE_ONLY,
                          mem_size_A, NULL, &err, 
                          1, kernels,
-                         0, NULL);
+                         0, NULL,
+                         3);
 
     if (!d_A || !d_B || !d_C)
     {
@@ -453,8 +456,8 @@ int main(int argc, char **argv)
     clReleaseProgram(program);
     // deregister memory
     clReleaseMemObject(d_A);
-    clReleaseMemObject(d_C);
     clReleaseMemObject(d_B);
+    clReleaseMemObject(d_C);
 
     // deregister kernel
     clReleaseKernel(kernels[0]);
