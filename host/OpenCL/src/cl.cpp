@@ -4,7 +4,6 @@
 #include <stdio.h>
 #endif
 
-
 #define MAX_KERNEL_BUFFERS 15
 
 #ifdef __cplusplus
@@ -76,12 +75,24 @@ extern "C"
         cl_context ctx;
     };
 
+    // typedef struct _sync_item
+    // {
+    //     cl_event event;
+    //     sync_item *next;
+    // } sync_item;
+
     struct _cl_command_queue
     {
         mango_task_graph_t *tgx; /* task_graph associated with this command_queue */
 
         cl_device_id device; /* its device */
         cl_context ctx;      /* parent context */
+
+        cl_event *events;
+        int command_count;
+        // cl_event events;            /* events of the enqueued commands in enqueue order */
+        // volatile int command_count; /* counter for unfinished command enqueued */
+        // volatile sync_item last_event;
     };
 
     struct _cl_device_id
@@ -129,6 +140,18 @@ extern "C"
             program->kernel_functions[kernel_function_index].buffers_out[i] = out_id;
         }
         va_end(list);
+    }
+
+    cl_int addEventToQueue(cl_command_queue queue, cl_event event)
+    {
+        if (queue->events != NULL)
+            queue->events = (cl_event *)realloc(queue->events, sizeof(cl_event *) * (queue->command_count + 1)); // FIX : maybe reallocation can be smarter, *2 just when necessary instead of +1 everytime
+        else
+            queue->events = (cl_event *)calloc(1, sizeof(cl_event));
+
+        queue->events[queue->command_count] = event;
+        queue->command_count++;
+        return CL_SUCCESS;
     }
 
     /* API IMPLEMENTATION */
@@ -326,6 +349,12 @@ extern "C"
         for (int i = 0; i < context->device_num; i++)
             context->devices[i]->queue = queue;
 
+        /* initialize events queue */
+        queue->events = NULL;
+        queue->command_count = 0;
+        // queue->last_event.event = NULL;
+        // queue->last_event.next = NULL;
+
         /* initialize task graph */
         queue->tgx = NULL;
         return queue;
@@ -516,7 +545,7 @@ extern "C"
     } */
 
     // support function for clCreateBuffer
-    void extractKernelIDs(std::vector<mango_kernel_t>* _kernels, cl_kernel *kernels, cl_int num_kernels)
+    void extractKernelIDs(std::vector<mango_kernel_t> *_kernels, cl_kernel *kernels, cl_int num_kernels)
     {
         _kernels->clear();
         for (int i = 0; i < num_kernels; i++)
@@ -541,7 +570,6 @@ extern "C"
         memory->ctx = context;
         memory->id = buffer_id;
 
-
         std::vector<mango_kernel_t> _kernels_in;
         std::vector<mango_kernel_t> _kernels_out;
         extractKernelIDs(&_kernels_in, kernels_in, num_kernels_in);
@@ -558,7 +586,7 @@ extern "C"
         else if ((flags & CL_MEM_WRITE_ONLY) == CL_MEM_WRITE_ONLY)
         {
             assert(kernels_in && "specify input kernels");
-            
+
             memory->type = CL_MEM_WRITE_ONLY;
             memory->buffer = mango_register_memory_with_kernels(memory->id, size, BUFFER, &_kernels_in, NULL);
         }
@@ -755,6 +783,9 @@ extern "C"
             (*event)->ev = mango_start_kernel(kernel->kernel, args, NULL);
             std::cout << "[clEnqueueNDRangeKernel] creating event : " << (*event)->ev << std::endl;
             (*event)->ctx = command_queue->ctx;
+
+            if(addEventToQueue(command_queue, (*event)) != CL_SUCCESS)
+                return CL_OUT_OF_RESOURCES; // FIX : random error, maybe it is not even needed
         }
         else
             mango_start_kernel(kernel->kernel, args, NULL);
@@ -889,6 +920,19 @@ extern "C"
             std::cout << "[clWaitForEvents] waiting for event : " << event_list[i]->ev << std::endl;
             mango_wait(event_list[i]->ev);
             std::cout << "[clWaitForEvents] finished waiting for event : " << event_list[i]->ev << std::endl;
+        }
+
+        return CL_SUCCESS;
+    }
+
+    cl_int clFinish(cl_command_queue command_queue)
+    {
+        if(command_queue == NULL)
+            return CL_INVALID_COMMAND_QUEUE;
+
+        for(int i = 0; i < command_queue->command_count; i++)
+        {
+            mango_wait(command_queue->events[i]->ev);
         }
 
         return CL_SUCCESS;

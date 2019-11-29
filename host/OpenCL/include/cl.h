@@ -927,8 +927,8 @@ extern "C"
     // extern CL_API_ENTRY cl_int CL_API_CALL
     // clFlush(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
 
-    // extern CL_API_ENTRY cl_int CL_API_CALL
-    // clFinish(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
+    extern CL_API_ENTRY cl_int CL_API_CALL
+    clFinish(cl_command_queue /* command_queue */) CL_API_SUFFIX__VERSION_1_0;
 
     /* Enqueued Commands APIs */
     extern CL_API_ENTRY cl_int CL_API_CALL

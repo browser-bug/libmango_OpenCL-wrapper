@@ -31,7 +31,7 @@ void randomMemInit(int *data, int size)
     int i;
 
     for (i = 0; i < size; ++i)
-        data[i] = rand() % 100;//(int)RAND_MAX;
+        data[i] = rand() % 100; //(int)RAND_MAX;
 }
 
 long LoadOpenCLKernel(char const *path, char **buf)
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
 
     d_C = clCreateBuffer(context,
                          CL_MEM_WRITE_ONLY,
-                         mem_size_A, NULL, &err, 
+                         mem_size_A, NULL, &err,
                          1, kernels,
                          0, NULL,
                          3);
@@ -412,6 +412,13 @@ int main(int argc, char **argv)
         printf("Error: Failed to wait for events! %d\n", err);
         exit(1);
     }
+
+    // err = clFinish(commands);
+    // if (err != CL_SUCCESS)
+    // {
+    //     printf("Error: Failed to finish all events in the command queue! %d", err);
+    //     exit(1);
+    // }
 
     printf("Matrix multiplication completed...\n");
 
