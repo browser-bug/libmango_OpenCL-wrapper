@@ -23,6 +23,8 @@ extern "C"
 
     // /******************************************************************************/
 
+    typedef cl_uint cl_argument_type;
+
     typedef struct _cl_platform_id *cl_platform_id;
     typedef struct _cl_device_id *cl_device_id;
     typedef struct _cl_context *cl_context;
@@ -102,6 +104,11 @@ extern "C"
     } cl_buffer_region;
 
 /******************************************************************************/
+
+/* cl_argument_type */
+#define CL_SCALAR_ARG 0x1284
+#define CL_BUFFER_ARG 0x1285
+#define CL_EVENT_ARG 0x1286
 
 /* Error Codes */
 #define CL_SUCCESS 0
@@ -673,7 +680,11 @@ extern "C"
                    size_t /* size */,
                    void * /* host_ptr */,
                    cl_int * /* errcode_ret */,
-                   cl_kernel /* kernel */) CL_API_SUFFIX__VERSION_1_0;
+                   cl_int /* num_kernels_in */,
+                   cl_kernel * /* kernels_in */,
+                   cl_int /* num_kernels_out */,
+                   cl_kernel * /* kernels_out */,
+                   cl_int /* buffer_id */) CL_API_SUFFIX__VERSION_1_0;
 
     // extern CL_API_ENTRY cl_mem CL_API_CALL
     // clCreateSubBuffer(cl_mem                   /* buffer */,
@@ -723,7 +734,7 @@ extern "C"
     //                                     void (CL_CALLBACK * /*pfn_notify*/)( cl_mem /* memobj */, void* /*user_data*/),
     //                                     void * /*user_data */ )             CL_API_SUFFIX__VERSION_1_1;
 
-    // /* Sampler APIs */
+    /* Sampler APIs */
     // extern CL_API_ENTRY cl_sampler CL_API_CALL
     // clCreateSampler(cl_context          /* context */,
     //                 cl_bool             /* normalized_coords */,
@@ -845,7 +856,8 @@ extern "C"
     clSetKernelArg(cl_kernel /* kernel */,
                    cl_uint /* arg_index */,
                    size_t /* arg_size */,
-                   const void * /* arg_value */) CL_API_SUFFIX__VERSION_1_0;
+                   const void * /* arg_value */,
+                   cl_argument_type /* arg_type */) CL_API_SUFFIX__VERSION_1_0;
 
     // extern CL_API_ENTRY cl_int CL_API_CALL
     // clGetKernelInfo(cl_kernel       /* kernel */,
@@ -882,9 +894,9 @@ extern "C"
     //                void *           /* param_value */,
     //                size_t *         /* param_value_size_ret */) CL_API_SUFFIX__VERSION_1_0;
 
-    // extern CL_API_ENTRY cl_event CL_API_CALL
-    // clCreateUserEvent(cl_context    /* context */,
-    //                   cl_int *      /* errcode_ret */) CL_API_SUFFIX__VERSION_1_1;
+    extern CL_API_ENTRY cl_event CL_API_CALL
+    clCreateUserEvent(cl_context    /* context */,
+                      cl_int *      /* errcode_ret */) CL_API_SUFFIX__VERSION_1_1;
 
     // extern CL_API_ENTRY cl_int CL_API_CALL
     // clRetainEvent(cl_event /* event */) CL_API_SUFFIX__VERSION_1_0;
