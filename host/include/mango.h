@@ -176,6 +176,23 @@ void mango_deregister_kernel(mango_kernel_t kernel);
  */
 mango_buffer_t mango_register_memory(uint32_t buffer_id, size_t size, mango_buffer_type_t mode, unsigned int nkernels_in, unsigned int nkernels_out, ...);
 
+
+/*! \brief Register a memory region to use as a buffer for communication
+ * \param buffer_id Id of the buffer
+ * \param size Size of the buffer
+ * \param mode Type of buffer
+ * \param in Vector of kernels that will write the buffer, and should all be of type mango_kernel_t
+ * \param out Vector of kernels that will read the buffer, and should all be of type mango_kernel-t
+ * \return A data structure containing the physical address and the size of the
+ * registered memory region
+ *
+ * \note In case of "FIFO" types, an appropriate background process should be
+ * in charge of setting up the communication. In this case, a single mango_write
+ * or mango_read will setup the streamed communication
+ * \note The bandwidth parameter has been moved to the RTlib
+ */
+mango_buffer_t mango_register_memory_with_kernels(uint32_t buffer_id, size_t size, mango_buffer_type_t mode, void *_in, void *_out);
+
 /*! \brief Deallocate registered memory
  * \param mem The memory buffer to deallocate
  *

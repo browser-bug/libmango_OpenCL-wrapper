@@ -41,6 +41,7 @@ extern "C"
     struct _cl_program
     {
         cl_context ctx; /* parent context */
+        //std::map<uint32_t, mango_kernel_function> *map_kernel_functions; 
         std::map<const char*, mango_kernel_function> *map_kernel_functions;
         cl_int num_kernel_functions;
 
@@ -91,13 +92,15 @@ extern "C"
 
     /* HELPER FUNCTIONS */
     // FIX : is there a better way to specify which kernel_function we want to set than using an index?
+    //cl_int clSetInputBufferIDs(cl_program program, uint32_t kernel_id, unsigned int nbuffers_in, ...)
     cl_int clSetInputBufferIDs(cl_program program, const char* binary, unsigned int nbuffers_in, ...)
     {
         assert(program->map_kernel_functions != NULL && "map has not been initialized");
-        assert(binary != NULL && "the kernel function path is not valid");
+      //  assert(kernel_id > 0 && "invalid kernel id");
         assert(nbuffers_in < MAX_KERNEL_BUFFERS && "exceeded the maximum number of kernel buffers available");
         
         mango_kernel_function *k1 = &(*program->map_kernel_functions)[binary];
+        //mango_kernel_function *k1 = &(*program->map_kernel_functions)[kernel_id];
 
         if (k1->buffers_in)
             free(k1->buffers_in);
@@ -116,13 +119,15 @@ extern "C"
     }
 
     // FIX : is there a better way to specify which kernel_function we want to set than using an index?
+    //cl_int clSetOutputBufferIDs(cl_program program, uint32_t kernel_id, unsigned int nbuffers_out, ...)
     cl_int clSetOutputBufferIDs(cl_program program, const char* binary, unsigned int nbuffers_out, ...)
     {
         assert(program->map_kernel_functions != NULL && "map has not been initialized");
-        assert(binary != NULL && "the kernel function path is not valid");
+        //assert(kernel_id > 0 && "invalid kernel id");
         assert(nbuffers_out < MAX_KERNEL_BUFFERS && "exceeded the maximum number of kernel buffers available");
         
         mango_kernel_function *k1 = &(*program->map_kernel_functions)[binary];
+        //mango_kernel_function *k1 = &(*program->map_kernel_functions)[kernel_id];
         if (k1->buffers_out)
             free(k1->buffers_out);
         
@@ -378,7 +383,11 @@ extern "C"
 
             std::cout << "[clCreateProgramWithBinary] initializing new kernel for device_type: " << device_type << std::endl;
         
+          //  int kernel_id = i+1;
             const char *path = binaries[i];
+            
+            // PROBLEMA: qui si dovrebbe sapere a priori gli id che l'utente andrà a specificare in clCreateKernel
+            
             (*program->map_kernel_functions)[path].function = mango_kernelfunction_init();
 
             (*program->map_kernel_functions)[path].device = device_list[i];

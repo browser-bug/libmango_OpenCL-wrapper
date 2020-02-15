@@ -31,7 +31,7 @@ void randomMemInit(int *data, int size)
     int i;
 
     for (i = 0; i < size; ++i)
-        data[i] = rand() % 100;//(int)RAND_MAX;
+        data[i] = 2;//(int)RAND_MAX;
 }
 
 long LoadOpenCLKernel(char const *path, char **buf)
