@@ -13,7 +13,7 @@
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #include <stdbool.h>
 
-#include "cl.h"
+#include "CL/cl.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 #define WA 8

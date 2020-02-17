@@ -4,18 +4,11 @@
 #ifdef __APPLE__
 #include <OpenCL/cl_platform.h>
 #else
-#include <cl_platform.h>
+#include <CL/cl_platform.h>
 #endif
 
 /* Including libmango headers */
 #include "mango.h"
-
-#include "utils.h"
-
-/* To get process IDs etc. */
-#include <unistd.h>
-
-#include <string.h>
 
 #ifdef __cplusplus
 extern "C"

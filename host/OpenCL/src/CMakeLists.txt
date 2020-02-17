@@ -1,7 +1,14 @@
 # List of source files of OpenCL library
 set(OPENCL_SOURCES	
 			cl.cpp
-			utils.c
+			clDevice.cpp
+			clContext.cpp
+			clCommandQueue.cpp
+			clProgram.cpp
+			clKernel.cpp
+			clMem.cpp
+			clEvent.cpp
+			clEnqueue.cpp
 			)
             
 # Build for convenience both static and dynamic library
