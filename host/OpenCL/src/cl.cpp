@@ -1,7 +1,7 @@
 #include "cl.h"
-
 #ifdef __cplusplus
 #include <stdio.h>
+#include <memory>
 #endif
 
 
