@@ -11,12 +11,15 @@ extern "C"
 
     struct _cl_mem
     {
-        uint32_t id;
-        mango_buffer_t buffer;
-        void *host_ptr;
-        int type;
+        cl_context ctx; /* the context associated with the mem */
 
-        cl_context ctx;
+        mango_buffer_t buffer;
+        uint32_t id; /* buffer id specified during creation */
+
+        cl_mem_object_type type; /* we only have CL_MEM_BUFFER_TYPE */
+        void *host_ptr;          /* pointer of the host mem */
+        cl_mem_flags flags;      /* flags that are specified during creation */
+        size_t size;             /* requested size specified during creation */
     };
 
     cl_mem cl_create_buffer(cl_context context,
@@ -29,6 +32,12 @@ extern "C"
                             cl_int num_kernels_out,
                             cl_kernel *kernels_out,
                             cl_int buffer_id);
+
+    cl_int cl_get_mem_object_info(cl_mem memobj,
+                                  cl_mem_info param_name,
+                                  size_t param_value_size,
+                                  void *param_value,
+                                  size_t *param_value_size_ret);
 
 #ifdef __cplusplus
 }

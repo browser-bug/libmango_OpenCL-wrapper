@@ -8,62 +8,105 @@
 #include "clEvent.h"
 
 cl_kernel cl_create_kernel(cl_program program,
-                           const char *kernel_name, /* this is the binary path */
+                           const char *binary_path,
                            cl_int *errcode_ret,
                            cl_int kernel_id)
 {
-    // TODO: check that all devices are associated with the correct context
-    assert(kernel_name && "the binary path must be specified");
-
     cl_kernel kernel = NULL;
-    kernel = (cl_kernel)malloc(sizeof(struct _cl_kernel));
+    cl_int err = CL_SUCCESS;
+    mango_kernel_function kern_funct;
+    int i;
 
-    int i = 0;
-    mango_exit_t err;
-    for (int i = 0; i < program->num_kernel_functions; i++)
+    if (program == NULL)
     {
-        if (strcmp(program->kernel_functions[i].binary, kernel_name) == 0)
+        err = CL_INVALID_PROGRAM;
+        goto exit;
+    }
+    if (binary_path == NULL)
+    {
+        std::cout << "[clCreateKernel] the binary path must be specified.\n";
+        err = CL_INVALID_VALUE;
+        goto exit;
+    }
+    if (program->kernel_functions.empty())
+    {
+        err = CL_INVALID_PROGRAM_EXECUTABLE;
+        goto exit;
+    }
+
+    for (i = 0; i < program->kernel_functions.size(); i++)
+    {
+        if (strcmp(program->kernel_functions[i].binary, binary_path) == 0)
             break;
     }
-    if (i == program->num_kernel_functions)
+    if (i == program->kernel_functions.size())
     {
-        printf("[clCreateKernel] kernel not found\n");
-        free(kernel);
-        kernel = NULL;
-        return kernel;
+        err = CL_INVALID_KERNEL_NAME;
+        goto exit;
+    }
+
+    kernel = new (std::nothrow) _cl_kernel;
+    if (!kernel)
+    {
+        err = CL_OUT_OF_HOST_MEMORY;
+        goto exit;
     }
 
     kernel->id = kernel_id;
-    mango_kernel_function kern_funct = program->kernel_functions[i];
+    kern_funct = program->kernel_functions[i];
     kernel->device = kern_funct.device;
+    kernel->program = program;
 
-    kernel->args = NULL;
-    kernel->args_num = 0;
-
-    // FIX : maybe move this copy part in the mango_register_kernel_with_buffers()
-    std::vector<uint32_t> buf_in(kern_funct.buffers_in, kern_funct.buffers_in + kern_funct.num_buffers_in);
-    std::vector<uint32_t> buf_out(kern_funct.buffers_out, kern_funct.buffers_out + kern_funct.num_buffers_out);
+    kernel->args.clear();
 
     kernel->kernel = mango_register_kernel_with_buffers(kernel->id,
                                                         kern_funct.function,
-                                                        &buf_in,
-                                                        &buf_out);
+                                                        &kern_funct.buffers_in,
+                                                        &kern_funct.buffers_out);
 
     // Get the task graph associated with the kernel (via its device)
     kernel->device->queue->tgx = mango_task_graph_add_kernel(kernel->device->queue->tgx, &(kernel->kernel));
     std::cout << "[TASK_GRAPH] added new kernel to tg (address) : " << kernel->device->queue->tgx << std::endl;
 
+exit:
+    if (errcode_ret)
+        *errcode_ret = err;
     return kernel;
 }
 
 cl_int cl_set_kernel_arg(cl_kernel kernel,
-                      cl_uint arg_index,
-                      size_t arg_size,
-                      const void *arg_value,
-                      cl_argument_type arg_type)
+                         cl_uint arg_index,
+                         size_t arg_size,
+                         const void *arg_value,
+                         cl_argument_type arg_type)
 {
+    cl_int err = CL_SUCCESS;
+    const void *value = NULL;
     mango_buffer_type_t argument_type;
-    const void *value;
+    mango_arg_t *arg = NULL;
+
+    if (kernel == NULL)
+    {
+        err = CL_INVALID_KERNEL;
+        goto exit;
+    }
+    // This is not needed since in our case we have kernels generated from binaries,
+    // so no informations (a priori) on the arguments etc.
+    // if (arg_index >= kernel->args.size())
+    // {
+    //     err = CL_INVALID_ARG_INDEX;
+    //     goto exit;
+    // }
+    if (arg_size == 0)
+    {
+        err = CL_INVALID_ARG_SIZE;
+        goto exit;
+    }
+    if (arg_value == NULL)
+    {
+        err = CL_INVALID_ARG_VALUE;
+        goto exit;
+    }
 
     switch (arg_type)
     {
@@ -81,12 +124,14 @@ cl_int cl_set_kernel_arg(cl_kernel kernel,
             arg_size = sizeof(u_int16_t);
             break;
 
-        default: // error needed ?
+        default: // TODO when can we return CL_INVALID_ARG_SIZE?
             arg_size = sizeof(u_int32_t);
             break;
         }
+
         argument_type = SCALAR;
         value = arg_value;
+
         std::cout << "[clSetKernelArg] creating new mango_arg for mango_scalar with value: " << (*(uint32_t *)value) << std::endl;
         break;
     }
@@ -95,7 +140,9 @@ cl_int cl_set_kernel_arg(cl_kernel kernel,
     {
         arg_size = sizeof(uint64_t); // this is not needed in mango_arg
         argument_type = BUFFER;
+
         value = &((*(cl_mem *)arg_value)->buffer);
+
         std::cout << "[clSetKernelArg] creating new mango_arg for mango_buffer (" << arg_value << ") with value: " << (*(uint32_t *)value) << std::endl;
         break;
     }
@@ -106,83 +153,76 @@ cl_int cl_set_kernel_arg(cl_kernel kernel,
         argument_type = EVENT;
 
         cl_event *argEvent = (cl_event *)arg_value;
-        *argEvent = (cl_event)malloc(sizeof(struct _cl_event));
+        *argEvent = new (std::nothrow) _cl_event;
+        if (!(*argEvent))
+        {
+            err = CL_OUT_OF_HOST_MEMORY;
+            goto exit;
+        }
+        /* in this case the arg_index refers to the buffer which the event is associated */
         (*argEvent)->ev = mango_get_buffer_event(((mango::Arg *)(kernel->args[arg_index]))->get_id());
         (*argEvent)->ctx = kernel->device->queue->ctx;
         value = &((*argEvent)->ev);
+
         std::cout << "[clSetKernelArg] creating new mango_arg for mango_event (" << arg_value << ") with value: " << (*(uint32_t *)value) << std::endl;
         break;
     }
 
     default:
-        return CL_BUILD_ERROR;
+        err = CL_INVALID_VALUE;
+        std::cout << "[clSetKernelArg] invalid kernel argument type\n";
+        goto exit;
     }
 
-    mango_arg_t *arg = mango_arg(kernel->kernel, value, arg_size, argument_type);
+    /* allocate new mango_arg and add it to the kernel structure */
+    arg = mango_arg(kernel->kernel, value, arg_size, argument_type);
+    kernel->args.push_back(arg);
 
-    if (kernel->args != NULL)
-        kernel->args = (mango_arg_t **)realloc(kernel->args, sizeof(mango_arg_t *) * (kernel->args_num + 1)); // FIX : maybe reallocation can be smarter, *2 just when necessary instead of +1 everytime
-    else                                                                                                      // initialize kernel args
-        kernel->args = (mango_arg_t **)calloc(1, sizeof(mango_arg_t *));
-
-    kernel->args[kernel->args_num] = arg;
-    kernel->args_num++;
-
-    return CL_SUCCESS;
+exit:
+    return err;
 }
 
-// FIX: to be implemented for future use. Partial implementation already present.
-/* 
-cl_int cl_create_kernels_in_program(cl_program program,
-                                    cl_uint num_kernels,
-                                    cl_kernel *kernels,
-                                    cl_uint *num_kernels_ret)
+// TODO : to be tested
+cl_int cl_get_kernel_info(cl_kernel kernel,
+                          cl_kernel_info param_name,
+                          size_t param_value_size,
+                          void *param_value,
+                          size_t *param_value_size_ret)
 {
-    if (!program)
-        return CL_INVALID_PROGRAM;
-    if (program->kernels != NULL && program->num_kernel_functions <= 0)
-        return CL_INVALID_PROGRAM_EXECUTABLE;
-    if (kernels && num_kernels < program->num_kernel_functions)
-        return CL_INVALID_VALUE;
+    const void *src_ptr = NULL;
+    size_t src_size = 0;
+    const char *str = NULL;
+    cl_int ref;
+    cl_uint n;
 
-    if (num_kernels_ret)
-        *num_kernels_ret = program->num_kernel_functions;
+    if (kernel == NULL)
+        return CL_INVALID_KERNEL;
 
-    if (kernels)
+    switch (param_name)
     {
-        for (int i = 0; i < program->num_kernel_functions; i++)
-        {
-            assert(program->kernel_functions[i].buffers_in && program->kernel_functions[i].buffers_out && "input and output buffers must be set first");
-            kernels[i] = (cl_kernel)malloc(sizeof(struct _cl_kernel));
-            kernels[i]->id = kernel_id; // FIX : dare anche qui la possibilità all'utente di specificare l'id? Se sì, come?
-            kernel_id++;
-
-            // FIX : maybe move this copy part in the mango_register_kernel_with_buffers()
-            std::vector<uint32_t> buf_in(program->kernel_functions[i].buffers_in, program->kernel_functions[i].buffers_in + program->kernel_functions[i].num_buffers_in);
-            std::vector<uint32_t> buf_out(program->kernel_functions[i].buffers_out, program->kernel_functions[i].buffers_out + program->kernel_functions[i].num_buffers_out);
-
-            kernels[i]->kernel_function = program->kernel_functions[i];
-            kernels[i]->args = NULL;
-            kernels[i]->args_num = 0;
-            kernels[i]->kernel_function.in_buffer_register_id = 0;
-            kernels[i]->kernel_function.out_buffer_register_id = 0;
-            kernels[i]->device = program->kernel_functions[i].device;
-
-            // TODO : convert the two buffer arrays into vectors and modify mango_register_kernel_with_buffers to COPY
-            kernels[i]->kernel = mango_register_kernel_with_buffers(kernels[i]->id,
-                                                                    program->kernel_functions[i].function,
-                                                                    &buf_in,
-                                                                    &buf_out);
-
-            // Get the task graph associated with the kernel (via its device)
-            kernels[i]->device->queue->tgx = kernels[i]->device->queue->tgx
-                                                 ? mango_task_graph_add_kernel(kernels[i]->device->queue->tgx, &(kernels[i]->kernel))
-                                                 : mango_task_graph_add_kernel(NULL, &(kernels[i]->kernel));
-
-            std::cout << "[CreateKernelsInProgram] Initializing kernel with id: " << i << std::endl;
-            std::cout << "[TASK_GRAPH] added new kernel to tg (address) : " << kernels[i]->device->queue->tgx << std::endl;
-        }
-        program->kernels = kernels;
+    case CL_KERNEL_CONTEXT:
+        src_ptr = &kernel->program->ctx;
+        src_size = sizeof(cl_context);
+        break;
+    case CL_KERNEL_PROGRAM:
+        src_ptr = &kernel->program;
+        src_size = sizeof(cl_program);
+        break;
+    case CL_KERNEL_NUM_ARGS:
+        n = kernel->args.size();
+        src_ptr = &n;
+        src_size = sizeof(cl_uint);
+        break;
+    default:
+        std::cout << "[clGetKernelInfo] " << param_name << "is invalid or not supported yet\n";
+        return CL_INVALID_VALUE;
     }
+
+    if (param_value && param_value_size < src_size)
+        return CL_INVALID_VALUE;
+    if (param_value && param_value_size)
+        memcpy(param_value, src_ptr, src_size);
+    if (param_value_size_ret)
+        *param_value_size_ret = src_size;
     return CL_SUCCESS;
-} */
+}

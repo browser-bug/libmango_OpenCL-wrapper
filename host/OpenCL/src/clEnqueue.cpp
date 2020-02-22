@@ -8,67 +8,109 @@
 #include "clMem.h"
 #include "clEvent.h"
 
-cl_int addEventToQueue(cl_command_queue queue, cl_event event)
+// TODO all event checking related code could be moved inside this function to avoid code repetition
+/* checks that all events in event_wait_list are inside the context */
+bool checkWaitListInContext(cl_context ctx, const cl_event *event_wait_list, cl_uint num_events_in_wait_list, cl_int *err)
 {
-    if (queue->events != NULL)
-        queue->events = (cl_event *)realloc(queue->events, sizeof(cl_event *) * (queue->command_count + 1)); // FIX : maybe reallocation can be smarter, *2 just when necessary instead of +1 everytime
-    else
-        queue->events = (cl_event *)calloc(1, sizeof(cl_event));
-
-    queue->events[queue->command_count] = event;
-    queue->command_count++;
-    return CL_SUCCESS;
+    for (int i = 0; i < num_events_in_wait_list; i++)
+    {
+        if (ctx != event_wait_list[i]->ctx)
+        {
+            *err = CL_INVALID_CONTEXT;
+            return false;
+        }
+    }
+    return true;
 }
 
-cl_int cl_enqueue_ND_range_kernel(cl_command_queue command_queue,
-                                  cl_kernel kernel,
-                                  cl_uint num_events_in_wait_list,
-                                  const cl_event *event_wait_list,
-                                  cl_event *event)
+cl_int cl_enqueue_task(cl_command_queue command_queue,
+                       cl_kernel kernel,
+                       cl_uint num_events_in_wait_list,
+                       const cl_event *event_wait_list,
+                       cl_event *event)
 {
-    std::cout << "[clEnqueueNDRangeKernel] setting args for kernel: " << kernel->kernel << std::endl;
-    std::vector<mango::Arg *> args_vec((mango::Arg **)kernel->args, (mango::Arg **)(kernel->args + kernel->args_num));
-    mango_args_t *args = mango_set_args_from_vector(kernel->kernel, &args_vec);
-    std::cout << "[clEnqueueNDRangeKernel] succesfully created args" << std::endl;
+    cl_int err = CL_SUCCESS;
+
+    mango_args_t *args;
+    mango_event_t task_event;
+
+    if (command_queue == NULL)
+    {
+        err = CL_INVALID_COMMAND_QUEUE;
+        goto exit;
+    }
+
+    if (kernel == NULL)
+    {
+        err = CL_INVALID_KERNEL;
+        goto exit;
+    }
+
+    assert(kernel->program && "[clEnqueueTask] kernel isn't associated with a program");
+    /* check that the command queue and the kernel have the same context */
+    if (command_queue->ctx != kernel->program->ctx)
+    {
+        err = CL_INVALID_CONTEXT;
+        goto exit;
+    }
+
+    if ((event_wait_list == NULL) && (num_events_in_wait_list > 0))
+    {
+        err = CL_INVALID_EVENT_WAIT_LIST;
+        goto exit;
+    }
+
+    if ((event_wait_list != NULL) && (num_events_in_wait_list == 0))
+    {
+        err = CL_INVALID_EVENT_WAIT_LIST;
+        goto exit;
+    }
 
     if (event_wait_list)
     {
-        if (num_events_in_wait_list > 0)
-        {
-            for (int i = 0; i < num_events_in_wait_list; i++)
-            {
-                if (event_wait_list[i]->ctx == NULL || command_queue->ctx != event_wait_list[i]->ctx)
-                    return CL_INVALID_CONTEXT;
-                std::cout << "[clEnqueueNDRangeKernel] waiting for the event : " << event_wait_list[i]->ev << std::endl;
-                mango_wait(event_wait_list[i]->ev);
-                std::cout << "[clEnqueueNDRangeKernel] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
-            }
-        }
-        else
-        {
-            return CL_INVALID_EVENT_WAIT_LIST;
-        }
-    }
-    else
-    {
-        if (num_events_in_wait_list > 0)
-            return CL_INVALID_EVENT_WAIT_LIST;
+        if (!checkWaitListInContext(command_queue->ctx, event_wait_list, num_events_in_wait_list, &err))
+            goto exit;
     }
 
+    /* check and wait for every event in the wait list */
+    if (event_wait_list)
+    {
+        for (int i = 0; i < num_events_in_wait_list; i++)
+        {
+            std::cout << "[clEnqueueTask] waiting for the event : " << event_wait_list[i]->ev << std::endl;
+            mango_wait(event_wait_list[i]->ev);
+            std::cout << "[clEnqueueTask] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
+        }
+    }
+
+    std::cout << "[clEnqueueTask] setting args for kernel: " << kernel->kernel << std::endl;
+    args = mango_set_args_from_vector(kernel->kernel, &kernel->args);
+
+    std::cout << "[clEnqueueTask] starting the kernel: " << kernel->kernel << std::endl;
+    task_event = mango_start_kernel(kernel->kernel, args, NULL);
+
+    /* if present, store the kernel_start_event into 'event' variable */
     if (event)
     {
-        (*event) = (cl_event)malloc(sizeof(struct _cl_event));
-        (*event)->ev = mango_start_kernel(kernel->kernel, args, NULL);
-        std::cout << "[clEnqueueNDRangeKernel] creating event : " << (*event)->ev << std::endl;
+        std::cout << "[clEnqueueTask] creating event : " << task_event << std::endl;
+        (*event) = new (std::nothrow) _cl_event;
+        if (!(*event))
+        {
+            err = CL_OUT_OF_HOST_MEMORY;
+            goto exit;
+        }
+
+        (*event)->ev = task_event;
+        (*event)->queue = command_queue;
         (*event)->ctx = command_queue->ctx;
+        (*event)->event_type = CL_COMMAND_NDRANGE_KERNEL; // since clEnqueueTask is actually deprecated we can assume is always of this type
 
-        if (addEventToQueue(command_queue, (*event)) != CL_SUCCESS)
-            return CL_OUT_OF_RESOURCES; // FIX : random error, maybe it is not even needed
+        /* add event to queue */
+        command_queue->events.push_back(*event);
     }
-    else
-        mango_start_kernel(kernel->kernel, args, NULL);
 
-    return CL_SUCCESS;
+exit:
+    return err;
 }
 
 cl_int cl_enqueue_write_buffer(cl_command_queue command_queue,
@@ -78,51 +120,89 @@ cl_int cl_enqueue_write_buffer(cl_command_queue command_queue,
                                const cl_event *event_wait_list,
                                cl_event *event)
 {
-    if (!command_queue)
-        return CL_INVALID_COMMAND_QUEUE;
-    if (!buffer)
-        return CL_INVALID_MEM_OBJECT;
-    if (!ptr)
-        return CL_INVALID_VALUE;
-    if (command_queue->ctx == NULL || buffer->ctx == NULL || command_queue->ctx != buffer->ctx)
-        return CL_INVALID_CONTEXT;
+    cl_int err = CL_SUCCESS;
+
+    mango_event_t task_event;
+
+    if (command_queue == NULL)
+    {
+        err = CL_INVALID_COMMAND_QUEUE;
+        goto exit;
+    }
+    if (buffer == NULL)
+    {
+        err = CL_INVALID_MEM_OBJECT;
+        goto exit;
+    }
+    if (ptr == NULL)
+    {
+        err = CL_INVALID_VALUE;
+        goto exit;
+    }
+    if (command_queue->ctx != buffer->ctx)
+    {
+        err = CL_INVALID_CONTEXT;
+        goto exit;
+    }
+    if (ptr == NULL)
+    {
+        err = CL_INVALID_VALUE;
+        goto exit;
+    }
+    if ((event_wait_list == NULL) && (num_events_in_wait_list > 0))
+    {
+        err = CL_INVALID_EVENT_WAIT_LIST;
+        goto exit;
+    }
+
+    if ((event_wait_list != NULL) && (num_events_in_wait_list == 0))
+    {
+        err = CL_INVALID_EVENT_WAIT_LIST;
+        goto exit;
+    }
 
     if (event_wait_list)
     {
-        if (num_events_in_wait_list > 0)
-        {
-            for (int i = 0; i < num_events_in_wait_list; i++)
-            {
-                if (event_wait_list[i]->ctx == NULL || command_queue->ctx != event_wait_list[i]->ctx)
-                    return CL_INVALID_CONTEXT;
-                std::cout << "[clEnqueueWriteBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
-                mango_wait(event_wait_list[i]->ev);
-                std::cout << "[clEnqueueWriteBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
-            }
-        }
-        else
-        {
-            return CL_INVALID_EVENT_WAIT_LIST;
-        }
-    }
-    else
-    {
-        if (num_events_in_wait_list > 0)
-            return CL_INVALID_EVENT_WAIT_LIST;
+        if (!checkWaitListInContext(command_queue->ctx, event_wait_list, num_events_in_wait_list, &err))
+            goto exit;
     }
 
-    printf("Enqueuing write buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
+    /* check and wait for every event in the wait list */
+    if (event_wait_list)
+    {
+        for (int i = 0; i < num_events_in_wait_list; i++)
+        {
+            std::cout << "[clEnqueueWriteBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
+            mango_wait(event_wait_list[i]->ev);
+            std::cout << "[clEnqueueWriteBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
+        }
+    }
+
+    printf("[clEnqueueWriteBuffer] Enqueuing write buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
+    task_event = mango_write(ptr, buffer->buffer, DIRECT, 0);
+
+    /* if present, store the mango_write_event into 'event' variable */
     if (event)
     {
-        (*event) = (cl_event)malloc(sizeof(struct _cl_event));
-        (*event)->ev = mango_write(ptr, buffer->buffer, DIRECT, 0);
-        std::cout << "[clEnqueueWriteBuffer] creating event : " << (*event)->ev << std::endl;
-        (*event)->ctx = command_queue->ctx;
-    }
-    else
-        mango_write(ptr, buffer->buffer, DIRECT, 0);
+        std::cout << "[clEnqueueWriteBuffer] creating event : " << task_event << std::endl;
+        (*event) = new (std::nothrow) _cl_event;
+        if (!(*event))
+        {
+            err = CL_OUT_OF_HOST_MEMORY;
+            goto exit;
+        }
 
-    return CL_SUCCESS;
+        (*event)->ev = task_event;
+        (*event)->queue = command_queue;
+        (*event)->ctx = command_queue->ctx;
+        (*event)->event_type = CL_COMMAND_WRITE_BUFFER;
+
+        /* add event to queue */
+        command_queue->events.push_back(*event);
+    }
+
+exit:
+    return err;
 }
 
 cl_int cl_enqueue_read_buffer(cl_command_queue command_queue,
@@ -132,49 +212,87 @@ cl_int cl_enqueue_read_buffer(cl_command_queue command_queue,
                               const cl_event *event_wait_list,
                               cl_event *event)
 {
-    if (!command_queue)
-        return CL_INVALID_COMMAND_QUEUE;
-    if (!buffer)
-        return CL_INVALID_MEM_OBJECT;
-    if (!ptr)
-        return CL_INVALID_VALUE;
-    if (command_queue->ctx == NULL || buffer->ctx == NULL || command_queue->ctx != buffer->ctx)
-        return CL_INVALID_CONTEXT;
+    cl_int err = CL_SUCCESS;
+
+    mango_event_t task_event;
+
+    if (command_queue == NULL)
+    {
+        err = CL_INVALID_COMMAND_QUEUE;
+        goto exit;
+    }
+    if (buffer == NULL)
+    {
+        err = CL_INVALID_MEM_OBJECT;
+        goto exit;
+    }
+    if (ptr == NULL)
+    {
+        err = CL_INVALID_VALUE;
+        goto exit;
+    }
+    if (command_queue->ctx != buffer->ctx)
+    {
+        err = CL_INVALID_CONTEXT;
+        goto exit;
+    }
+    if (ptr == NULL)
+    {
+        err = CL_INVALID_VALUE;
+        goto exit;
+    }
+    if ((event_wait_list == NULL) && (num_events_in_wait_list > 0))
+    {
+        err = CL_INVALID_EVENT_WAIT_LIST;
+        goto exit;
+    }
+
+    if ((event_wait_list != NULL) && (num_events_in_wait_list == 0))
+    {
+        err = CL_INVALID_EVENT_WAIT_LIST;
+        goto exit;
+    }
 
     if (event_wait_list)
     {
-        if (num_events_in_wait_list > 0)
-        {
-            for (int i = 0; i < num_events_in_wait_list; i++)
-            {
-                if (event_wait_list[i]->ctx == NULL || command_queue->ctx != event_wait_list[i]->ctx)
-                    return CL_INVALID_CONTEXT;
-                std::cout << "[clEnqueueReadBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
-                mango_wait(event_wait_list[i]->ev);
-                std::cout << "[clEnqueueReadBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
-            }
-        }
-        else
-        {
-            return CL_INVALID_EVENT_WAIT_LIST;
-        }
-    }
-    else
-    {
-        if (num_events_in_wait_list > 0)
-            return CL_INVALID_EVENT_WAIT_LIST;
+        if (!checkWaitListInContext(command_queue->ctx, event_wait_list, num_events_in_wait_list, &err))
+            goto exit;
     }
 
-    printf("Enqueuing read buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
+    /* check and wait for every event in the wait list */
+    if (event_wait_list)
+    {
+        for (int i = 0; i < num_events_in_wait_list; i++)
+        {
+            std::cout << "[clEnqueueReadBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
+            mango_wait(event_wait_list[i]->ev);
+            std::cout << "[clEnqueueReadBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
+        }
+    }
+
+    printf("[clEnqueueReadBuffer] Enqueuing read buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
+    task_event = mango_read(ptr, buffer->buffer, DIRECT, 0);
+
+    /* if present, store the mango_write_event into 'event' variable */
     if (event)
     {
-        (*event) = (cl_event)malloc(sizeof(struct _cl_event));
-        (*event)->ev = mango_read(ptr, buffer->buffer, DIRECT, 0);
-        std::cout << "[clEnqueueReadBuffer] creating event : " << (*event)->ev << std::endl;
-        (*event)->ctx = command_queue->ctx;
-    }
-    else
-        mango_read(ptr, buffer->buffer, DIRECT, 0);
+        std::cout << "[clEnqueueReadBuffer] creating event : " << task_event << std::endl;
+        (*event) = new (std::nothrow) _cl_event;
+        if (!(*event))
+        {
+            err = CL_OUT_OF_HOST_MEMORY;
+            goto exit;
+        }
 
-    return CL_SUCCESS;
+        (*event)->ev = task_event;
+        (*event)->queue = command_queue;
+        (*event)->ctx = command_queue->ctx;
+        (*event)->event_type = CL_COMMAND_READ_BUFFER;
+
+        /* add event to queue */
+        command_queue->events.push_back(*event);
+    }
+
+exit:
+    return err;
 }

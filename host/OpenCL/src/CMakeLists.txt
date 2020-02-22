@@ -1,11 +1,11 @@
 # List of source files of OpenCL library
 set(OPENCL_SOURCES	
 			cl.cpp
-			clDevice.cpp
 			clContext.cpp
 			clCommandQueue.cpp
 			clProgram.cpp
 			clKernel.cpp
+			clDevice.cpp
 			clMem.cpp
 			clEvent.cpp
 			clEnqueue.cpp

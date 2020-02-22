@@ -3,66 +3,162 @@
 #include "clContext.h"
 #include "clDevice.h"
 
+#include <algorithm>
+
+/* checks that all devices in device_list are inside the context */
+bool checkDevicesInContext(cl_context ctx, const cl_device_id *device_list, cl_uint num_devices)
+{
+    if (num_devices <= 0)
+        return false;
+
+    for (int i = 0; i < num_devices; i++)
+    {
+        if (std::find(ctx->devices.begin(), ctx->devices.end(), device_list[i]) == ctx->devices.end())
+            return false;
+    }
+    return true;
+}
+
 cl_program cl_create_program_with_binary(cl_context context,
                                          cl_uint num_devices,
                                          const cl_device_id *device_list,
-                                         const size_t *lengths, /* not needed */
                                          const char **binaries,
                                          cl_int *binary_status,
                                          cl_int *errcode_ret)
 {
-    // TODO: check that all devices are associated with the correct context
-    assert(context && "context must be a valid pointer");
-    assert(device_list && "device_list must be a non-NULL value");
-    assert(binaries && "binaries cannot be a NULL pointer");
+    cl_program program = NULL;
+    cl_int err = CL_SUCCESS;
 
-    if (num_devices <= 0)
+    mango_exit_t mango_err;        /* stores errors from mango function calls */
+    mango_unit_type_t device_type; /* stores mango unit type of each device */
+    mango_kernel_function tempKN;  /* temp. variable storing the kernel function data */
+
+    if (context == NULL)
     {
-        if (errcode_ret)
-            *errcode_ret = CL_INVALID_VALUE;
-        return NULL;
+        err = CL_INVALID_CONTEXT;
+        goto exit;
+    }
+    if (device_list == NULL || num_devices <= 0)
+    {
+        err = CL_INVALID_DEVICE;
+        goto exit;
+    }
+    if (!checkDevicesInContext(context, device_list, num_devices))
+    {
+        err = CL_INVALID_DEVICE;
+        goto exit;
+    }
+    if (binaries == NULL)
+    {
+        err = CL_INVALID_VALUE;
+        if (binary_status)
+            binary_status[0] = CL_INVALID_VALUE;
+        goto exit;
     }
 
-    // Allocating new program
-    cl_program program = NULL;
-    program = (cl_program)malloc(sizeof(struct _cl_program));
-    program->kernel_functions = (mango_kernel_function *)calloc(num_devices, sizeof(mango_kernel_function)); // FIX : not quite sure of the correctness of this
-    program->num_kernel_functions = num_devices;
+    program = new (std::nothrow) _cl_program();
+    if (!program)
+    {
+        err = CL_OUT_OF_HOST_MEMORY;
+        goto exit;
+    }
 
-    mango_exit_t err;
     for (int i = 0; i < num_devices; i++)
     {
-        mango_unit_type_t device_type = device_list[i]->device_type;
+        std::cout << "[clCreateProgramWithBinary] initializing new kernel for device_type: " << device_list[i]->device_type << std::endl;
 
-        std::cout << "[clCreateProgramWithBinary] initializing new kernel for device_type: " << device_type << std::endl;
-        program->kernel_functions[i].function = mango_kernelfunction_init();
+        device_type = device_list[i]->device_type;
 
-        program->kernel_functions[i].device = device_list[i];
-        program->kernel_functions[i].binary = binaries[i];
-        program->kernel_functions[i].buffers_in = NULL;
-        program->kernel_functions[i].buffers_out = NULL;
+        /* initializing a new mango_kernel_function */
+        tempKN.function = mango_kernelfunction_init();
+        tempKN.device = device_list[i];
+        tempKN.binary = binaries[i];
+        tempKN.buffers_in.clear();
+        tempKN.buffers_out.clear();
 
-        err = mango_load_kernel(binaries[i], program->kernel_functions[i].function, device_type, BINARY);
-        if (err != SUCCESS)
+        /* storing it into the program vector */
+        program->kernel_functions.push_back(tempKN);
+        /* loading and initializing kernel data structure in MANGO */
+        mango_err = mango_load_kernel(binaries[i], tempKN.function, device_type, BINARY);
+
+        if (mango_err != SUCCESS)
         {
+            program->kernel_functions.clear();
+
             if (binary_status)
                 binary_status[i] = CL_INVALID_BINARY;
-            if (errcode_ret)
-                *errcode_ret = CL_INVALID_BINARY;
-            free(program->kernel_functions);
-            free(program);
-            return NULL;
+            err = CL_INVALID_BINARY;
+            delete program;
+
+            goto exit;
         }
-        else // SUCCESS
-        {
-            if (binary_status)
-                binary_status[i] = CL_SUCCESS;
-            if (errcode_ret)
-                *errcode_ret = CL_SUCCESS;
-        }
+
+        if (binary_status)
+            binary_status[i] = CL_SUCCESS;
     }
 
-    // Associate program with context
+    /* if everything went fine, we add the program into its coresponding context and viceversa*/
     context->program = program;
+    program->ctx = context;
+
+exit:
+    if (errcode_ret)
+        *errcode_ret = err;
     return program;
+}
+
+// TODO : to be tested
+cl_int cl_get_program_info(cl_program program,
+                           cl_program_info param_name,
+                           size_t param_value_size,
+                           void *param_value,
+                           size_t *param_value_size_ret)
+{
+    const void *src_ptr = NULL;
+    size_t src_size = 0;
+    cl_uint num_dev, kernels_num;
+
+    if (program == NULL)
+        return CL_INVALID_PROGRAM;
+
+    switch (param_name)
+    {
+    case CL_PROGRAM_CONTEXT:
+        src_ptr = &program->ctx;
+        src_size = sizeof(cl_context);
+        break;
+    case CL_PROGRAM_NUM_DEVICES:
+        num_dev = program->ctx->devices.size();
+        src_ptr = &num_dev;
+        src_size = sizeof(cl_uint);
+        break;
+    case CL_PROGRAM_DEVICES:
+        src_ptr = &program->ctx->devices[0];
+        src_size = program->ctx->devices.size() * sizeof(cl_device_id);
+        break;
+    case CL_PROGRAM_NUM_KERNELS:
+        kernels_num = program->kernel_functions.size();
+        src_ptr = &kernels_num;
+        src_size = sizeof(cl_uint);
+        break;
+    case CL_PROGRAM_BINARY_SIZES:
+        // TODO need to be implemented first defining the relation between kernels and binaries
+        std::cout << "[clGetProgramInfo] CL_PROGRAM_BINARY_SIZES not implemented yet\n";
+        return CL_INVALID_VALUE;
+    case CL_PROGRAM_BINARIES:
+        // TODO need to be implemented first defining the relation between kernels and binaries
+        std::cout << "[clGetProgramInfo] CL_PROGRAM_BINARIES not implemented yet\n";
+        return CL_INVALID_VALUE;
+    default:
+        std::cout << "[clGetProgramInfo] " << param_name << "is invalid or not supported yet\n";
+        return CL_INVALID_VALUE;
+    }
+
+    if (param_value && param_value_size < src_size)
+        return CL_INVALID_VALUE;
+    if (param_value && param_value_size)
+        memcpy(param_value, src_ptr, src_size);
+    if (param_value_size_ret)
+        *param_value_size_ret = src_size;
+    return CL_SUCCESS;
 }

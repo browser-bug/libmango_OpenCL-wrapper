@@ -240,7 +240,7 @@ int main(int argc, char **argv)
     printf("Found %d devices for current platform\n", dev_cnt);
 
     cl_device_id device_ids[dev_cnt];
-    err = clGetDeviceIDs(platform_ids[0], CL_DEVICE_TYPE_CPU, 2, device_ids, NULL);
+    err = clGetDeviceIDs(platform_ids[0], CL_DEVICE_TYPE_CPU, dev_cnt, device_ids, NULL);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to create a device group!\n");
@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 
     // Create a compute context
     const char *mango_receipe = "test_manga";
-    context = clCreateContext(NULL, 2, device_ids, NULL, mango_receipe, &err);
+    context = clCreateContext(NULL, dev_cnt, device_ids, NULL, mango_receipe, &err);
     if (!context)
     {
         printf("Error: Failed to create a compute context!\n");

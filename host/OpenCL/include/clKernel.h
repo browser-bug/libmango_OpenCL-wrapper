@@ -11,16 +11,17 @@ extern "C"
 
     struct _cl_kernel
     {
-        uint32_t id;
-        mango_kernel_t kernel;
         cl_device_id device; /* device associated with this kernel */
+        cl_program program;  /* program that owns this structure */
 
-        mango_arg_t **args;
-        int args_num;
+        mango_kernel_t kernel;
+
+        uint32_t id;                     /* kernel identifier */
+        std::vector<mango_arg_t *> args; /* kernel arguments */
     };
 
     cl_kernel cl_create_kernel(cl_program program,
-                               const char *kernel_name, /* this is the binary path */
+                               const char *binary_path,
                                cl_int *errcode_ret,
                                cl_int kernel_id);
 
@@ -30,10 +31,11 @@ extern "C"
                              const void *arg_value,
                              cl_argument_type arg_type);
 
-    cl_int cl_create_kernels_in_program(cl_program program,
-                                        cl_uint num_kernels,
-                                        cl_kernel *kernels,
-                                        cl_uint *num_kernels_ret);
+    cl_int cl_get_kernel_info(cl_kernel kernel,
+                              cl_kernel_info param_name,
+                              size_t param_value_size,
+                              void *param_value,
+                              size_t *param_value_size_ret);
 
 #ifdef __cplusplus
 }
