@@ -75,8 +75,7 @@ extern "C"
 		return kernel_id;
 	}
 
-	mango_kernel_t mango_register_kernel_with_buffers(uint32_t kernel_id,
-										 kernelfunction *kernel, void* _in, void* _out)
+	mango_kernel_t mango_register_kernel_with_buffers(uint32_t kernel_id, kernelfunction *kernel, void *_in, void *_out)
 	{
 
 		assert(kernel != NULL && "Kernel function must be a valid pointer!");
@@ -92,7 +91,6 @@ extern "C"
 
 		return kernel_id;
 	}
-
 
 	mango_buffer_t mango_register_memory(uint32_t buffer_id, size_t size, mango_buffer_type_t mode,
 										 unsigned int nkernels_in, unsigned int nkernels_out, ...)
@@ -110,6 +108,35 @@ extern "C"
 		for (unsigned int i = 0; i < nkernels_out; i++)
 			out.push_back(va_arg(list, mango_kernel_t));
 		va_end(list);
+
+		//
+
+		if (mode == FIFO)
+		{
+			std::shared_ptr<mango::FIFOBuffer> buff = std::make_shared<mango::FIFOBuffer>(buffer_id, size, in, out);
+			cxt->register_buffer(buff, buffer_id);
+		}
+		else
+		{
+			std::shared_ptr<mango::Buffer> buff = std::make_shared<mango::Buffer>(buffer_id, size, in, out);
+			cxt->register_buffer(buff, buffer_id);
+		}
+		return buffer_id;
+	}
+
+	mango_buffer_t mango_register_memory_with_kernels(uint32_t buffer_id, size_t size, mango_buffer_type_t mode, void *_in, void *_out)
+	{
+		assert(buffer_id > 0 && "Buffer id must be positive");
+		assert(size > 0 && "Size must be positive");
+
+		std::vector<uint32_t> in;
+		std::vector<uint32_t> out;
+
+		if (_in != NULL)
+			in.swap(*(std::vector<mango_kernel_t> *)_in);
+
+		if (_out != NULL)
+			out.swap(*(std::vector<mango_kernel_t> *)_out);
 
 		//
 
@@ -350,15 +377,14 @@ extern "C"
 		return (mango_args_t *)new mango::KernelArguments(arguments, k);
 	}
 
-	mango_args_t *mango_set_args_from_vector(mango_kernel_t kernel, void* _arguments)
+	mango_args_t *mango_set_args_from_vector(mango_kernel_t kernel, void *_arguments)
 	{
 
-		assert(_arguments!= NULL && "argc must be non-negative");
-
+		assert(_arguments != NULL && "argc must be non-negative");
 
 		std::vector<mango::Arg *> *arguments;
 		arguments = (std::vector<mango::Arg *> *)_arguments;
-		
+
 		auto k = cxt->get_kernel(kernel);
 
 		std::cout << "[DEBUG] Correctly retrieved the kernel : " << kernel << std::endl;

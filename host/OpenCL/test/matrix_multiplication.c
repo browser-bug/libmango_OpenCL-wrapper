@@ -13,7 +13,7 @@
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #include <stdbool.h>
 
-#include "cl.h"
+#include "CL/cl.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 #define WA 8
@@ -31,7 +31,7 @@ void randomMemInit(int *data, int size)
     int i;
 
     for (i = 0; i < size; ++i)
-        data[i] = 2;//(int)RAND_MAX;
+        data[i] = rand() % 100; //(int)RAND_MAX;
 }
 
 long LoadOpenCLKernel(char const *path, char **buf)
@@ -233,23 +233,23 @@ int main(int argc, char **argv)
 
     cl_platform_id platform_ids[plt_cnt];
     clGetPlatformIDs(plt_cnt, platform_ids, NULL);
-
+ 
     // Connect to a compute device
     cl_uint dev_cnt = 0;
     clGetDeviceIDs(0, CL_DEVICE_TYPE_CPU, 0, 0, &dev_cnt);
     printf("Found %d devices for current platform\n", dev_cnt);
-
+   
     cl_device_id device_ids[dev_cnt];
-    err = clGetDeviceIDs(platform_ids[0], CL_DEVICE_TYPE_CPU, 2, device_ids, NULL);
+    err = clGetDeviceIDs(platform_ids[0], CL_DEVICE_TYPE_CPU, dev_cnt, device_ids, NULL);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to create a device group!\n");
         return EXIT_FAILURE;
     }
-
+    printf("CIAOOOOO\n");
     // Create a compute context
-    const char *mango_receipe = "test_manga";
-    context = clCreateContext(NULL, 2, device_ids, NULL, mango_receipe, &err);
+    const char *mango_recipe = "test_manga";
+    context = clCreateContext(NULL, dev_cnt, device_ids, NULL, mango_recipe, &err);
     if (!context)
     {
         printf("Error: Failed to create a compute context!\n");
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
 
     d_C = clCreateBuffer(context,
                          CL_MEM_WRITE_ONLY,
-                         mem_size_A, NULL, &err, 
+                         mem_size_A, NULL, &err,
                          1, kernels,
                          0, NULL,
                          3);
@@ -412,6 +412,13 @@ int main(int argc, char **argv)
         printf("Error: Failed to wait for events! %d\n", err);
         exit(1);
     }
+
+    // err = clFinish(commands);
+    // if (err != CL_SUCCESS)
+    // {
+    //     printf("Error: Failed to finish all events in the command queue! %d", err);
+    //     exit(1);
+    // }
 
     printf("Matrix multiplication completed...\n");
 
