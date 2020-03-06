@@ -58,58 +58,57 @@
 #ifdef __cplusplus
 #include "context.h"
 
-extern "C" {
-#endif 
+extern "C"
+{
+#endif
 
-//typedef mango::ExitCode mango_exit_t;
-//typedef mango::UnitType mango_unit_type_t;
-//typedef mango::BufferType mango_buffer_type_t;
-//typedef mango::FileType filetype;
+	//typedef mango::ExitCode mango_exit_t;
+	//typedef mango::UnitType mango_unit_type_t;
+	//typedef mango::BufferType mango_buffer_type_t;
+	//typedef mango::FileType filetype;
 
-typedef uint32_t mango_kernel_t;
-typedef uint32_t mango_buffer_t;
-typedef uint32_t mango_event_t;
-typedef struct KernelFunction kernelfunction;
-typedef struct TaskGraph mango_task_graph_t;
-typedef struct KernelArguments mango_args_t;
-typedef struct Arg mango_arg_t;
-
+	typedef uint32_t mango_kernel_t;
+	typedef uint32_t mango_buffer_t;
+	typedef uint32_t mango_event_t;
+	typedef struct KernelFunction kernelfunction;
+	typedef struct TaskGraph mango_task_graph_t;
+	typedef struct KernelArguments mango_args_t;
+	typedef struct Arg mango_arg_t;
 
 #include "mango_types_c.h"
 
-/*! @name Initialization and shutdown */
-///@{
+	/*! @name Initialization and shutdown */
+	///@{
 
-/*! \brief Initialize runtime library */
-mango_exit_t mango_init(const char *application_name, const char *recipe);
+	/*! \brief Initialize runtime library */
+	mango_exit_t mango_init(const char *application_name, const char *recipe);
 
-/*! \brief Shutdown runtime library */
-mango_exit_t mango_release();
+	/*! \brief Shutdown runtime library */
+	mango_exit_t mango_release();
 
-///@}
+	///@}
 
-/*! @name Kernel loading */
-///@{
+	/*! @name Kernel loading */
+	///@{
 
-/*! \brief Initialize a kernelfunction data structure */
-kernelfunction *mango_kernelfunction_init();
+	/*! \brief Initialize a kernelfunction data structure */
+	kernelfunction *mango_kernelfunction_init();
 
-/*! \brief Initialize a kernelfunction data structure 
+	/*! \brief Initialize a kernelfunction data structure 
  * \param kname Kernel file name or string representation
  * \param kernel Target kernel data structure
  * \param unit The type of unit for which this implementation is compiled/optimized
  * \param t The type of file (source file, binary file, or source string)
  * \returns An exit code; kernel is modified by adding the appropriate kernel implementation
  */
-mango_exit_t mango_load_kernel(const char *kname, kernelfunction *kernel, mango_unit_type_t unit, filetype t);
+	mango_exit_t mango_load_kernel(const char *kname, kernelfunction *kernel, mango_unit_type_t unit, filetype t);
 
-///@}
+	///@}
 
+	/*! @name Registration of task graph components */
+	///@{
 
-/*! @name Registration of task graph components */
-///@{
-
-/*! \brief Register a kernel with BarbequeRTRM
+	/*! \brief Register a kernel with BarbequeRTRM
  * \param kernel_id A unique identifier of the kernel, used to match it to the
  * recipe specification
  * \param kernel The kernel to run, possibly in multiple version compiled for
@@ -126,16 +125,32 @@ mango_exit_t mango_load_kernel(const char *kname, kernelfunction *kernel, mango_
  * \deprecated  ut The list of unit types in order of preference
  * (STOP-terminated), if NULL rely on BarbequeRTRM recipes.
  */
-mango_kernel_t mango_register_kernel(uint32_t kernel_id, kernelfunction *kernel, 
-					unsigned int nbuffers_in, unsigned  int nbuffers_out, ...);
+	mango_kernel_t mango_register_kernel(uint32_t kernel_id, kernelfunction *kernel,
+										 unsigned int nbuffers_in, unsigned int nbuffers_out, ...);
 
-/*! \brief De-register the kernel with BarbequeRTRM
+	/*! \brief Register a kernel with BarbequeRTRM
+ * \param kernel_id A unique identifier of the kernel, used to match it to the
+ * recipe specification
+ * \param kernel The kernel to run, possibly in multiple version compiled for
+ * different accelerator architectures
+ * \param in Vector with buffers for input
+ * \param out Vector with buffers for output
+ * \return The registered kernel
+ *
+ * \note thread count and unit type have been moved to the RTlib
+ * \deprecated  thread_count The number of parallel instances to run. If set to
+ * 0, it is interpreted as "as many as possible" by the resource manager
+ * \deprecated  ut The list of unit types in order of preference
+ * (STOP-terminated), if NULL rely on BarbequeRTRM recipes.
+ */
+	mango_kernel_t mango_register_kernel_with_buffers(uint32_t kernel_id, kernelfunction *kernel, void *_in, void *_out);
+
+	/*! \brief De-register the kernel with BarbequeRTRM
  * \param kernel The kernel to remove
  */
-void mango_deregister_kernel(mango_kernel_t kernel);
+	void mango_deregister_kernel(mango_kernel_t kernel);
 
-
-/*! \brief Register a memory region to use as a buffer for communication
+	/*! \brief Register a memory region to use as a buffer for communication
  * \param buffer_id Id of the buffer
  * \param size Size of the buffer
  * \param mode Type of buffer
@@ -154,16 +169,32 @@ void mango_deregister_kernel(mango_kernel_t kernel);
  * or mango_read will setup the streamed communication
  * \note The bandwidth parameter has been moved to the RTlib
  */
-mango_buffer_t mango_register_memory(uint32_t buffer_id, size_t size, mango_buffer_type_t mode, unsigned int nkernels_in, unsigned int nkernels_out, ...);
+	mango_buffer_t mango_register_memory(uint32_t buffer_id, size_t size, mango_buffer_type_t mode, unsigned int nkernels_in, unsigned int nkernels_out, ...);
 
-/*! \brief Deallocate registered memory
+	/*! \brief Register a memory region to use as a buffer for communication
+ * \param buffer_id Id of the buffer
+ * \param size Size of the buffer
+ * \param mode Type of buffer
+ * \param in Vector of kernels that will write the buffer, and should all be of type mango_kernel_t
+ * \param out Vector of kernels that will read the buffer, and should all be of type mango_kernel-t
+ * \return A data structure containing the physical address and the size of the
+ * registered memory region
+ *
+ * \note In case of "FIFO" types, an appropriate background process should be
+ * in charge of setting up the communication. In this case, a single mango_write
+ * or mango_read will setup the streamed communication
+ * \note The bandwidth parameter has been moved to the RTlib
+ */
+	mango_buffer_t mango_register_memory_with_kernels(uint32_t buffer_id, size_t size, mango_buffer_type_t mode, void *_in, void *_out);
+
+	/*! \brief Deallocate registered memory
  * \param mem The memory buffer to deallocate
  *
  * This function frees space from the HN node for use by future kernels.
  */
-void mango_deregister_memory(mango_buffer_t mem);
+	void mango_deregister_memory(mango_buffer_t mem);
 
-/*! \brief Register a HN synchronization event (semaphore?)
+	/*! \brief Register a HN synchronization event (semaphore?)
  * \param nkernels Number of kernels which will write the event
  * \param nkernels Number of kernels which will read the event
  * \param ... The variadic parameters define which kernels will access the
@@ -175,27 +206,26 @@ void mango_deregister_memory(mango_buffer_t mem);
  * retrieved but the will be set to zero. When written the content will be
  * incremented by the value to be written.
  */
-mango_event_t mango_register_event(unsigned int nkernels_in, unsigned int nkernels_out, ...);
+	mango_event_t mango_register_event(unsigned int nkernels_in, unsigned int nkernels_out, ...);
 
-/*! \brief Deallocate registered event
+	/*! \brief Deallocate registered event
  * \param event The synchronization event to deallocate
  *
  * This function frees space from the TILEREG
  */
-void mango_deregister_event(mango_event_t event);
+	void mango_deregister_event(mango_event_t event);
 
-/*! \brief Get an event from the corresponding buffer 
+	/*! \brief Get an event from the corresponding buffer 
  * This function is needed to keep mango_buffer_t opaque in the C interface.
  */
-mango_event_t mango_get_buffer_event(mango_buffer_t buffer);
+	mango_event_t mango_get_buffer_event(mango_buffer_t buffer);
 
-///@}
+	///@}
 
+	/*! @name Task graph definition  */
+	///@{
 
-/*! @name Task graph definition  */
-///@{
-
-/*! \brief Define a task graph
+	/*! \brief Define a task graph
  * \param kernels NULL-terminated array of pointers to mango_kernel_t structures
  * representing the kernels in the task graph
  * \param buffers NULL-terminated array of pointers to mango_buffer_t structures
@@ -204,9 +234,9 @@ mango_event_t mango_get_buffer_event(mango_buffer_t buffer);
  * representing the synchronization events in the task graph
  * \returns A pointer to the task graph data structure
  */
-mango_task_graph_t *mango_task_graph_vcreate(mango_kernel_t **kernels, mango_buffer_t **buffers, mango_event_t **events);
+	mango_task_graph_t *mango_task_graph_vcreate(mango_kernel_t **kernels, mango_buffer_t **buffers, mango_event_t **events);
 
-/*! \brief Define a task graph 
+	/*! \brief Define a task graph 
  * \param k number of kernels 
  * \param b number of buffers
  * \param e number of events
@@ -215,124 +245,120 @@ mango_task_graph_t *mango_task_graph_vcreate(mango_kernel_t **kernels, mango_buf
  * and events employed in this task graph.
  * \returns A pointer to the task graph data structure
  */
-mango_task_graph_t *mango_task_graph_create(int k, int b, int e, ...);
+	mango_task_graph_t *mango_task_graph_create(int k, int b, int e, ...);
 
-/*! \brief Destroy a task graph
+	/*! \brief Destroy a task graph
  * \param task_graph The task graph to destroy
  */
-void mango_task_graph_destroy(mango_task_graph_t *task_graph);
+	void mango_task_graph_destroy(mango_task_graph_t *task_graph);
 
-/*! \brief Destroy a task graph and deregister all of its components
+	/*! \brief Destroy a task graph and deregister all of its components
  * \param task_graph The task graph to destroy
  */
-void mango_task_graph_destroy_all(mango_task_graph_t *task_graph);
+	void mango_task_graph_destroy_all(mango_task_graph_t *task_graph);
 
-
-/*! \brief Add a kernel to the task graph
+	/*! \brief Add a kernel to the task graph
  * \param tg The task graph (if NULL, a new one is created)
  * \param kernel The kernel to add
  * \returns The task graph (identical to tg unless tg==NULL)
  */
-mango_task_graph_t *mango_task_graph_add_kernel(mango_task_graph_t *tg, mango_kernel_t *kernel);
+	mango_task_graph_t *mango_task_graph_add_kernel(mango_task_graph_t *tg, mango_kernel_t *kernel);
 
-/*! \brief Remove a kernel from the task graph
+	/*! \brief Remove a kernel from the task graph
  * \param tg The task graph
  * \param kernel The kernel to add
  * \returns The task graph (NULL if empty)
  */
-mango_task_graph_t *mango_task_graph_remove_kernel(mango_task_graph_t *tg, mango_kernel_t *kernel);
+	mango_task_graph_t *mango_task_graph_remove_kernel(mango_task_graph_t *tg, mango_kernel_t *kernel);
 
-/*! \brief Add a buffer to the task graph
+	/*! \brief Add a buffer to the task graph
  * \param tg The task graph (if NULL, a new one is created)
  * \param buffer The buffer to add
  * \returns The task graph (identical to tg unless tg==NULL)
  */
-mango_task_graph_t *mango_task_graph_add_buffer(mango_task_graph_t *tg, mango_buffer_t *buffer);
+	mango_task_graph_t *mango_task_graph_add_buffer(mango_task_graph_t *tg, mango_buffer_t *buffer);
 
-/*! \brief Remove a buffer from the task graph
+	/*! \brief Remove a buffer from the task graph
  * \param tg The task graph
  * \param buffer The buffer to add
  * \returns The task graph (NULL if empty)
  */
-mango_task_graph_t *mango_task_graph_remove_buffer(mango_task_graph_t *tg, mango_buffer_t *buffer);
+	mango_task_graph_t *mango_task_graph_remove_buffer(mango_task_graph_t *tg, mango_buffer_t *buffer);
 
-/*! \brief Add a event to the task graph
+	/*! \brief Add a event to the task graph
  * \param tg The task graph (if NULL, a new one is created)
  * \param event The event to add
  * \returns The task graph (identical to tg unless tg==NULL)
  */
-mango_task_graph_t *mango_task_graph_add_event(mango_task_graph_t *tg, mango_event_t *event);
+	mango_task_graph_t *mango_task_graph_add_event(mango_task_graph_t *tg, mango_event_t *event);
 
-/*! \brief Remove a event from the task graph
+	/*! \brief Remove a event from the task graph
  * \param tg The task graph
  * \param event The event to add
  * \returns The task graph (NULL if empty)
  */
-mango_task_graph_t *mango_task_graph_remove_event(mango_task_graph_t *tg, mango_event_t *event);
+	mango_task_graph_t *mango_task_graph_remove_event(mango_task_graph_t *tg, mango_event_t *event);
 
-///@}
+	///@}
 
-/*! @name Resource Allocation  */
-///@{
+	/*! @name Resource Allocation  */
+	///@{
 
-/*! \brief Resource Allocation for a task graph of the application
+	/*! \brief Resource Allocation for a task graph of the application
  * \param tg The task graph to allocate resources for
  * \returns An exit code signalling the correct allocation (or not)
  */
-mango_exit_t mango_resource_allocation(mango_task_graph_t *tg);
+	mango_exit_t mango_resource_allocation(mango_task_graph_t *tg);
 
-/*! \brief Resource Allocation for a task graph of the application
+	/*! \brief Resource Allocation for a task graph of the application
  * \param tg The task graph to deallocate resources for
  */
-void mango_resource_deallocation(mango_task_graph_t *tg);
+	void mango_resource_deallocation(mango_task_graph_t *tg);
 
-///@}
+	///@}
 
-
-/*! @name Synchronization primitives
+	/*! @name Synchronization primitives
  */
-///@{
+	///@{
 
-/*! \brief High level wait primitive
+	/*! \brief High level wait primitive
  * \param e A synchronization event
  */
- void mango_wait(mango_event_t e);
+	void mango_wait(mango_event_t e);
 
-/*! \brief High level wait primitive
+	/*! \brief High level wait primitive
  * \param e A synchronization event
  * \param state Value waited for
  */
-void mango_wait_state(mango_event_t e, uint32_t state);
+	void mango_wait_state(mango_event_t e, uint32_t state);
 
-/*! \brief Initialize an event
+	/*! \brief Initialize an event
  * \param event A synchronization event on the HN side
  * \param value An integer value
  * write value to the TILEREG register associated with event
  */
-void mango_write_synchronization(mango_event_t event, uint32_t value);
+	void mango_write_synchronization(mango_event_t event, uint32_t value);
 
-/*! \brief Read and reset an event
+	/*! \brief Read and reset an event
  * \param event A synchronization event on the HN side
  * read value from the TILEREG register associated with event and replace it
  * with 0
  */
-uint32_t mango_read_synchronization(mango_event_t event);
+	uint32_t mango_read_synchronization(mango_event_t event);
 
-/*! \brief lock and read event 
+	/*! \brief lock and read event 
  * \param event A synchronization event on the HN side
  * read value from the TILEREG register associated with event and replace it
  * with 0, when it becomes != 0 (i.e., when unlocked)
  */
-uint32_t mango_lock(mango_event_t e);
+	uint32_t mango_lock(mango_event_t e);
 
-///@}
+	///@}
 
+	/*! @name GN-HN data transfer */
+	///@{
 
-
-/*! @name GN-HN data transfer */
-///@{
-
-/*! \brief Memory transfer from GN to HN
+	/*! \brief Memory transfer from GN to HN
  * \param GN_buffer A pointer to memory in the GN address space
  * \param HN_buffer A data structure representing a memory region allocated
  *        to the application on the HN
@@ -342,11 +368,10 @@ uint32_t mango_lock(mango_event_t e);
  * specified in the HN buffer descriptor.
  * \note Current specification assumes asynchronous transfer
  */
-mango_event_t mango_write(const void *GN_buffer, mango_buffer_t HN_buffer,
-				mango_communication_mode_t mode, size_t global_size);
+	mango_event_t mango_write(const void *GN_buffer, mango_buffer_t HN_buffer,
+							  mango_communication_mode_t mode, size_t global_size);
 
-
-/*! \brief Memory transfer from HN to GN
+	/*! \brief Memory transfer from HN to GN
  * \param GN_buffer A pointer to memory in the GN address space
  * \param HN_buffer A data structure representing a memory region allocated
  *        to the application on the HN
@@ -357,22 +382,21 @@ mango_event_t mango_write(const void *GN_buffer, mango_buffer_t HN_buffer,
  * specified in the HN buffer descriptor.
  * \note Current specification assumes asynchronous transfer
  */
-mango_event_t mango_read(void *GN_buffer, mango_buffer_t HN_buffer, mango_communication_mode_t mode, size_t global_size);
-///@}
+	mango_event_t mango_read(void *GN_buffer, mango_buffer_t HN_buffer, mango_communication_mode_t mode, size_t global_size);
+	///@}
 
+	/*! @name Kernel launch */
+	///@{
 
-/*! @name Kernel launch */
-///@{
-
-/*! \brief Build an argument parameter
+	/*! \brief Build an argument parameter
  * \param value The value or address of the argument
  * \param size The size of the argument
  * \param t The type of argument (scalar, event or buffer)
  * \returns a mango_arg_t structure
  */
-mango_arg_t *mango_arg(mango_kernel_t kernel, const void *value, size_t size, mango_buffer_type_t t);
+	mango_arg_t *mango_arg(mango_kernel_t kernel, const void *value, size_t size, mango_buffer_type_t t);
 
-/*! \brief Set up the arguments for a kernel
+	/*! \brief Set up the arguments for a kernel
  * \param kernel The kernel for which the parameters are set
  * \param argc The number of arguments to pass
  * \param ...  The variadic parameters represent the actual arguments,
@@ -380,9 +404,18 @@ mango_arg_t *mango_arg(mango_kernel_t kernel, const void *value, size_t size, ma
  * \returns The packaged arguments for the loaded kernel
  * \note Can be called multiple times to change the arguments
  */
-mango_args_t *mango_set_args(mango_kernel_t kernel, int argc, ...);
+	mango_args_t *mango_set_args(mango_kernel_t kernel, int argc, ...);
 
-/*! \brief Run a kernel
+	/*! \brief Set up the arguments for a kernel
+ * \param kernel The kernel for which the parameters are set
+ * \param _arguments A pointer to a std::vector<mango::Arg *> that,
+ * contains the arguments for the kernel
+ * \returns The packaged arguments for the loaded kernel
+ * \note Can be called multiple times to change the arguments
+ */
+	mango_args_t *mango_set_args_from_vector(mango_kernel_t kernel, void *_arguments);
+
+	/*! \brief Run a kernel
  * \param kernel The registered kernel to run
  * \param args The structure representing the arguments
  * \param even The event which the kernel should notify upon completion; if NULL,
@@ -391,28 +424,27 @@ mango_args_t *mango_set_args(mango_kernel_t kernel, int argc, ...);
  * the kernel has completed (identical to the event parameter unless the former
  * is NULL).
  */
-mango_event_t mango_start_kernel(mango_kernel_t kernel, mango_args_t *args, mango_event_t event);
+	mango_event_t mango_start_kernel(mango_kernel_t kernel, mango_args_t *args, mango_event_t event);
 
-/*!
+	/*!
  * \brief Returns the processor id assigned to the kernel. It must be called AFTER
  *        a successful resource allocation.
  * \param kernel The kernel to query
  */
-uint32_t mango_get_unit_id(mango_kernel_t kernel);
+	uint32_t mango_get_unit_id(mango_kernel_t kernel);
 
-/*!
+	/*!
  * \brief Returns the maximum number of buffers allowed (it depends on the architecture).
  */
-uint16_t mango_get_max_nr_buffers(void);
+	uint16_t mango_get_max_nr_buffers(void);
 
-/*!
+	/*!
  * \brief Returns the processor type assigned to the kernel specified as argument.
  *        It must be called AFTER a successful resource allocation.
  */
-mango_unit_type_t mango_get_unit_arch(mango_kernel_t kernel);
+	mango_unit_type_t mango_get_unit_arch(mango_kernel_t kernel);
 
-
-///@}
+	///@}
 
 #ifdef __cplusplus
 }
