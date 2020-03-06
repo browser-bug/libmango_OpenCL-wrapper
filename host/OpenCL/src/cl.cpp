@@ -6,12 +6,13 @@
 #include "clProgram.h"
 #include "clKernel.h"
 #include "clMem.h"
+#include "clExceptions.h"
 
 #include "CL/cl.h"
 
 #ifdef __cplusplus
 #include <stdio.h>
-#include <string.h>
+#include <string>
 #endif
 
 // TODO is this related to the mango_get_max_nr_buffers() function of MANGO?
@@ -48,7 +49,10 @@ extern "C"
                           cl_device_id *devices,
                           cl_uint *num_devices)
     {
-        return cl_get_device_ids(device_type, num_entries, devices, num_devices);
+        return cl_get_device_ids(device_type,
+                                 num_entries,
+                                 devices,
+                                 num_devices);
     }
 
     cl_int clGetDeviceInfo(cl_device_id device,
@@ -57,7 +61,11 @@ extern "C"
                            void *param_value,
                            size_t *param_value_size_ret)
     {
-        return cl_get_device_info(device, param_name, param_value_size, param_value, param_value_size_ret);
+        return cl_get_device_info(device,
+                                  param_name,
+                                  param_value_size,
+                                  param_value,
+                                  param_value_size_ret);
     }
 
     cl_int clCreateSubDevices(cl_device_id in_device,
@@ -90,7 +98,25 @@ extern "C"
                                void *user_data,
                                cl_int *errcode_ret)
     {
-        return cl_create_context(num_devices, devices, user_data, errcode_ret);
+        try
+        {
+            return cl_create_context(num_devices,
+                                     devices,
+                                     user_data,
+                                     errcode_ret);
+        }
+        catch (const std::bad_alloc &)
+        {
+            if (errcode_ret)
+                *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+            return NULL;
+        }
+        catch (const cl_error &e)
+        {
+            if (errcode_ret)
+                *errcode_ret = e.errcode;
+            return NULL;
+        }
     }
 
     cl_context clCreateContextFromType(const cl_context_properties *properties,
@@ -99,7 +125,24 @@ extern "C"
                                        void *user_data,
                                        cl_int *errcode_ret)
     {
-        return cl_create_context_from_type(device_type, user_data, errcode_ret);
+        try
+        {
+            return cl_create_context_from_type(device_type,
+                                               user_data,
+                                               errcode_ret);
+        }
+        catch (const std::bad_alloc &)
+        {
+            if (errcode_ret)
+                *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+            return NULL;
+        }
+        catch (const cl_error &e)
+        {
+            if (errcode_ret)
+                *errcode_ret = e.errcode;
+            return NULL;
+        }
     }
 
     cl_int clRetainContext(cl_context context)
@@ -124,7 +167,11 @@ extern "C"
                             void *param_value,
                             size_t *param_value_size_ret)
     {
-        return cl_get_context_info(context, param_name, param_value_size, param_value, param_value_size_ret);
+        return cl_get_context_info(context,
+                                   param_name,
+                                   param_value_size,
+                                   param_value,
+                                   param_value_size_ret);
     }
 
     cl_command_queue clCreateCommandQueue(cl_context context,
@@ -132,7 +179,24 @@ extern "C"
                                           cl_command_queue_properties properties,
                                           cl_int *errcode_ret)
     {
-        return cl_create_command_queue(context, device, errcode_ret);
+        try
+        {
+            return cl_create_command_queue(context,
+                                           device,
+                                           errcode_ret);
+        }
+        catch (const std::bad_alloc &)
+        {
+            if (errcode_ret)
+                *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+            return NULL;
+        }
+        catch (const cl_error &e)
+        {
+            if (errcode_ret)
+                *errcode_ret = e.errcode;
+            return NULL;
+        }
     }
 
     cl_int clRetainCommandQueue(cl_command_queue command_queue)
@@ -159,7 +223,11 @@ extern "C"
                                  void *param_value,
                                  size_t *param_value_size_ret)
     {
-        return cl_get_command_queue_info(command_queue, param_name, param_value_size, param_value, param_value_size_ret);
+        return cl_get_command_queue_info(command_queue,
+                                         param_name,
+                                         param_value_size,
+                                         param_value,
+                                         param_value_size_ret);
     }
 
     cl_mem clCreateBuffer(cl_context context,
@@ -173,7 +241,29 @@ extern "C"
                           cl_kernel *kernels_out,
                           cl_int buffer_id)
     {
-        return cl_create_buffer(context, flags, size, host_ptr, errcode_ret, num_kernels_in, kernels_in, num_kernels_out, kernels_out, buffer_id);
+        try
+        {
+            return cl_create_buffer(context,
+                                    flags,
+                                    size,
+                                    host_ptr,
+                                    errcode_ret,
+                                    num_kernels_in, kernels_in,
+                                    num_kernels_out, kernels_out,
+                                    buffer_id);
+        }
+        catch (const std::bad_alloc &)
+        {
+            if (errcode_ret)
+                *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+            return NULL;
+        }
+        catch (const cl_error &e)
+        {
+            if (errcode_ret)
+                *errcode_ret = e.errcode;
+            return NULL;
+        }
     }
 
     cl_mem clCreateSubBuffer(cl_mem buffer,
@@ -231,7 +321,11 @@ extern "C"
                               void *param_value,
                               size_t *param_value_size_ret)
     {
-        return cl_get_mem_object_info(memobj, param_name, param_value_size, param_value, param_value_size_ret);
+        return cl_get_mem_object_info(memobj,
+                                      param_name,
+                                      param_value_size,
+                                      param_value,
+                                      param_value_size_ret);
     }
 
     cl_int clGetImageInfo(cl_mem image,
@@ -303,7 +397,27 @@ extern "C"
                                          cl_int *binary_status,
                                          cl_int *errcode_ret)
     {
-        return cl_create_program_with_binary(context, num_devices, device_list, binaries, binary_status, errcode_ret);
+        try
+        {
+            return cl_create_program_with_binary(context,
+                                                 num_devices,
+                                                 device_list,
+                                                 binaries,
+                                                 binary_status,
+                                                 errcode_ret);
+        }
+        catch (const std::bad_alloc &)
+        {
+            if (errcode_ret)
+                *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+            return NULL;
+        }
+        catch (const cl_error &e)
+        {
+            if (errcode_ret)
+                *errcode_ret = e.errcode;
+            return NULL;
+        }
     }
 
     cl_program clCreateProgramWithBuiltInKernels(cl_context context,
@@ -383,7 +497,11 @@ extern "C"
                             void *param_value,
                             size_t *param_value_size_ret)
     {
-        return cl_get_program_info(program, param_name, param_value_size, param_value, param_value_size_ret);
+        return cl_get_program_info(program,
+                                   param_name,
+                                   param_value_size,
+                                   param_value,
+                                   param_value_size_ret);
     }
 
     cl_int clGetProgramBuildInfo(cl_program program,
@@ -402,7 +520,25 @@ extern "C"
                              cl_int *errcode_ret,
                              cl_int kernel_id)
     {
-        return cl_create_kernel(program, kernel_name, errcode_ret, kernel_id);
+        try
+        {
+            return cl_create_kernel(program,
+                                    kernel_name,
+                                    errcode_ret,
+                                    kernel_id);
+        }
+        catch (const std::bad_alloc &)
+        {
+            if (errcode_ret)
+                *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+            return NULL;
+        }
+        catch (const cl_error &e)
+        {
+            if (errcode_ret)
+                *errcode_ret = e.errcode;
+            return NULL;
+        }
     }
 
     // TODO: this can be implemented for future use after defining the realtionship between kernels and binaries in a program
@@ -438,7 +574,22 @@ extern "C"
                           const void *arg_value,
                           cl_argument_type arg_type)
     {
-        return cl_set_kernel_arg(kernel, arg_index, arg_size, arg_value, arg_type);
+        try
+        {
+            return cl_set_kernel_arg(kernel,
+                                     arg_index,
+                                     arg_size,
+                                     arg_value,
+                                     arg_type);
+        }
+        catch (const std::bad_alloc &)
+        {
+            return CL_OUT_OF_HOST_MEMORY;
+        }
+        catch (const cl_error &e)
+        {
+            return e.errcode;
+        }
     }
 
     cl_int clGetKernelInfo(cl_kernel kernel,
@@ -447,7 +598,11 @@ extern "C"
                            void *param_value,
                            size_t *param_value_size_ret)
     {
-        return cl_get_kernel_info(kernel, param_name, param_value_size, param_value, param_value_size_ret);
+        return cl_get_kernel_info(kernel,
+                                  param_name,
+                                  param_value_size,
+                                  param_value,
+                                  param_value_size_ret);
     }
 
     cl_int clGetKernelArgInfo(cl_kernel kernel,
@@ -475,7 +630,19 @@ extern "C"
     cl_int clWaitForEvents(cl_uint num_events,
                            const cl_event *event_list)
     {
-        return cl_wait_for_events(num_events, event_list);
+        try
+        {
+            return cl_wait_for_events(num_events,
+                                      event_list);
+        }
+        catch (const std::bad_alloc &)
+        {
+            return CL_OUT_OF_HOST_MEMORY;
+        }
+        catch (const cl_error &e)
+        {
+            return e.errcode;
+        }
     }
 
     cl_int clGetEventInfo(cl_event event,
@@ -484,7 +651,11 @@ extern "C"
                           void *param_value,
                           size_t *param_value_size_ret)
     {
-        return cl_get_event_info(event, param_name, param_value_size, param_value, param_value_size_ret);
+        return cl_get_event_info(event,
+                                 param_name,
+                                 param_value_size,
+                                 param_value,
+                                 param_value_size_ret);
     }
 
     // TODO : there's maybe a potential mapping with mango_register_event but this function needs some additional parameters
@@ -557,7 +728,23 @@ extern "C"
                                const cl_event *event_wait_list,
                                cl_event *event)
     {
-        return cl_enqueue_read_buffer(command_queue, buffer, ptr, num_events_in_wait_list, event_wait_list, event);
+        try
+        {
+            return cl_enqueue_read_buffer(command_queue,
+                                          buffer,
+                                          blocking_write,
+                                          ptr,
+                                          num_events_in_wait_list, event_wait_list,
+                                          event);
+        }
+        catch (const std::bad_alloc &)
+        {
+            return CL_OUT_OF_HOST_MEMORY;
+        }
+        catch (const cl_error &e)
+        {
+            return e.errcode;
+        }
     }
 
     cl_int clEnqueueReadBufferRect(cl_command_queue command_queue,
@@ -589,7 +776,23 @@ extern "C"
                                 const cl_event *event_wait_list,
                                 cl_event *event)
     {
-        return cl_enqueue_write_buffer(command_queue, buffer, ptr, num_events_in_wait_list, event_wait_list, event);
+        try
+        {
+            return cl_enqueue_write_buffer(command_queue,
+                                           buffer,
+                                           blocking_write,
+                                           ptr,
+                                           num_events_in_wait_list, event_wait_list,
+                                           event);
+        }
+        catch (const std::bad_alloc &)
+        {
+            return CL_OUT_OF_HOST_MEMORY;
+        }
+        catch (const cl_error &e)
+        {
+            return e.errcode;
+        }
     }
 
     cl_int clEnqueueWriteBufferRect(cl_command_queue command_queue,
@@ -812,7 +1015,21 @@ extern "C"
                          const cl_event *event_wait_list,
                          cl_event *event)
     {
-        return cl_enqueue_task(command_queue, kernel, num_events_in_wait_list, event_wait_list, event);
+        try
+        {
+            return cl_enqueue_task(command_queue,
+                                   kernel,
+                                   num_events_in_wait_list, event_wait_list,
+                                   event);
+        }
+        catch (const std::bad_alloc &)
+        {
+            return CL_OUT_OF_HOST_MEMORY;
+        }
+        catch (const cl_error &e)
+        {
+            return e.errcode;
+        }
     }
 
     cl_int clEnqueueNDRangeKernel(cl_command_queue command_queue,
@@ -825,7 +1042,21 @@ extern "C"
                                   const cl_event *event_wait_list,
                                   cl_event *event)
     {
-        return clEnqueueTask(command_queue, kernel, num_events_in_wait_list, event_wait_list, event);
+        try
+        {
+            return clEnqueueTask(command_queue,
+                                 kernel,
+                                 num_events_in_wait_list, event_wait_list,
+                                 event);
+        }
+        catch (const std::bad_alloc &)
+        {
+            return CL_OUT_OF_HOST_MEMORY;
+        }
+        catch (const cl_error &e)
+        {
+            return e.errcode;
+        }
     }
 
     // TODO check if this can be implemented in some way
@@ -910,7 +1141,7 @@ extern "C"
 
     cl_int clKernelAndBufferAllocation(cl_command_queue command_queue)
     {
-        printf("[clKernelAndBufferAllocation] allocating new resources\n");
+        std::cout << "[clKernelAndBufferAllocation] allocating new resources in task graph: " << command_queue->tgx << std::endl;
         command_queue->tgx = mango_task_graph_add_event(command_queue->tgx, NULL); // FIX : this is the last part of mango allocation that should stay somewhere else
         mango_exit_t err = mango_resource_allocation(command_queue->tgx);
         if (err == SUCCESS)
