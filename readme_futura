@@ -1,9 +1,0 @@
-- Possible future works: 
-1) non è stata mappata la mango_register_event su nulla, si è individuata una possibilità con clCreateUserEvent che non è stata indagata ulteriormente. 
-
-2) per quanto riguarda i device disponibili sulla piattaforma, si resta in attesa che ci sia un'implementazione lato mango che possa offrire una lista
-
-
-- funzioni di info che ritornino informazioni minimali 
-
-- clFlush metti messaggio che informi la non implementazione
