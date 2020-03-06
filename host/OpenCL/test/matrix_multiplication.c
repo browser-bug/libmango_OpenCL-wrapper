@@ -16,9 +16,9 @@
 #include "CL/cl.h"
 
 ////////////////////////////////////////////////////////////////////////////////
-#define WA 8
-#define HA 8
-#define WB 8
+#define WA 1024
+#define HA 1024
+#define WB 1024
 
 #define HB WA
 #define WC WB
@@ -93,80 +93,6 @@ long LoadOpenCLKernel(char const *path, char **buf)
     return (long)fsz;
 }
 
-void kernel_function(int *A, int *B, int *D, int rows, int cols)
-{
-    for (int r = 0; r < rows; r++)
-    {
-        for (int c = 0; c < cols; c++)
-        {
-            int v = 0;
-            for (int p = 0; p < rows; p++)
-            {
-                v = v + A[r * cols + p] * B[p * cols + c];
-            }
-            D[r * cols + c] = v;
-        }
-    }
-    return;
-}
-
-// cl_program CreateProgramFromBinary(cl_context context, cl_device_id device, const char *fileName)
-// {
-//     FILE *fp = fopen(fileName, "rb");
-//     if (fp == NULL)
-//     {
-//         return NULL;
-//     }
-
-//     // Determine the size of the binary
-//     size_t binarySize;
-//     fseek(fp, 0, SEEK_END);
-//     binarySize = ftell(fp);
-//     rewind(fp);
-
-//     unsigned char *programBinary = malloc(binarySize);
-//     fread(programBinary, 1, binarySize, fp);
-//     fclose(fp);
-
-//     cl_int errNum = 0;
-//     cl_program program;
-//     cl_int binaryStatus;
-
-//     program = clCreateProgramWithBinary(context,
-//                                         1,
-//                                         &device,
-//                                         &binarySize,
-//                                         (const unsigned char **)&programBinary,
-//                                         &binaryStatus,
-//                                         &errNum);
-//     free(programBinary);
-//     if (errNum != CL_SUCCESS)
-//     {
-//         printf("Error loading program binary.");
-//         return NULL;
-//     }
-
-//     if (binaryStatus != CL_SUCCESS)
-//     {
-//         printf("Invalid binary for device");
-//         return NULL;
-//     }
-
-//     errNum = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-//     if (errNum != CL_SUCCESS)
-//     {
-//         // Determine the reason for the error
-//         char buildLog[16384];
-//         clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG,
-//                               sizeof(buildLog), buildLog, NULL);
-
-//         printf("Error in program: \n");
-//         clReleaseProgram(program);
-//         return NULL;
-//     }
-
-//     return program;
-// }
 
 int main(int argc, char **argv)
 {
@@ -204,43 +130,18 @@ int main(int argc, char **argv)
     unsigned int mem_size_C = sizeof(int) * size_C;
     int *h_C = (int *)malloc(mem_size_C);
 
-    /* matrix used to verify the result */
-    int *h_D = (int *)malloc(mem_size_C);
-
-    /* Printing initialized matrices */
-    // printf("\n\nMatrix A\n");
-    // for (int i = 0; i < size_A; i++)
-    // {
-    //     printf("%f ", h_A[i]);
-    //     if (((i + 1) % WC) == 0)
-    //         printf("\n");
-    // }
-    // printf("\n");
-
-    // printf("\n\nMatrix B\n");
-    // for (int i = 0; i < size_B; i++)
-    // {
-    //     printf("%f ", h_B[i]);
-    //     if (((i + 1) % WC) == 0)
-    //         printf("\n");
-    // }
-    // printf("\n");
-
     printf("Initializing OpenCL device...\n");
+
 
     cl_uint plt_cnt = 0;
     clGetPlatformIDs(0, 0, &plt_cnt);
 
     cl_platform_id platform_ids[plt_cnt];
     clGetPlatformIDs(plt_cnt, platform_ids, NULL);
-
+ 
     // Connect to a compute device
-    cl_uint dev_cnt = 0;
-    clGetDeviceIDs(0, CL_DEVICE_TYPE_CPU, 0, 0, &dev_cnt);
-    printf("Found %d devices for current platform\n", dev_cnt);
 
-    cl_device_id device_ids[dev_cnt];
-    err = clGetDeviceIDs(platform_ids[0], CL_DEVICE_TYPE_CPU, dev_cnt, device_ids, NULL);
+    err = clGetDeviceIDs(platform_ids[0], CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to create a device group!\n");
@@ -248,8 +149,8 @@ int main(int argc, char **argv)
     }
 
     // Create a compute context
-    const char *mango_receipe = "test_manga";
-    context = clCreateContext(NULL, dev_cnt, device_ids, NULL, mango_receipe, &err);
+    const char *mango_recipe = "test_manga";
+    context = clCreateContext(NULL, 1, &device_id, NULL, mango_recipe, &err);
     if (!context)
     {
         printf("Error: Failed to create a compute context!\n");
@@ -257,22 +158,22 @@ int main(int argc, char **argv)
     }
 
     // Create a command commands
-    commands = clCreateCommandQueue(context, device_ids[0], NULL, &err);
+    commands = clCreateCommandQueue(context, device_id, NULL, &err);
     if (!commands)
     {
         printf("Error: Failed to create a command queue!\n", err);
         return EXIT_FAILURE;
     }
 
+
     cl_int errNum = 0;
-    cl_int binaryStatus[dev_cnt];
-    const char *programBinaryPaths[dev_cnt];
+    cl_int binaryStatus[1];
+    const char *programBinaryPaths[1];
     programBinaryPaths[0] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev";
-    programBinaryPaths[1] = "/opt/mango/usr/local/share/matrix_multiplication/matrix_multiplication_dev"; // potentially a second binary
 
     program = clCreateProgramWithBinary(context,
                                         1,
-                                        device_ids,
+                                        &device_id,
                                         NULL, /* not needed */
                                         (const char **)programBinaryPaths,
                                         binaryStatus,
@@ -282,15 +183,7 @@ int main(int argc, char **argv)
         printf("Error loading program binary.");
         return EXIT_FAILURE;
     }
-    // for (int i = 0; i < dev_cnt; i++)
-    // {
-    //     if (binaryStatus[i] != CL_SUCCESS)
-    //     {
-    //         printf("Error with binary status %d\n", binaryStatus[i]);
-    //         printf("Invalid binary for device at position %d\n", i);
-    //         return EXIT_FAILURE;
-    //     }
-    // }
+
     if (!program)
     {
         printf("Error: Failed to create compute program!\n");
@@ -298,48 +191,44 @@ int main(int argc, char **argv)
     }
 
     // Set the buffer IDS for the kernel we wish to run first
-    clSetInputBufferIDs(program, 0, 2, 1, 2);
-    clSetOutputBufferIDs(program, 0, 1, 3);
-    // clSetInputBufferIDs(program, 1, 2, 4, 5);
-    // clSetOutputBufferIDs(program, 1, 1, 6);
+    clSetInputBufferIDs(program, programBinaryPaths[0], 2, 1, 2);
+    clSetOutputBufferIDs(program, programBinaryPaths[0], 1, 3);
 
-    // TODO : redefine first kernel structure inside cl_program and change the following functions to take kernels[0]
-    cl_kernel kernels[dev_cnt];
+    // Create the compute kernel in the program we wish to run
+    kernel = clCreateKernel(program, programBinaryPaths[0], NULL, 1);
 
-    // err = clCreateKernelsInProgram(program, 1, kernels, NULL);
-    // if (!kernels || err != CL_SUCCESS)
-    // {
-    //     printf("Error: Failed to create compute kernel!\n");
-    //     exit(1);
-    // }
+     if (!kernel || err != CL_SUCCESS)
+     {
+         printf("Error: Failed to create compute kernel!\n");
+         return EXIT_FAILURE;
+     }
 
-    kernels[0] = clCreateKernel(program, programBinaryPaths[0], NULL, 1);
 
     // Create the input and output arrays in device memory for our calculation
     d_A = clCreateBuffer(context,
                          CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                          mem_size_A, h_A, &err,
                          0, NULL,
-                         1, kernels,
+                         1, &kernel,
                          1);
     d_B = clCreateBuffer(context,
                          CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                          mem_size_B, h_B, &err,
                          0, NULL,
-                         1, kernels,
+                         1, &kernel,
                          2);
 
     d_C = clCreateBuffer(context,
                          CL_MEM_WRITE_ONLY,
                          mem_size_A, NULL, &err,
-                         1, kernels,
+                         1, &kernel,
                          0, NULL,
                          3);
 
     if (!d_A || !d_B || !d_C)
     {
         printf("Error: Failed to allocate device memory!\n");
-        exit(1);
+        return EXIT_FAILURE;
     }
 
     printf("Running matrix multiplication for matrices A (%dx%d) and B (%dx%d) ...\n", WA, HA, WB, HB);
@@ -349,26 +238,27 @@ int main(int argc, char **argv)
     int wA = WA;
     int wC = WC;
 
-    err = clSetKernelArg(kernels[0], 0, sizeof(cl_mem), (void *)&d_A, CL_BUFFER_ARG);
-    err |= clSetKernelArg(kernels[0], 1, sizeof(cl_mem), (void *)&d_B, CL_BUFFER_ARG);
-    err |= clSetKernelArg(kernels[0], 2, sizeof(cl_mem), (void *)&d_C, CL_BUFFER_ARG);
-    err |= clSetKernelArg(kernels[0], 3, sizeof(int), (void *)&wA, CL_SCALAR_ARG);
-    err |= clSetKernelArg(kernels[0], 4, sizeof(int), (void *)&wC, CL_SCALAR_ARG);
-    cl_event bufferEvent;
-    err |= clSetKernelArg(kernels[0], 2, sizeof(cl_event), (void *)&bufferEvent, CL_EVENT_ARG);
+    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&d_A, CL_BUFFER_ARG);
+    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&d_B, CL_BUFFER_ARG);
+    err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&d_C, CL_BUFFER_ARG);
+    err |= clSetKernelArg(kernel, 3, sizeof(int), (void *)&wA, CL_SCALAR_ARG);
+    err |= clSetKernelArg(kernel, 4, sizeof(int), (void *)&wC, CL_SCALAR_ARG);
+    cl_event bufferEvent; // necessary event for reading buffer with ID 2
+    err |= clSetKernelArg(kernel, 2, sizeof(cl_event), (void *)&bufferEvent, CL_EVENT_ARG);
 
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to set kernel arguments! %d\n", err);
-        exit(1);
+        return EXIT_FAILURE;
     }
 
     // User needs to explicitly allocate resources for the task graph
     clKernelAndBufferAllocation(commands);
 
-    // Writing buffers to device memory
+
+    // Writing buffers to device memory 
     cl_event writeEvent;
-    // printf("Passo evento di write buffer con indirizzo %p\n", &writeEvent);
+    
     err = clEnqueueWriteBuffer(commands, d_A, NULL, NULL, NULL, h_A, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
     {
@@ -387,9 +277,9 @@ int main(int argc, char **argv)
     globalWorkSize[0] = 1024;
     globalWorkSize[1] = 1024;
 
-    // Adding an event to synchronization purpuses
+    // Adding an event to synchronization purpuses (necessary in MANGO)
     cl_event kernelEvent;
-    err = clEnqueueNDRangeKernel(commands, kernels[0], 2, NULL, globalWorkSize, localWorkSize, 0, NULL, &kernelEvent);
+    err = clEnqueueNDRangeKernel(commands, kernel, 2, NULL, globalWorkSize, localWorkSize, 0, NULL, &kernelEvent);
 
     if (err != CL_SUCCESS)
     {
@@ -397,9 +287,8 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    //Retrieve result from device
-    cl_event readEvent;
-    err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, 1, &bufferEvent, &readEvent);
+    // In MANGO, when we want to read, it is necessary to wait for the bufferEvent
+    err = clEnqueueReadBuffer(commands, d_C, CL_TRUE, 0, mem_size_C, h_C, 1, &bufferEvent, NULL);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to read output array! %d\n", err);
@@ -407,67 +296,28 @@ int main(int argc, char **argv)
     }
 
     err = clWaitForEvents(1, &kernelEvent);
+
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to wait for events! %d\n", err);
         exit(1);
     }
 
-    // err = clFinish(commands);
-    // if (err != CL_SUCCESS)
-    // {
-    //     printf("Error: Failed to finish all events in the command queue! %d", err);
-    //     exit(1);
-    // }
-
-    printf("Matrix multiplication completed...\n");
-
-    //Check the result correctness
-    kernel_function(h_A, h_B, h_D, WC, HC);
-
-    int out = 0;
-    for (int i = 0; i < WC; i++)
-        for (int j = 0; j < HC; j++)
-            if (h_D[i * HC + j] != h_C[i * HC + j])
-            {
-                printf("Incorrect value at %d, %d: %d vs %d\n", i, j, h_D[i * HC + j], h_C[i * HC + j]);
-                out++;
-            }
-
-    if (out)
-    {
-        printf("Detected %d errors in the computation\n", out);
-        exit(out);
-    }
-    else
-    {
-        printf("Matrix multiplication correctly performed\n");
-        /* Printing result matrix */
-        // printf("\n\nMatrix C\n");
-        // for (int i = 0; i < size_A; i++)
-        // {
-        //     printf("%d ", h_D[i]);
-        //     if (((i + 1) % WC) == 0)
-        //         printf("\n");
-        // }
-        // printf("\n");
-    }
 
     //Shutdown and cleanup
     free(h_A);
     free(h_B);
     free(h_C);
-    free(h_D);
-
-    // doesn't do anything
-    clReleaseProgram(program);
+    
     // deregister memory
     clReleaseMemObject(d_A);
     clReleaseMemObject(d_B);
     clReleaseMemObject(d_C);
 
+
+    clReleaseProgram(program);
     // deregister kernel
-    clReleaseKernel(kernels[0]);
+    clReleaseKernel(kernel);
     // mango_resource_deallocation(tg); mango_task_graph_destroy_all(tg);
     clReleaseCommandQueue(commands);
     // mango_release()
