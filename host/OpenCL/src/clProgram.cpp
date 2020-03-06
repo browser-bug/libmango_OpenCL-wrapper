@@ -28,7 +28,6 @@ cl_program cl_create_program_with_binary(cl_context context,
 
     mango_exit_t mango_err;        /* stores errors from mango function calls */
     mango_unit_type_t device_type; /* stores mango unit type of each device */
-    mango_kernel_function tempKN;  /* temp. variable storing the kernel function data */
 
     if (context == NULL)
         throw cl_error(CL_INVALID_CONTEXT);
@@ -53,22 +52,24 @@ cl_program cl_create_program_with_binary(cl_context context,
         std::cout << "[clCreateProgramWithBinary] initializing new kernel for device_type: " << device_list[i]->device_type << std::endl;
 
         device_type = device_list[i]->device_type;
+        const char *path = binaries[i];
 
-        /* initializing a new mango_kernel_function */
-        tempKN.function = mango_kernelfunction_init();
-        tempKN.device = device_list[i];
-        tempKN.binary = binaries[i];
-        tempKN.buffers_in.clear();
-        tempKN.buffers_out.clear();
+        /* initializing a new mango_kernel_function identified by the path */
+        (program->map_kernel_functions)[path].function = mango_kernelfunction_init();
+        (program->map_kernel_functions)[path].device = device_list[i];
+        (program->map_kernel_functions)[path].binary = binaries[i];
+        (program->map_kernel_functions)[path].buffers_in.clear();
+        (program->map_kernel_functions)[path].buffers_out.clear();
+        /* loading and initializing kernel data structure in MANGO */
+        mango_err = mango_load_kernel(binaries[i], (program->map_kernel_functions)[path].function, device_type, BINARY);
 
-        /* storing it into the program vector */
-        program->kernel_functions.push_back(tempKN);
+
         /* loading and initializing kernel data structure in MANGO */
         mango_err = mango_load_kernel(binaries[i], tempKN.function, device_type, BINARY);
 
         if (mango_err != SUCCESS)
         {
-            program->kernel_functions.clear();
+            program->map_kernel_functions.clear();
 
             if (binary_status)
                 binary_status[i] = CL_INVALID_BINARY;
@@ -118,7 +119,7 @@ cl_int cl_get_program_info(cl_program program,
         src_size = program->ctx->devices.size() * sizeof(cl_device_id);
         break;
     case CL_PROGRAM_NUM_KERNELS:
-        kernels_num = program->kernel_functions.size();
+        kernels_num = program->map_kernel_functions.size();
         src_ptr = &kernels_num;
         src_size = sizeof(cl_uint);
         break;

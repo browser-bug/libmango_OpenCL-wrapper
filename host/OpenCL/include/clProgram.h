@@ -29,7 +29,7 @@ extern "C"
 
         cl_context ctx; /* parent context */
 
-        std::vector<mango_kernel_function> kernel_functions; /* all kernels included in the program */
+        std::map<const char*, mango_kernel_function> map_kernel_functions; /* all kernels included in the program */
     };
 
     cl_program cl_create_program_with_binary(cl_context context,

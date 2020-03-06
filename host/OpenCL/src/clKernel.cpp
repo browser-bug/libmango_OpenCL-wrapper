@@ -27,19 +27,17 @@ cl_kernel cl_create_kernel(cl_program program,
         throw cl_error(CL_INVALID_VALUE);
     }
 
-    if (program->kernel_functions.empty())
+    if (program->map_kernel_functions.empty())
         throw cl_error(CL_INVALID_PROGRAM_EXECUTABLE);
 
-    for (i = 0; i < program->kernel_functions.size(); i++)
-    {
-        // Finding the kernel_function associated with input binary path
-        if (strcmp(program->kernel_functions[i].binary, binary_path) == 0)
+    for (const auto& kv : program->map_kernel_functions) {
+            if (strcmp(kv.second.binary, binary_path) == 0)
             break;
     }
-    if (i == program->kernel_functions.size())
+    if (i == program->map_kernel_functions.size())
         throw cl_error(CL_INVALID_KERNEL_NAME);
 
-    kern_funct = program->kernel_functions[i];
+    kern_funct = program->map_kernel_functions[binary_path];
 
     kernel = new _cl_kernel(kern_funct.device, program);
     kernel->id = kernel_id;

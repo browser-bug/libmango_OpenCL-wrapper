@@ -1103,42 +1103,42 @@ extern "C"
 
     /* Additional functions to support the MANGO Platform */
 
-    // FIX : is there a better way to specify which kernel_function we want to set than using an index?
-    cl_int clSetInputBufferIDs(cl_program program, unsigned int kernel_function_index, unsigned int nbuffers_in, ...)
+    cl_int clSetInputBufferIDs(cl_program program, const char* binary, unsigned int nbuffers_in, ...)
     {
-        assert(kernel_function_index >= 0 && kernel_function_index < program->kernel_functions.size() && "the kernel function index is not valid");
+        assert(binary != NULL  && "the kernel function path is not valid ");
         assert(nbuffers_in < MAX_NUM_KERNEL_BUFFERS && "exceeded the maximum number of kernel buffers available");
-
-        program->kernel_functions[kernel_function_index].buffers_in.clear();
+       
+        program->map_kernel_functions[binary].buffers_in.clear();
 
         va_list list;
         va_start(list, nbuffers_in);
         for (unsigned int i = 0; i < nbuffers_in; i++)
         {
             uint32_t in_id = (uint32_t)va_arg(list, cl_uint);
-            program->kernel_functions[kernel_function_index].buffers_in.push_back(in_id);
+            program->map_kernel_functions[binary].buffers_in.push_back(in_id);
         }
         va_end(list);
     }
 
-    // FIX : is there a better way to specify which kernel_function we want to set than using an index?
-    cl_int clSetOutputBufferIDs(cl_program program, unsigned int kernel_function_index, unsigned int nbuffers_out, ...)
+    
+    cl_int clSetOutputBufferIDs(cl_program program, const char* binary, unsigned int nbuffers_out, ...)
     {
-        assert(kernel_function_index >= 0 && kernel_function_index < program->kernel_functions.size() && "the kernel function index is not valid");
+        assert(binary != NULL && "the kernel function path is not valid");
         assert(nbuffers_out < MAX_NUM_KERNEL_BUFFERS && "exceeded the maximum number of kernel buffers available");
 
-        program->kernel_functions[kernel_function_index].buffers_out.clear();
+        program->map_kernel_functions[binary].buffers_out.clear();
 
         va_list list;
         va_start(list, nbuffers_out);
         for (unsigned int i = 0; i < nbuffers_out; i++)
         {
             uint32_t out_id = (uint32_t)va_arg(list, cl_uint);
-            program->kernel_functions[kernel_function_index].buffers_out.push_back(out_id);
+            program->map_kernel_functions[binary].buffers_out.push_back(out_id);
         }
         va_end(list);
     }
 
+    
     cl_int clKernelAndBufferAllocation(cl_command_queue command_queue)
     {
         std::cout << "[clKernelAndBufferAllocation] allocating new resources in task graph: " << command_queue->tgx << std::endl;
