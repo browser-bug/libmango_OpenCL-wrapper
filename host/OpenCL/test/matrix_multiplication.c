@@ -260,7 +260,7 @@ int main(int argc, char **argv)
     commands = clCreateCommandQueue(context, device_ids[0], NULL, &err);
     if (!commands)
     {
-        printf("Error: Failed to create a command queue!\n");
+        printf("Error: Failed to create a command queue!\n", err);
         return EXIT_FAILURE;
     }
 
