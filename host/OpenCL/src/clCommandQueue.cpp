@@ -3,48 +3,29 @@
 #include "clContext.h"
 #include "clDevice.h"
 #include "clEvent.h"
+#include "clExceptions.h"
 
 cl_command_queue cl_create_command_queue(cl_context context,
                                          cl_device_id device,
                                          cl_int *errcode_ret)
 {
     cl_command_queue queue = NULL;
-    cl_int err = CL_SUCCESS;
 
     if (context == NULL)
-    {
-        err = CL_INVALID_CONTEXT;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_CONTEXT);
 
     if (device == NULL)
-    {
-        err = CL_INVALID_DEVICE;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_DEVICE);
 
-    queue = new (std::nothrow) _cl_command_queue();
-    if (!queue)
-    {
-        err = CL_OUT_OF_HOST_MEMORY;
-        goto exit;
-    }
+    queue = new _cl_command_queue(context, device);
 
-    queue->ctx = context;
     context->queue = queue;
     // asssociate device with the queue
     for (auto &d : context->devices)
         d->queue = queue;
 
-    /* initialize events queue */
-    queue->events.clear();
-
-    /* initialize task graph */
-    queue->tgx = NULL;
-
-exit:
     if (errcode_ret)
-        *errcode_ret = err;
+        *errcode_ret = CL_SUCCESS;
     return queue;
 }
 

@@ -2,15 +2,13 @@
 
 #include "clContext.h"
 #include "clDevice.h"
+#include "clExceptions.h"
 
 #include <algorithm>
 
 /* checks that all devices in device_list are inside the context */
 bool checkDevicesInContext(cl_context ctx, const cl_device_id *device_list, cl_uint num_devices)
 {
-    if (num_devices <= 0)
-        return false;
-
     for (int i = 0; i < num_devices; i++)
     {
         if (std::find(ctx->devices.begin(), ctx->devices.end(), device_list[i]) == ctx->devices.end())
@@ -27,41 +25,28 @@ cl_program cl_create_program_with_binary(cl_context context,
                                          cl_int *errcode_ret)
 {
     cl_program program = NULL;
-    cl_int err = CL_SUCCESS;
 
     mango_exit_t mango_err;        /* stores errors from mango function calls */
     mango_unit_type_t device_type; /* stores mango unit type of each device */
     mango_kernel_function tempKN;  /* temp. variable storing the kernel function data */
 
     if (context == NULL)
-    {
-        err = CL_INVALID_CONTEXT;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_CONTEXT);
+
     if (device_list == NULL || num_devices <= 0)
-    {
-        err = CL_INVALID_DEVICE;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_DEVICE);
+
     if (!checkDevicesInContext(context, device_list, num_devices))
-    {
-        err = CL_INVALID_DEVICE;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_DEVICE);
+
     if (binaries == NULL)
     {
-        err = CL_INVALID_VALUE;
         if (binary_status)
             binary_status[0] = CL_INVALID_VALUE;
-        goto exit;
+        throw cl_error(CL_INVALID_VALUE);
     }
 
-    program = new (std::nothrow) _cl_program();
-    if (!program)
-    {
-        err = CL_OUT_OF_HOST_MEMORY;
-        goto exit;
-    }
+    program = new _cl_program(context);
 
     for (int i = 0; i < num_devices; i++)
     {
@@ -87,23 +72,19 @@ cl_program cl_create_program_with_binary(cl_context context,
 
             if (binary_status)
                 binary_status[i] = CL_INVALID_BINARY;
-            err = CL_INVALID_BINARY;
             delete program;
-
-            goto exit;
+            throw cl_error(CL_INVALID_BINARY);
         }
 
         if (binary_status)
             binary_status[i] = CL_SUCCESS;
     }
 
-    /* if everything went fine, we add the program into its coresponding context and viceversa*/
+    /* if everything went fine, we add the program into its coresponding context*/
     context->program = program;
-    program->ctx = context;
 
-exit:
     if (errcode_ret)
-        *errcode_ret = err;
+        *errcode_ret = CL_SUCCESS;
     return program;
 }
 

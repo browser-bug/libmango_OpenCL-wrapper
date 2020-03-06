@@ -1,30 +1,30 @@
 #include "clEvent.h"
 
+#include "clExceptions.h"
+
+// /*!
+//  * \enum mango_event_status_t
+//  * \brief States for events
+//  */
+// typedef enum MangoEventStatus { LOCK=0, READ, WRITE, END_FIFO_OPERATION } mango_event_status_t;
+
 cl_int cl_wait_for_events(cl_uint num_events,
                           const cl_event *event_list)
 {
-    cl_int err = CL_SUCCESS;
-
     if (event_list == NULL || num_events <= 0)
-    {
-        err = CL_INVALID_VALUE;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_VALUE);
 
     for (int i = 0; i < num_events; i++)
     {
         if (!event_list[i])
-        {
-            err = CL_INVALID_EVENT;
-            goto exit;
-        }
+            throw cl_error(CL_INVALID_EVENT);
+
         std::cout << "[clWaitForEvents] waiting for event : " << event_list[i]->ev << std::endl;
         mango_wait(event_list[i]->ev);
         std::cout << "[clWaitForEvents] finished waiting for event : " << event_list[i]->ev << std::endl;
     }
 
-exit:
-    return err;
+    return CL_SUCCESS;
 }
 
 cl_int cl_get_event_info(cl_event event,

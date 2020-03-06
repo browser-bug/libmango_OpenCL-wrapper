@@ -1,5 +1,7 @@
 #include "clDevice.h"
 
+#include "clExceptions.h"
+
 // typedef enum
 // {
 //     PEAK, /*!< PEAK units */
@@ -46,17 +48,6 @@ std::vector<mango_unit_type_t> getAvailableDevicesByType(cl_device_type device_t
     return tempVect;
 }
 
-cl_uint getNumDevicesByType(mango_unit_type_t type)
-{
-    cl_uint counter = 0;
-    for (auto &unit : availableUnits)
-    {
-        if (unit == type)
-            counter++;
-    }
-    return counter;
-}
-
 cl_int cl_get_device_ids(cl_device_type device_type,
                          cl_uint num_entries,
                          cl_device_id *devices,
@@ -88,7 +79,7 @@ cl_int cl_get_device_ids(cl_device_type device_type,
     {
         for (int i = 0; i < num_entries; i++)
         {
-            devices[i] = new _cl_device_id();
+            devices[i] = new _cl_device_id(nullptr);
             devices[i]->device_type = available_devices.at(i);
         }
     }

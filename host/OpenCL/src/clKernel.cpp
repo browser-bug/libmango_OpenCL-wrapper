@@ -6,6 +6,7 @@
 #include "clCommandQueue.h"
 #include "clMem.h"
 #include "clEvent.h"
+#include "clExceptions.h"
 
 cl_kernel cl_create_kernel(cl_program program,
                            const char *binary_path,
@@ -13,51 +14,35 @@ cl_kernel cl_create_kernel(cl_program program,
                            cl_int kernel_id)
 {
     cl_kernel kernel = NULL;
-    cl_int err = CL_SUCCESS;
+
     mango_kernel_function kern_funct;
     int i;
 
     if (program == NULL)
-    {
-        err = CL_INVALID_PROGRAM;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_PROGRAM);
+
     if (binary_path == NULL)
     {
         std::cout << "[clCreateKernel] the binary path must be specified.\n";
-        err = CL_INVALID_VALUE;
-        goto exit;
+        throw cl_error(CL_INVALID_VALUE);
     }
+
     if (program->kernel_functions.empty())
-    {
-        err = CL_INVALID_PROGRAM_EXECUTABLE;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_PROGRAM_EXECUTABLE);
 
     for (i = 0; i < program->kernel_functions.size(); i++)
     {
+        // Finding the kernel_function associated with input binary path
         if (strcmp(program->kernel_functions[i].binary, binary_path) == 0)
             break;
     }
     if (i == program->kernel_functions.size())
-    {
-        err = CL_INVALID_KERNEL_NAME;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_KERNEL_NAME);
 
-    kernel = new (std::nothrow) _cl_kernel;
-    if (!kernel)
-    {
-        err = CL_OUT_OF_HOST_MEMORY;
-        goto exit;
-    }
-
-    kernel->id = kernel_id;
     kern_funct = program->kernel_functions[i];
-    kernel->device = kern_funct.device;
-    kernel->program = program;
 
-    kernel->args.clear();
+    kernel = new _cl_kernel(kern_funct.device, program);
+    kernel->id = kernel_id;
 
     kernel->kernel = mango_register_kernel_with_buffers(kernel->id,
                                                         kern_funct.function,
@@ -65,12 +50,11 @@ cl_kernel cl_create_kernel(cl_program program,
                                                         &kern_funct.buffers_out);
 
     // Get the task graph associated with the kernel (via its device)
+    std::cout << "From new kernel: " << kernel->device->queue->tgx << "\t from old kern_funct" << kern_funct.device->queue->tgx << std::endl;
     kernel->device->queue->tgx = mango_task_graph_add_kernel(kernel->device->queue->tgx, &(kernel->kernel));
-    std::cout << "[TASK_GRAPH] added new kernel to tg (address) : " << kernel->device->queue->tgx << std::endl;
 
-exit:
     if (errcode_ret)
-        *errcode_ret = err;
+        *errcode_ret = CL_SUCCESS;
     return kernel;
 }
 
@@ -80,33 +64,23 @@ cl_int cl_set_kernel_arg(cl_kernel kernel,
                          const void *arg_value,
                          cl_argument_type arg_type)
 {
-    cl_int err = CL_SUCCESS;
     const void *value = NULL;
     mango_buffer_type_t argument_type;
     mango_arg_t *arg = NULL;
 
     if (kernel == NULL)
-    {
-        err = CL_INVALID_KERNEL;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_KERNEL);
+
     // This is not needed since in our case we have kernels generated from binaries,
     // so no informations (a priori) on the arguments etc.
     // if (arg_index >= kernel->args.size())
-    // {
-    //     err = CL_INVALID_ARG_INDEX;
-    //     goto exit;
-    // }
+    //  throw cl_error(CL_INVALID_ARG_INDEX);
+
     if (arg_size == 0)
-    {
-        err = CL_INVALID_ARG_SIZE;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_ARG_SIZE);
+
     if (arg_value == NULL)
-    {
-        err = CL_INVALID_ARG_VALUE;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_ARG_VALUE);
 
     switch (arg_type)
     {
@@ -153,15 +127,10 @@ cl_int cl_set_kernel_arg(cl_kernel kernel,
         argument_type = EVENT;
 
         cl_event *argEvent = (cl_event *)arg_value;
-        *argEvent = new (std::nothrow) _cl_event;
-        if (!(*argEvent))
-        {
-            err = CL_OUT_OF_HOST_MEMORY;
-            goto exit;
-        }
-        /* in this case the arg_index refers to the buffer which the event is associated */
+        *argEvent = new _cl_event(kernel->device->queue->ctx, kernel->device->queue);
+
+        /* in this case the arg_index refers to the buffer which the event is associated with */
         (*argEvent)->ev = mango_get_buffer_event(((mango::Arg *)(kernel->args[arg_index]))->get_id());
-        (*argEvent)->ctx = kernel->device->queue->ctx;
         value = &((*argEvent)->ev);
 
         std::cout << "[clSetKernelArg] creating new mango_arg for mango_event (" << arg_value << ") with value: " << (*(uint32_t *)value) << std::endl;
@@ -169,17 +138,15 @@ cl_int cl_set_kernel_arg(cl_kernel kernel,
     }
 
     default:
-        err = CL_INVALID_VALUE;
         std::cout << "[clSetKernelArg] invalid kernel argument type\n";
-        goto exit;
+        throw cl_error(CL_INVALID_VALUE);
     }
 
     /* allocate new mango_arg and add it to the kernel structure */
     arg = mango_arg(kernel->kernel, value, arg_size, argument_type);
     kernel->args.push_back(arg);
 
-exit:
-    return err;
+    return CL_SUCCESS;
 }
 
 // TODO : to be tested

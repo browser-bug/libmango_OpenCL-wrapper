@@ -1,12 +1,19 @@
 #include "clContext.h"
 
 #include "clDevice.h"
+#include "clExceptions.h"
 
-// support function for clCreateContext
+#include <string>
+
+// Support function for clCreateContext
+/* 
+The core structure of this code comes from the Stack Overflow Network.
+Link to the original answer/question: https://stackoverflow.com/questions/15545341/process-name-from-its-pid-in-linux/22214304#22214304
+Author: Martin York https://stackoverflow.com/users/341032/qjgui
+ */
 const char *getProcessNameByPid(const int pid)
 {
-    char *name = NULL;
-    name = (char *)calloc(1024, sizeof(char));
+    char *name = (char *)calloc(1024, sizeof(char));
     if (name)
     {
         sprintf(name, "/proc/%d/cmdline", pid);
@@ -28,22 +35,12 @@ const char *getProcessNameByPid(const int pid)
     return name;
 }
 
-std::vector<cl_device_id> addDevices(const cl_device_id *devices, cl_uint num_devices)
-{
-    std::vector<cl_device_id> tempVec;
-    for (int i = 0; i < num_devices; i++)
-        tempVec.push_back(devices[i]);
-
-    return tempVec;
-}
-
 cl_context cl_create_context(cl_uint num_devices,
                              const cl_device_id *devices,
                              void *mango_receipe,
                              cl_int *errcode_ret)
 {
     cl_context context = NULL;
-    cl_int err = CL_SUCCESS;
 
     assert(mango_receipe && "user_data must specify a mango_receipe");
     const int pid = getpid();
@@ -51,29 +48,16 @@ cl_context cl_create_context(cl_uint num_devices,
     const char *receipe = (char *)mango_receipe;
 
     if (devices == NULL)
-    {
-        err = CL_INVALID_DEVICE;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_DEVICE);
 
     if (mango_init(process_name, receipe) != SUCCESS)
-    {
-        err = CL_INVALID_VALUE;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_VALUE);
 
-    context = new (std::nothrow) _cl_context();
-    if (!context)
-    {
-        err = CL_OUT_OF_HOST_MEMORY;
-        goto exit;
-    }
-    context->devices = addDevices(devices, num_devices);
-    context->mem_objects.clear();
+    context = new _cl_context(nullptr, nullptr);
+    context->devices = std::vector<cl_device_id>(devices, devices + num_devices);
 
-exit:
     if (errcode_ret)
-        *errcode_ret = err;
+        *errcode_ret = CL_SUCCESS;
     return context;
 }
 
@@ -89,30 +73,21 @@ cl_context cl_create_context_from_type(cl_device_type device_type,
     const cl_device_type valid_type = CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR | CL_DEVICE_TYPE_CPU | CL_DEVICE_TYPE_CUSTOM | CL_DEVICE_TYPE_DEFAULT;
 
     if ((device_type & valid_type) == 0)
-    {
-        err = CL_INVALID_DEVICE_TYPE;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_DEVICE_TYPE);
 
     // get devices num first
     err = cl_get_device_ids(device_type, 0, NULL, &num_devices);
     if (err != CL_SUCCESS)
-        goto exit;
+        throw cl_error(err);
 
     assert(num_devices > 0);
-    devices = new (std::nothrow) cl_device_id[num_devices];
-    if (!devices)
-    {
-        err = CL_OUT_OF_HOST_MEMORY;
-        goto exit;
-    }
+    devices = new cl_device_id[num_devices];
+
     err = cl_get_device_ids(device_type, num_devices, devices, &num_devices);
-    if (err != CL_SUCCESS)
-        goto exit;
+    throw cl_error(err);
 
     context = cl_create_context(num_devices, devices, mango_receipe, &err);
 
-exit:
     if (devices)
         delete[] devices;
     if (errcode_ret)

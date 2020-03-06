@@ -3,6 +3,7 @@
 #include "clKernel.h"
 #include "clContext.h"
 #include "clCommandQueue.h"
+#include "clExceptions.h"
 
 // support function for clCreateBuffer
 std::vector<mango_kernel_t> extractKernelIDs(cl_kernel *kernels, cl_int num_kernels)
@@ -25,7 +26,6 @@ cl_mem cl_create_buffer(cl_context context,
                         cl_int buffer_id)
 {
     cl_mem memory = NULL;
-    cl_int err = CL_SUCCESS;
     /* we can accept only these flags for now */
     cl_mem_flags valid_flags = CL_MEM_READ_WRITE | CL_MEM_WRITE_ONLY | CL_MEM_READ_ONLY;
     std::vector<mango_kernel_t> _kernels_in;
@@ -33,29 +33,20 @@ cl_mem cl_create_buffer(cl_context context,
     mango_buffer_t buf_t;
 
     if (context == NULL)
-    {
-        err = CL_INVALID_CONTEXT;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_CONTEXT);
 
     if ((flags & valid_flags) == 0)
     {
         std::cout << "[clCreateBuffer] please specify one of the available flags: CL_MEM_READ_WRITE | CL_MEM_WRITE_ONLY | CL_MEM_READ_ONLY\n";
-        err = CL_INVALID_VALUE;
-        goto exit;
+        throw cl_error(CL_INVALID_VALUE);
     }
 
     if (size == 0)
-    {
-        err = CL_INVALID_BUFFER_SIZE;
-        goto exit;
-    }
+        throw cl_error(CL_INVALID_BUFFER_SIZE);
 
     // TODO when we'll have the possibility to get device's infos we'll do this
     // if(size > getDeviceMaxAllocSize(context->devices[0])){
-    //     err = CL_INVALID_BUFFER_SIZE;
-    //     goto exit;
-    // }
+    //   throw cl_error(CL_INVALID_BUFFER_SIZE);
 
     /* get the IDs for the mango_register_memory process */
     _kernels_in = extractKernelIDs(kernels_in, num_kernels_in);
@@ -66,8 +57,7 @@ cl_mem cl_create_buffer(cl_context context,
         if (_kernels_in.empty() || _kernels_out.empty())
         {
             std::cout << "[clCreateBuffer] specify input and output kernels";
-            err = CL_INVALID_VALUE;
-            goto exit;
+            throw cl_error(CL_INVALID_VALUE);
         }
         buf_t = mango_register_memory_with_kernels(buffer_id, size, BUFFER, &_kernels_in, &_kernels_out);
     }
@@ -76,8 +66,7 @@ cl_mem cl_create_buffer(cl_context context,
         if (_kernels_in.empty())
         {
             std::cout << "[clCreateBuffer] specify input kernels";
-            err = CL_INVALID_VALUE;
-            goto exit;
+            throw cl_error(CL_INVALID_VALUE);
         }
         buf_t = mango_register_memory_with_kernels(buffer_id, size, BUFFER, &_kernels_in, NULL);
     }
@@ -86,26 +75,19 @@ cl_mem cl_create_buffer(cl_context context,
         if (_kernels_out.empty())
         {
             std::cout << "[clCreateBuffer] specify output kernels";
-            err = CL_INVALID_VALUE;
-            goto exit;
+            throw cl_error(CL_INVALID_VALUE);
         }
         buf_t = mango_register_memory_with_kernels(buffer_id, size, BUFFER, NULL, &_kernels_out);
     }
 
     /* allocate a new mem object */
-    memory = new (std::nothrow) _cl_mem;
-    if (!memory)
-    {
-        err = CL_MEM_OBJECT_ALLOCATION_FAILURE;
-        goto exit;
-    }
+    memory = new _cl_mem(context);
 
     memory->id = buffer_id;
     memory->host_ptr = host_ptr;
     memory->flags = flags;
     memory->size = size;
     memory->type = CL_MEM_OBJECT_BUFFER;
-    memory->ctx = context;
     memory->buffer = buf_t;
 
     memory->ctx->queue->tgx = mango_task_graph_add_buffer(memory->ctx->queue->tgx, &(memory->buffer));
@@ -114,9 +96,8 @@ cl_mem cl_create_buffer(cl_context context,
     /* add the buffer to the context mem objects vector */
     context->mem_objects.push_back(memory);
 
-exit:
     if (errcode_ret)
-        *errcode_ret = err;
+        *errcode_ret = CL_SUCCESS;
     return memory;
 }
 
