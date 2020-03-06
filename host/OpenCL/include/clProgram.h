@@ -23,6 +23,10 @@ extern "C"
 
     struct _cl_program
     {
+        _cl_program(
+            cl_context c)
+            : ctx(c) {}
+
         cl_context ctx; /* parent context */
 
         std::vector<mango_kernel_function> kernel_functions; /* all kernels included in the program */

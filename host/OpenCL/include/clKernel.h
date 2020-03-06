@@ -11,6 +11,11 @@ extern "C"
 
     struct _cl_kernel
     {
+        _cl_kernel(
+            cl_device_id d,
+            cl_program p)
+            : device(d), program(p) {}
+
         cl_device_id device; /* device associated with this kernel */
         cl_program program;  /* program that owns this structure */
 

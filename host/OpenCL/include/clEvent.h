@@ -11,6 +11,11 @@ extern "C"
 
     struct _cl_event
     {
+        _cl_event(
+            cl_context c,
+            cl_command_queue q)
+            : ctx(c), queue(q) {}
+
         cl_context ctx;         /* the context associated with the event */
         cl_command_queue queue; /* the command queue associated with the event */
 

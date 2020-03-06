@@ -17,6 +17,7 @@ extern "C"
 
     cl_int cl_enqueue_write_buffer(cl_command_queue command_queue,
                                    cl_mem buffer,
+                                   cl_bool blocking_write,
                                    const void *ptr,
                                    cl_uint num_events_in_wait_list,
                                    const cl_event *event_wait_list,
@@ -24,6 +25,7 @@ extern "C"
 
     cl_int cl_enqueue_read_buffer(cl_command_queue command_queue,
                                   cl_mem buffer,
+                                  cl_bool blocking_read,
                                   void *ptr,
                                   cl_uint num_events_in_wait_list,
                                   const cl_event *event_wait_list,

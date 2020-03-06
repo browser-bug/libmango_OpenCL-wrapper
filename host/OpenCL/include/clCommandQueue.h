@@ -11,10 +11,15 @@ extern "C"
 
     struct _cl_command_queue
     {
+        _cl_command_queue(
+            cl_context ctx,
+            cl_device_id dev)
+            : ctx(ctx), device(dev) {}
+
         cl_context ctx;      /* parent context */
         cl_device_id device; /* its device */
 
-        mango_task_graph_t *tgx; /* task_graph associated with this command_queue */
+        mango_task_graph_t *tgx = NULL; /* task_graph associated with this command_queue */
 
         std::vector<cl_event> events; /* enqueued events */
     };

@@ -13,6 +13,11 @@ extern "C"
 
     struct _cl_context
     {
+        _cl_context(
+            cl_command_queue q,
+            cl_program prog)
+            : queue(q), program(prog) {}
+
         cl_command_queue queue; /* this corresponds to the task_graph in MANGO */
         cl_program program;     /* the program associated with this context */
 

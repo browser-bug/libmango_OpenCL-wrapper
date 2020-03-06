@@ -15,6 +15,10 @@ extern "C"
     // TODO: could be populated with many more informations about the device in the future
     struct _cl_device_id
     {
+        _cl_device_id(
+            cl_command_queue q)
+            : queue(q) {}
+            
         cl_command_queue queue; /* command_queue associated with this device */
 
         mango_unit_type_t device_type;

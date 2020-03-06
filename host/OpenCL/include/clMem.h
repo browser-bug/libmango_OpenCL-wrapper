@@ -11,6 +11,11 @@ extern "C"
 
     struct _cl_mem
     {
+
+        _cl_mem(
+            cl_context c)
+            : ctx(c) {}
+
         cl_context ctx; /* the context associated with the mem */
 
         mango_buffer_t buffer;
