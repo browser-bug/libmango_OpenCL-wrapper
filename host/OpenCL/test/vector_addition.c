@@ -1,3 +1,7 @@
+////////////////////////////////////////////////////////////////////////////////
+// Sample code taken from https://github.com/olcf/vector_addition_tutorials.git
+////////////////////////////////////////////////////////////////////////////////
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -23,7 +27,7 @@ const char *kernelSource =                                       "\n" \
 int main( int argc, char* argv[] )
 {
     // Length of vectors
-    unsigned int n = 20;
+    unsigned int n = 10000;
  
     // Host input vectors
     int *h_a;
@@ -124,13 +128,12 @@ int main( int argc, char* argv[] )
         exit(1);
     }
 
-    int cols=1;
     // Set the arguments to our compute kernel
     err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&d_a, CL_BUFFER_ARG);
     err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&d_b, CL_BUFFER_ARG);
     err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&d_c, CL_BUFFER_ARG);
     err |= clSetKernelArg(kernel, 3, sizeof(int), (void *)&n, CL_SCALAR_ARG);
-    err |= clSetKernelArg(kernel, 4, sizeof(int), (void *)&cols, CL_SCALAR_ARG);
+    //err |= clSetKernelArg(kernel, 4, sizeof(int), (void *)&cols, CL_SCALAR_ARG);
     cl_event bufferEvent;
     err |= clSetKernelArg(kernel, 2, sizeof(cl_event), (void *)&bufferEvent, CL_EVENT_ARG);
 
