@@ -30,11 +30,7 @@ cl_kernel cl_create_kernel(cl_program program,
     if (program->map_kernel_functions.empty())
         throw cl_error(CL_INVALID_PROGRAM_EXECUTABLE);
 
-    for (const auto& kv : program->map_kernel_functions) {
-            if (strcmp(kv.second.binary, binary_path) == 0)
-            break;
-    }
-    if (i == program->map_kernel_functions.size())
+    if (program->map_kernel_functions.find(binary_path) == program->map_kernel_functions.end())
         throw cl_error(CL_INVALID_KERNEL_NAME);
 
     kern_funct = program->map_kernel_functions[binary_path];

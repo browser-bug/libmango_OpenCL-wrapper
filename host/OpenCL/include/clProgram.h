@@ -16,7 +16,6 @@ extern "C"
 
         kernelfunction *function;
 
-        const char *binary;                /* path to the program binary */
         std::vector<uint32_t> buffers_in;  /* function input buffers */
         std::vector<uint32_t> buffers_out; /* function output buffers */
     } mango_kernel_function;
@@ -29,7 +28,7 @@ extern "C"
 
         cl_context ctx; /* parent context */
 
-        std::map<const char*, mango_kernel_function> map_kernel_functions; /* all kernels included in the program */
+        std::map<const char *, mango_kernel_function> map_kernel_functions; /* all kernels included in the program */
     };
 
     cl_program cl_create_program_with_binary(cl_context context,

@@ -57,15 +57,9 @@ cl_program cl_create_program_with_binary(cl_context context,
         /* initializing a new mango_kernel_function identified by the path */
         (program->map_kernel_functions)[path].function = mango_kernelfunction_init();
         (program->map_kernel_functions)[path].device = device_list[i];
-        (program->map_kernel_functions)[path].binary = binaries[i];
-        (program->map_kernel_functions)[path].buffers_in.clear();
-        (program->map_kernel_functions)[path].buffers_out.clear();
+
         /* loading and initializing kernel data structure in MANGO */
         mango_err = mango_load_kernel(binaries[i], (program->map_kernel_functions)[path].function, device_type, BINARY);
-
-
-        /* loading and initializing kernel data structure in MANGO */
-        mango_err = mango_load_kernel(binaries[i], tempKN.function, device_type, BINARY);
 
         if (mango_err != SUCCESS)
         {
