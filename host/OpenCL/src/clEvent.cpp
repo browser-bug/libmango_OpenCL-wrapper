@@ -19,9 +19,28 @@ cl_int cl_wait_for_events(cl_uint num_events,
         if (!event_list[i])
             throw cl_error(CL_INVALID_EVENT);
 
-        std::cout << "[clWaitForEvents] waiting for event : " << event_list[i]->ev << std::endl;
-        mango_wait(event_list[i]->ev);
-        std::cout << "[clWaitForEvents] finished waiting for event : " << event_list[i]->ev << std::endl;
+        if (event_list[i]->status == mango_event_status_t::LOCK) // this event has yet to finish so we wait
+        {
+            std::cout << "[clWaitForEvents] waiting for event : " << event_list[i]->ev << std::endl;
+            switch (event_list[i]->event_type)
+            {
+            case CL_COMMAND_READ_BUFFER:
+                mango_wait_state(event_list[i]->ev, mango_event_status_t::READ);
+                event_list[i]->status = mango_event_status_t::READ;
+                break;
+
+            case CL_COMMAND_WRITE_BUFFER:
+                mango_wait_state(event_list[i]->ev, mango_event_status_t::WRITE);
+                event_list[i]->status = mango_event_status_t::WRITE;
+                break;
+
+            default: // In every other case we let MANGO decide the correct event status to wait
+                mango_wait(event_list[i]->ev);
+                event_list[i]->status = mango_event_status_t::END_FIFO_OPERATION;
+                break;
+            }
+            std::cout << "[clWaitForEvents] finished waiting for event : " << event_list[i]->ev << std::endl;
+        }
     }
 
     return CL_SUCCESS;
@@ -35,6 +54,7 @@ cl_int cl_get_event_info(cl_event event,
 {
     void *src_ptr = NULL;
     size_t src_size = 0;
+    cl_int status;
 
     if (event == NULL)
         return CL_INVALID_EVENT;
@@ -44,6 +64,21 @@ cl_int cl_get_event_info(cl_event event,
     case CL_EVENT_COMMAND_QUEUE:
         src_ptr = &event->queue;
         src_size = sizeof(cl_command_queue);
+        break;
+    case CL_EVENT_COMMAND_EXECUTION_STATUS:
+        // TODO is this mapping with mango_event_status correct?
+        switch (event->status)
+        {
+        case mango_event_status_t::LOCK:
+            status = CL_QUEUED;
+            break;
+
+        default: // mango_event_status_t = READ | WRITE | END_FIFO_OPERATION
+            status = CL_COMPLETE;
+            break;
+        }
+        src_ptr = &status;
+        src_size = sizeof(cl_int);
         break;
     case CL_EVENT_CONTEXT:
         src_ptr = &event->ctx;
