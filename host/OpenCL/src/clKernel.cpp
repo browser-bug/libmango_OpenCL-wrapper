@@ -125,6 +125,7 @@ cl_int cl_set_kernel_arg(cl_kernel kernel,
 
         /* in this case the arg_index refers to the buffer which the event is associated with */
         (*argEvent)->ev = mango_get_buffer_event(((mango::Arg *)(kernel->args[arg_index]))->get_id());
+        (*argEvent)->event_type = CL_EVENT_ARG;
         value = &((*argEvent)->ev);
 
         std::cout << "[clSetKernelArg] creating new mango_arg for mango_event (" << arg_value << ") with value: " << (*(uint32_t *)value) << std::endl;
