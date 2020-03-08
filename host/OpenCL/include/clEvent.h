@@ -14,12 +14,16 @@ extern "C"
         _cl_event(
             cl_context c,
             cl_command_queue q)
-            : ctx(c), queue(q) {}
+            : ctx(c), queue(q)
+        {
+            status = mango_event_status_t::LOCK;
+        }
 
         cl_context ctx;         /* the context associated with the event */
         cl_command_queue queue; /* the command queue associated with the event */
 
-        mango_event_t ev; /* the event structure in MANGO */
+        mango_event_t ev;            /* the event structure in MANGO */
+        mango_event_status_t status; /* the event status */
 
         cl_command_type event_type; /* event type */
     };
