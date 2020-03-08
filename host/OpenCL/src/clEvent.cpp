@@ -21,7 +21,7 @@ cl_int cl_wait_for_events(cl_uint num_events,
 
         if (event_list[i]->status == mango_event_status_t::LOCK) // this event has yet to finish so we wait
         {
-            std::cout << "[clWaitForEvents] waiting for event : " << event_list[i]->ev << std::endl;
+            // std::cout << "[clWaitForEvents] waiting for event : " << event_list[i]->ev << std::endl;
             switch (event_list[i]->event_type)
             {
             case CL_COMMAND_READ_BUFFER:
@@ -39,7 +39,7 @@ cl_int cl_wait_for_events(cl_uint num_events,
                 event_list[i]->status = mango_event_status_t::END_FIFO_OPERATION;
                 break;
             }
-            std::cout << "[clWaitForEvents] finished waiting for event : " << event_list[i]->ev << std::endl;
+            // std::cout << "[clWaitForEvents] finished waiting for event : " << event_list[i]->ev << std::endl;
         }
     }
 

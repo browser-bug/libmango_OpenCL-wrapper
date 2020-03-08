@@ -60,22 +60,20 @@ cl_int cl_enqueue_task(cl_command_queue command_queue,
     {
         for (int i = 0; i < num_events_in_wait_list; i++)
         {
-            std::cout << "[clEnqueueTask] waiting for the event : " << event_wait_list[i]->ev << std::endl;
+            // std::cout << "[clEnqueueTask] waiting for the event : " << event_wait_list[i]->ev << std::endl;
             cl_wait_for_events(1, &event_wait_list[i]);
-            std::cout << "[clEnqueueTask] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
+            // std::cout << "[clEnqueueTask] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
         }
     }
 
-    std::cout << "[clEnqueueTask] setting args for kernel: " << kernel->kernel << std::endl;
+    // std::cout << "[clEnqueueTask] setting args for kernel: " << kernel->kernel << std::endl;
     args = mango_set_args_from_vector(kernel->kernel, &kernel->args);
 
-    std::cout << "[clEnqueueTask] starting the kernel: " << kernel->kernel << std::endl;
+    // std::cout << "[clEnqueueTask] starting the kernel: " << kernel->kernel << std::endl;
     task_event = mango_start_kernel(kernel->kernel, args, NULL);
 
-    std::cout << "[clEnqueueTask] creating event : " << task_event << std::endl;
+    // std::cout << "[clEnqueueTask] creating event : " << task_event << std::endl;
     temp_event = new _cl_event(command_queue->ctx, command_queue);
-    if (!temp_event)
-        throw cl_error(CL_OUT_OF_HOST_MEMORY);
 
     temp_event->ev = task_event;
     temp_event->event_type = CL_COMMAND_NDRANGE_KERNEL; // since clEnqueueTask is actually deprecated we can assume is always of this type
@@ -134,20 +132,20 @@ cl_int cl_enqueue_write_buffer(cl_command_queue command_queue,
     {
         for (int i = 0; i < num_events_in_wait_list; i++)
         {
-            std::cout << "[clEnqueueWriteBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
+            // std::cout << "[clEnqueueWriteBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
             cl_wait_for_events(1, &event_wait_list[i]);
-            std::cout << "[clEnqueueWriteBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
+            // std::cout << "[clEnqueueWriteBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
         }
     }
 
-    printf("[clEnqueueWriteBuffer] Enqueuing write buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
+    // printf("[clEnqueueWriteBuffer] Enqueuing write buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
     task_event = mango_write(ptr, buffer->buffer, DIRECT, 0);
 
     // TODO this needs a more in depth look
     // if (blocking_write)
-    //     mango_wait(task_event);
+    //     mango_wait_state(task_event, mango_event_status_t::WRITE);
 
-    std::cout << "[clEnqueueWriteBuffer] creating event : " << task_event << std::endl;
+    // std::cout << "[clEnqueueWriteBuffer] creating event : " << task_event << std::endl;
     temp_event = new _cl_event(command_queue->ctx, command_queue);
 
     temp_event->ev = task_event;
@@ -207,20 +205,20 @@ cl_int cl_enqueue_read_buffer(cl_command_queue command_queue,
     {
         for (int i = 0; i < num_events_in_wait_list; i++)
         {
-            std::cout << "[clEnqueueReadBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
+            // std::cout << "[clEnqueueReadBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
             cl_wait_for_events(1, &event_wait_list[i]);
-            std::cout << "[clEnqueueReadBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
+            // std::cout << "[clEnqueueReadBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
         }
     }
 
-    printf("[clEnqueueReadBuffer] Enqueuing read buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
+    // printf("[clEnqueueReadBuffer] Enqueuing read buffer %d. Current specificication assumes asynchronous transfer.\n", buffer->id);
     task_event = mango_read(ptr, buffer->buffer, DIRECT, 0);
 
     // TODO this needs a more in depth look
     // if (blocking_read)
-    //     mango_wait(task_event);
+    //     mango_wait_state(task_event, mango_event_status_t::READ);
 
-    std::cout << "[clEnqueueReadBuffer] creating event : " << task_event << std::endl;
+    // std::cout << "[clEnqueueReadBuffer] creating event : " << task_event << std::endl;
     temp_event = new _cl_event(command_queue->ctx, command_queue);
 
     temp_event->ev = task_event;

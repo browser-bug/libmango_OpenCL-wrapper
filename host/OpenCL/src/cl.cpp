@@ -1139,12 +1139,12 @@ extern "C"
 
     cl_int clKernelAndBufferAllocation(cl_command_queue command_queue)
     {
-        std::cout << "[clKernelAndBufferAllocation] allocating new resources in task graph: " << command_queue->tgx << std::endl;
+        // std::cout << "[clKernelAndBufferAllocation] allocating new resources in task graph: " << command_queue->tgx << std::endl;
         command_queue->tgx = mango_task_graph_add_event(command_queue->tgx, NULL); // FIX : this is the last part of mango allocation that should stay somewhere else
         mango_exit_t err = mango_resource_allocation(command_queue->tgx);
         if (err == SUCCESS)
         {
-            printf("[clKernelAndBufferAllocation] allocation completed\n");
+            // printf("[clKernelAndBufferAllocation] allocation completed\n");
             return CL_SUCCESS;
         }
         else

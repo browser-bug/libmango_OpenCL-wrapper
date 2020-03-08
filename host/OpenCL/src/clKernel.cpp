@@ -16,7 +16,6 @@ cl_kernel cl_create_kernel(cl_program program,
     cl_kernel kernel = NULL;
 
     mango_kernel_function kern_funct;
-    int i;
 
     if (program == NULL)
         throw cl_error(CL_INVALID_PROGRAM);
@@ -43,8 +42,6 @@ cl_kernel cl_create_kernel(cl_program program,
                                                         &kern_funct.buffers_in,
                                                         &kern_funct.buffers_out);
 
-    // Get the task graph associated with the kernel (via its device)
-    std::cout << "From new kernel: " << kernel->device->queue->tgx << "\t from old kern_funct" << kern_funct.device->queue->tgx << std::endl;
     kernel->device->queue->tgx = mango_task_graph_add_kernel(kernel->device->queue->tgx, &(kernel->kernel));
 
     if (errcode_ret)
@@ -100,7 +97,7 @@ cl_int cl_set_kernel_arg(cl_kernel kernel,
         argument_type = SCALAR;
         value = arg_value;
 
-        std::cout << "[clSetKernelArg] creating new mango_arg for mango_scalar with value: " << (*(uint32_t *)value) << std::endl;
+        // std::cout << "[clSetKernelArg] creating new mango_arg for mango_scalar with value: " << (*(uint32_t *)value) << std::endl;
         break;
     }
 
@@ -111,7 +108,7 @@ cl_int cl_set_kernel_arg(cl_kernel kernel,
 
         value = &((*(cl_mem *)arg_value)->buffer);
 
-        std::cout << "[clSetKernelArg] creating new mango_arg for mango_buffer (" << arg_value << ") with value: " << (*(uint32_t *)value) << std::endl;
+        // std::cout << "[clSetKernelArg] creating new mango_arg for mango_buffer (" << arg_value << ") with value: " << (*(uint32_t *)value) << std::endl;
         break;
     }
 
@@ -128,7 +125,7 @@ cl_int cl_set_kernel_arg(cl_kernel kernel,
         (*argEvent)->event_type = CL_EVENT_ARG;
         value = &((*argEvent)->ev);
 
-        std::cout << "[clSetKernelArg] creating new mango_arg for mango_event (" << arg_value << ") with value: " << (*(uint32_t *)value) << std::endl;
+        // std::cout << "[clSetKernelArg] creating new mango_arg for mango_event (" << arg_value << ") with value: " << (*(uint32_t *)value) << std::endl;
         break;
     }
 

@@ -91,7 +91,7 @@ cl_mem cl_create_buffer(cl_context context,
     memory->buffer = buf_t;
 
     memory->ctx->queue->tgx = mango_task_graph_add_buffer(memory->ctx->queue->tgx, &(memory->buffer));
-    std::cout << "[TASK_GRAPH] added new buffer to tg (address) : " << memory->ctx->queue->tgx << std::endl;
+    // std::cout << "[TASK_GRAPH] added new buffer to tg (address) : " << memory->ctx->queue->tgx << std::endl;
 
     /* add the buffer to the context mem objects vector */
     context->mem_objects.push_back(memory);

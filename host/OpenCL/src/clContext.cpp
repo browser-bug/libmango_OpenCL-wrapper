@@ -54,7 +54,7 @@ cl_context cl_create_context(cl_uint num_devices,
         throw cl_error(CL_INVALID_VALUE);
 
     context = new _cl_context(nullptr, nullptr);
-    context->devices = std::vector<cl_device_id>(devices, devices + num_devices);
+    context->devices = std::vector<cl_device_id>(devices, devices + num_devices); // copy input devices into the context
 
     if (errcode_ret)
         *errcode_ret = CL_SUCCESS;

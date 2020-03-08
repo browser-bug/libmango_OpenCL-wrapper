@@ -49,7 +49,7 @@ cl_program cl_create_program_with_binary(cl_context context,
 
     for (int i = 0; i < num_devices; i++)
     {
-        std::cout << "[clCreateProgramWithBinary] initializing new kernel for device_type: " << device_list[i]->device_type << std::endl;
+        // std::cout << "[clCreateProgramWithBinary] initializing new kernel for device_type: " << device_list[i]->device_type << std::endl;
 
         device_type = device_list[i]->device_type;
         const char *path = binaries[i];
