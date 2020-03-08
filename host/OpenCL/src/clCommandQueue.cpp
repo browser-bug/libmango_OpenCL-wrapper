@@ -31,14 +31,18 @@ cl_command_queue cl_create_command_queue(cl_context context,
 
 cl_int cl_finish(cl_command_queue command_queue)
 {
+    cl_int err;
+
     if (command_queue == NULL)
         return CL_INVALID_COMMAND_QUEUE;
 
     size_t queueLength = command_queue->events.size();
     for (int i = 0; i < queueLength; i++)
     {
-        cl_event topEv = command_queue->events.back();
-        mango_wait(topEv->ev);
+        const cl_event topEv = command_queue->events.back();
+        err = clWaitForEvents(1, &topEv);
+        if (err != CL_SUCCESS)
+            return err;
         command_queue->events.pop_back();
     }
 
