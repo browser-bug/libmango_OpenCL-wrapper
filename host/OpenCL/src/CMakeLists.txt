@@ -54,5 +54,6 @@ target_link_libraries(openclStatic PUBLIC ${MANGO_ROOT}/lib/libmango.a)
 # target_link_libraries(opencl PUBLIC "/usr/local/cuda-10.1/lib64/libOpenCL.so")
 # target_link_libraries(openclStatic PUBLIC "/usr/local/cuda-10.1/lib64/libOpenCL.so")
 
+# Installation
 install (TARGETS opencl DESTINATION ${MANGO_ROOT}/lib)
 install (TARGETS openclStatic DESTINATION ${MANGO_ROOT}/lib)
