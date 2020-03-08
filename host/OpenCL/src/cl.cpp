@@ -1103,11 +1103,11 @@ extern "C"
 
     /* Additional functions to support the MANGO Platform */
 
-    cl_int clSetInputBufferIDs(cl_program program, const char* binary, unsigned int nbuffers_in, ...)
+    cl_int clSetInputBufferIDs(cl_program program, const char *binary, unsigned int nbuffers_in, ...)
     {
-        assert(binary != NULL  && "the kernel function path is not valid ");
+        assert(binary != NULL && "the kernel function path is not valid ");
         assert(nbuffers_in < MAX_NUM_KERNEL_BUFFERS && "exceeded the maximum number of kernel buffers available");
-       
+
         program->map_kernel_functions[binary].buffers_in.clear();
 
         va_list list;
@@ -1120,8 +1120,7 @@ extern "C"
         va_end(list);
     }
 
-    
-    cl_int clSetOutputBufferIDs(cl_program program, const char* binary, unsigned int nbuffers_out, ...)
+    cl_int clSetOutputBufferIDs(cl_program program, const char *binary, unsigned int nbuffers_out, ...)
     {
         assert(binary != NULL && "the kernel function path is not valid");
         assert(nbuffers_out < MAX_NUM_KERNEL_BUFFERS && "exceeded the maximum number of kernel buffers available");
@@ -1138,7 +1137,6 @@ extern "C"
         va_end(list);
     }
 
-    
     cl_int clKernelAndBufferAllocation(cl_command_queue command_queue)
     {
         std::cout << "[clKernelAndBufferAllocation] allocating new resources in task graph: " << command_queue->tgx << std::endl;
