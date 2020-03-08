@@ -61,7 +61,7 @@ cl_int cl_enqueue_task(cl_command_queue command_queue,
         for (int i = 0; i < num_events_in_wait_list; i++)
         {
             std::cout << "[clEnqueueTask] waiting for the event : " << event_wait_list[i]->ev << std::endl;
-            mango_wait(event_wait_list[i]->ev);
+            cl_wait_for_events(1, &event_wait_list[i]);
             std::cout << "[clEnqueueTask] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
         }
     }
@@ -135,7 +135,7 @@ cl_int cl_enqueue_write_buffer(cl_command_queue command_queue,
         for (int i = 0; i < num_events_in_wait_list; i++)
         {
             std::cout << "[clEnqueueWriteBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
-            mango_wait(event_wait_list[i]->ev);
+            cl_wait_for_events(1, &event_wait_list[i]);
             std::cout << "[clEnqueueWriteBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
         }
     }
@@ -208,7 +208,7 @@ cl_int cl_enqueue_read_buffer(cl_command_queue command_queue,
         for (int i = 0; i < num_events_in_wait_list; i++)
         {
             std::cout << "[clEnqueueReadBuffer] waiting for the event : " << event_wait_list[i]->ev << std::endl;
-            mango_wait(event_wait_list[i]->ev);
+            cl_wait_for_events(1, &event_wait_list[i]);
             std::cout << "[clEnqueueReadBuffer] finished waiting for event : " << event_wait_list[i]->ev << std::endl;
         }
     }
